@@ -1,7 +1,3 @@
-# create a small library for tabletop detection
-add_library(tabletop_table
-            tabletop_segmenter.cpp)
-
 # deal with the detection TOD module
 ectomodule(tabletop_table
   module.cpp
