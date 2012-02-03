@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 project(tabletop)
-include(cmake/pcl-search.cmake)
 
 #find_package(catkin)
 #find_package(genmsg)
@@ -13,6 +12,8 @@ include(cmake/pcl-search.cmake)
 #  FILES Table.msg)
 
 #generate_messages()
+
+find_package(PCL REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${PCL_INCLUDE_DIRS})
