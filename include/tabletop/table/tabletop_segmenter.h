@@ -37,11 +37,15 @@
 #define TABLETOP_SEGMENTER_H_
 
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/extract_indices.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/filters/project_inliers.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/surface/convex_hull.h>
 
 namespace tabletop
 {
@@ -55,13 +59,16 @@ namespace tabletop
     };
 
     TabletopSegmenter(const std::vector<float> & filter_limits, size_t min_cluster_size,
-                      float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold)
+                      float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold,
+                      const Eigen::Vector3f &vertical_direction)
         :
           filter_limits_(filter_limits),
           min_cluster_size_(min_cluster_size),
           plane_detection_voxel_size_(plane_detection_voxel_size),
           normal_k_search_(normal_k_search),
-          plane_threshold_(plane_threshold)
+          plane_threshold_(plane_threshold),
+          vertical_direction_(vertical_direction)
+
     {
     }
 
@@ -119,10 +126,10 @@ namespace tabletop
     }
 
     void
-    downsample(float downLeafSize, const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_in,
-               pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_out)
+    downsample(float downLeafSize, const typename pcl::PointCloud<Point>::Ptr &cloud_in,
+               typename pcl::PointCloud<Point>::Ptr &cloud_out)
     {
-      pcl::VoxelGrid<pcl::PointXYZ> downsampler;
+      pcl::VoxelGrid<Point> downsampler;
       downsampler.setDownsampleAllData(false);
       downsampler.setLeafSize(downLeafSize, downLeafSize, downLeafSize);
 
@@ -137,11 +144,7 @@ namespace tabletop
     {
       pcl::NormalEstimation<Point, pcl::Normal> normalsEstimator;
       normalsEstimator.setInputCloud(cloud);
-#if PCL_MINOR_VERSION<=3
-      typename pcl::KdTree<Point>::Ptr tree(new pcl::KdTreeFLANN<Point>());
-#else
       typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>());
-#endif
       normalsEstimator.setSearchMethod(tree);
       normalsEstimator.setKSearch(normal_k_search);
       normalsEstimator.compute(*normals);
@@ -170,7 +173,8 @@ namespace tabletop
     }
 
     Result
-    findTable(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in, typename pcl::PointIndices::Ptr table_inliers_ptr,
+    findTable(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in,
+              typename pcl::PointIndices::Ptr table_inliers_ptr,
               typename pcl::ModelCoefficients::Ptr table_coefficients_ptr)
     {
       // First, filter by an interest box (which also remove NaN's)
@@ -199,7 +203,7 @@ namespace tabletop
 
       // Perform planar segmentation
       if (!segmentPlane(plane_threshold_, cloud_downsampled_ptr_, cloud_normals_ptr, table_inliers_ptr,
-                   table_coefficients_ptr))
+                        table_coefficients_ptr))
         return NO_TABLE;
 
       if (table_coefficients_ptr->values.size() <= 3)
@@ -217,6 +221,14 @@ namespace tabletop
        */
       //ROS_INFO(
       //  "[TableObjectDetector::input_callback] Model found with %d inliers: [%f %f %f %f].", (int)table_inliers_ptr->indices.size (), table_coefficients_ptr->values[0], table_coefficients_ptr->values[1], table_coefficients_ptr->values[2], table_coefficients_ptr->values[3]);
+      // Set the vertical direction properly
+      const int coeffsCount = 4;
+      Eigen::Vector3f tableNormal(table_coefficients_ptr->values[0], table_coefficients_ptr->values[1],
+                                  table_coefficients_ptr->values[2]);
+      if (tableNormal.dot(vertical_direction_) < 0)
+        for (int i = 0; i < coeffsCount; ++i)
+          table_coefficients_ptr->values[i] *= -1;
+
       return SUCCESS;
     }
 
@@ -233,6 +245,93 @@ namespace tabletop
     unsigned int normal_k_search_;
     /** The distance used as a threshold when finding a plane */
     float plane_threshold_;
+    /** The vertical direction vector */
+    Eigen::Vector3f vertical_direction_;
+  };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  template<typename Point>
+  class TabletopHull
+  {
+    TabletopHull(float cluster_tolerance)
+        :
+          cluster_tolerance_(cluster_tolerance)
+    {
+    }
+
+    void
+    projectInliersOnTable(const typename pcl::PointCloud<Point> &cloud, const pcl::PointIndices::ConstPtr &inliers,
+                          const pcl::ModelCoefficients::ConstPtr &coefficients,
+                          typename pcl::PointCloud<Point> &projectedInliers)
+    {
+      typename pcl::ProjectInliers<Point> projector;
+      projector.setModelType(pcl::SACMODEL_PLANE);
+      projector.setInputCloud(cloud.makeShared());
+      projector.setIndices(inliers);
+      projector.setModelCoefficients(coefficients);
+      projector.filter(projectedInliers);
+    }
+
+    void
+    extractPointCloud(const typename pcl::PointCloud<Point> &cloud, const pcl::PointIndices::ConstPtr &inliers,
+                      typename pcl::PointCloud<Point> &extractedCloud)
+    {
+      pcl::ExtractIndices<Point> extractor;
+      extractor.setInputCloud(cloud.makeShared());
+      extractor.setIndices(inliers);
+      extractor.setNegative(false);
+      extractor.filter(extractedCloud);
+    }
+
+    void
+    reconstructConvexHull(const typename pcl::PointCloud<Point> &projectedInliers,
+                          typename pcl::PointCloud<Point> &tableHull)
+    {
+      typename pcl::ConvexHull<Point> hullReconstruntor;
+      hullReconstruntor.setInputCloud(projectedInliers.makeShared());
+      hullReconstruntor.reconstruct(tableHull);
+    }
+
+    typename pcl::PointCloud<Point>::Ptr
+    cluster(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in, typename pcl::PointIndices::Ptr inliers_ptr,
+            typename pcl::ModelCoefficients::Ptr coefficients_ptr)
+    {
+      typename pcl::PointCloud<Point> projectedInliers;
+      projectInliersOnTable(cloud_in, inliers_ptr, coefficients_ptr, projectedInliers);
+
+      //    reconstructConvexHull(projectedInliers, *tableHull);
+
+      typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>);
+      tree->setInputCloud(projectedInliers.makeShared());
+
+      std::vector<pcl::PointIndices> clusterIndices;
+      typename pcl::EuclideanClusterExtraction<Point> ec;
+      ec.setClusterTolerance(cluster_tolerance_);
+      ec.setSearchMethod(tree);
+      ec.setInputCloud(projectedInliers.makeShared());
+      ec.extract(clusterIndices);
+
+      int maxClusterIndex = 0;
+      for (size_t i = 1; i < clusterIndices.size(); ++i)
+      {
+        if (clusterIndices[maxClusterIndex].indices.size() < clusterIndices[i].indices.size())
+        {
+          maxClusterIndex = i;
+        }
+      }
+
+      pcl::PointCloud<Point> table;
+      extractPointCloud(projectedInliers, boost::make_shared<pcl::PointIndices>(clusterIndices[maxClusterIndex]),
+                        table);
+
+      typename pcl::PointCloud<Point>::Ptr table_hull(new typename pcl::PointCloud<pcl::PointXYZ>);
+      reconstructConvexHull(table, *table_hull);
+      return table_hull;
+    }
+
+    /** The cluster tolerance when calling EuclideanClusterExtraction */
+    float cluster_tolerance_;
   };
 }
 

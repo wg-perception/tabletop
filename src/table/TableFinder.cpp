@@ -74,6 +74,7 @@ namespace tabletop
                      "The number of nearest neighbors to use when computing normals", 10);
       params.declare(&TableFinder::plane_threshold_, "plane_threshold",
                      "The distance used as a threshold when finding a plane", 0.2);
+      params.declare(&TableFinder::vertical_direction_, "vertical_direction", "The vertical direction");
     }
 
     static void
@@ -101,7 +102,7 @@ namespace tabletop
     {
       TabletopSegmenter<pcl::PointXYZ> table_segmenter(*filter_limits_, *min_cluster_size_,
                                                        *plane_detection_voxel_size_, *normal_k_search_,
-                                                       *plane_threshold_);
+                                                       *plane_threshold_, *vertical_direction_);
       table_segmenter.findTable(*cloud_, *table_inliers_, *table_coefficients_);
 
       return ecto::OK;
@@ -124,6 +125,8 @@ namespace tabletop
     ecto::spore<pcl::PointIndices::Ptr> table_inliers_;
     /** The minimum number of inliers in order to do pose matching */
     ecto::spore<pcl::ModelCoefficients::Ptr> table_coefficients_;
+    /** The vertical direction */
+    ecto::spore<Eigen::Vector3f> vertical_direction_;
   };
 }
 

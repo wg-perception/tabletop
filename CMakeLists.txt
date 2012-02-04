@@ -14,6 +14,8 @@ include(cmake/pcl-search.cmake)
 
 #generate_messages()
 
+find_package(PCL REQUIRED)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${PCL_INCLUDE_DIRS})
 
