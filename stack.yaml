@@ -1,0 +1,13 @@
+Catkin-ProjectName: tabeltop
+Version: 0.2.3
+Description: A port of the old tabletop object recognition 
+
+Author: Marius Muja, Matei, Vincent Rabaud <vrabaud@willowgarage.com>
+Maintainer:  Vincent Rabaud <vrabaud@willowgarage.com>
+Homepage:  http://ecto.willowgarage.com
+
+Depends: catkin, ecto
+
+Catkin-CopyrightType:  willowgarage
+Catkin-DebRulesType: cmake
+

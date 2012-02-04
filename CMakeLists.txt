@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 project(tabletop)
-include(cmake/pcl-search.cmake)
 
 #find_package(catkin)
 #find_package(genmsg)
