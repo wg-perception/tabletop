@@ -6,7 +6,7 @@ Author: Marius Muja, Matei, Vincent Rabaud <vrabaud@willowgarage.com>
 Maintainer:  Vincent Rabaud <vrabaud@willowgarage.com>
 Homepage:  http://ecto.willowgarage.com
 
-Depends: catkin, ecto, arm-navigation-experimental
+Depends: catkin, ecto, ecto-pcl, arm-navigation-experimental
 
 Catkin-CopyrightType:  willowgarage
 Catkin-DebRulesType: cmake

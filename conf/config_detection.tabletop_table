@@ -1,0 +1,15 @@
+source1:
+  type: ros_kinect
+  rgb_frame_id: '/camera_rgb_optical_frame'
+
+sink1:
+  type: publisher
+
+pipeline1:
+  method: 'tabletop'
+  package: 'tabletop'
+  submethod: ''
+  sources: [1]
+  sinks: [1]
+  parameters:
+    none: 'none'

@@ -1,16 +1,16 @@
 # create some messages for ROS
 find_package(genmsg)
 if (genmsg_FOUND)
-#  find_package(ROS REQUIRED geometry_msgs sensor_msgs std_msgs)
-#  add_message_files(DIRECTORY msg FILES Table.msg)
-  #generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
+#TODO
   #SET(TABLETOP_ROS_CELLS TablePublisher)
 endif()
 
 # deal with the detection TOD module
 ectomodule(tabletop_table
   module.cpp
-  TableFinder.cpp
+  Clusterer.cpp
+  ConvexHull.cpp
+  TableDetector.cpp
   ${TABLETOP_ROS_CELLS}
 )
 
