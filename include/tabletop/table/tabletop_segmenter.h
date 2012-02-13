@@ -43,12 +43,21 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
+#include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/surface/convex_hull.h>
 
 namespace tabletop
 {
+  template<typename Point>
+  struct PointCloudView
+  {
+    typename pcl::PointCloud<Point>::ConstPtr & cloud_;
+    typename pcl::PointIndices::ConstPtr indices_;
+  };
+
   template<typename Point>
   class TabletopSegmenter
   {
@@ -59,15 +68,13 @@ namespace tabletop
     };
 
     TabletopSegmenter(const std::vector<float> & filter_limits, size_t min_cluster_size,
-                      float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold,
-                      const Eigen::Vector3f &vertical_direction)
+                      float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold)
         :
           filter_limits_(filter_limits),
           min_cluster_size_(min_cluster_size),
           plane_detection_voxel_size_(plane_detection_voxel_size),
           normal_k_search_(normal_k_search),
-          plane_threshold_(plane_threshold),
-          vertical_direction_(vertical_direction)
+          plane_threshold_(plane_threshold)
 
     {
     }
@@ -222,13 +229,6 @@ namespace tabletop
       //ROS_INFO(
       //  "[TableObjectDetector::input_callback] Model found with %d inliers: [%f %f %f %f].", (int)table_inliers_ptr->indices.size (), table_coefficients_ptr->values[0], table_coefficients_ptr->values[1], table_coefficients_ptr->values[2], table_coefficients_ptr->values[3]);
       // Set the vertical direction properly
-      const int coeffsCount = 4;
-      Eigen::Vector3f tableNormal(table_coefficients_ptr->values[0], table_coefficients_ptr->values[1],
-                                  table_coefficients_ptr->values[2]);
-      if (tableNormal.dot(vertical_direction_) < 0)
-        for (int i = 0; i < coeffsCount; ++i)
-          table_coefficients_ptr->values[i] *= -1;
-
       return SUCCESS;
     }
 
@@ -245,8 +245,6 @@ namespace tabletop
     unsigned int normal_k_search_;
     /** The distance used as a threshold when finding a plane */
     float plane_threshold_;
-    /** The vertical direction vector */
-    Eigen::Vector3f vertical_direction_;
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -254,6 +252,7 @@ namespace tabletop
   template<typename Point>
   class TabletopHull
   {
+  public:
     TabletopHull(float cluster_tolerance)
         :
           cluster_tolerance_(cluster_tolerance)
@@ -261,8 +260,8 @@ namespace tabletop
     }
 
     void
-    projectInliersOnTable(const typename pcl::PointCloud<Point> &cloud, const pcl::PointIndices::ConstPtr &inliers,
-                          const pcl::ModelCoefficients::ConstPtr &coefficients,
+    projectInliersOnTable(const typename pcl::PointCloud<Point> &cloud, const pcl::PointIndices::Ptr &inliers,
+                          const pcl::ModelCoefficients::Ptr &coefficients,
                           typename pcl::PointCloud<Point> &projectedInliers)
     {
       typename pcl::ProjectInliers<Point> projector;
@@ -294,22 +293,22 @@ namespace tabletop
     }
 
     typename pcl::PointCloud<Point>::Ptr
-    cluster(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in, typename pcl::PointIndices::Ptr inliers_ptr,
+    cluster(const typename pcl::PointCloud<Point>::Ptr & cloud_in, typename pcl::PointIndices::Ptr inliers_ptr,
             typename pcl::ModelCoefficients::Ptr coefficients_ptr)
     {
-      typename pcl::PointCloud<Point> projectedInliers;
-      projectInliersOnTable(cloud_in, inliers_ptr, coefficients_ptr, projectedInliers);
+      projected_inliers_ = typename pcl::PointCloud<Point>::Ptr(new typename pcl::PointCloud<Point>);
+      projectInliersOnTable(*cloud_in, inliers_ptr, coefficients_ptr, *projected_inliers_);
 
       //    reconstructConvexHull(projectedInliers, *tableHull);
 
       typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>);
-      tree->setInputCloud(projectedInliers.makeShared());
+      tree->setInputCloud(projected_inliers_);
 
       std::vector<pcl::PointIndices> clusterIndices;
       typename pcl::EuclideanClusterExtraction<Point> ec;
       ec.setClusterTolerance(cluster_tolerance_);
       ec.setSearchMethod(tree);
-      ec.setInputCloud(projectedInliers.makeShared());
+      ec.setInputCloud(projected_inliers_);
       ec.extract(clusterIndices);
 
       int maxClusterIndex = 0;
@@ -322,16 +321,120 @@ namespace tabletop
       }
 
       pcl::PointCloud<Point> table;
-      extractPointCloud(projectedInliers, boost::make_shared<pcl::PointIndices>(clusterIndices[maxClusterIndex]),
+      extractPointCloud(*projected_inliers_, boost::make_shared<pcl::PointIndices>(clusterIndices[maxClusterIndex]),
                         table);
 
-      typename pcl::PointCloud<Point>::Ptr table_hull(new typename pcl::PointCloud<pcl::PointXYZ>);
+      typename pcl::PointCloud<Point>::Ptr table_hull(new typename pcl::PointCloud<Point>);
       reconstructConvexHull(table, *table_hull);
       return table_hull;
     }
 
+    typename pcl::PointCloud<Point>::Ptr projected_inliers_;
+
+  private:
     /** The cluster tolerance when calling EuclideanClusterExtraction */
     float cluster_tolerance_;
+    /** The vertical direction vector */
+    Eigen::Vector3f vertical_direction_;
+  };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  template<typename Point>
+  class BlobSegmenter
+  {
+  public:
+    BlobSegmenter(double clustering_voxel_size, double cluster_distance, int min_cluster_size)
+        :
+          clustering_voxel_size_(clustering_voxel_size),
+          cluster_distance_(cluster_distance),
+          min_cluster_size_(min_cluster_size)
+    {
+    }
+
+    void
+    process(typename pcl::PointCloud<Point>::Ptr cloud_filtered_ptr,
+            typename pcl::PointCloud<Point>::Ptr table_hull_ptr,
+            std::vector<typename pcl::PointCloud<Point>::Ptr> & clusters)
+    {
+      typename pcl::ExtractPolygonalPrismData<Point> prism_;
+
+      // ---[ Get the objects on top of the (non-flat) table
+      pcl::PointIndices cloud_object_indices;
+      //prism_.setInputCloud (cloud_all_minus_table_ptr);
+      prism_.setInputCloud(cloud_filtered_ptr);
+      prism_.setInputPlanarHull(table_hull_ptr);
+      prism_.setHeightLimits(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+      prism_.segment(cloud_object_indices);
+
+      typename pcl::PointCloud<Point>::Ptr cloud_objects_ptr(new pcl::PointCloud<Point>);
+      pcl::ExtractIndices<Point> extract_object_indices;
+      extract_object_indices.setInputCloud(cloud_filtered_ptr);
+      extract_object_indices.setIndices(boost::make_shared<const pcl::PointIndices>(cloud_object_indices));
+      extract_object_indices.filter(*cloud_objects_ptr);
+
+      if (cloud_objects_ptr->points.empty())
+      {
+        return;
+      }
+
+      // ---[ Downsample the points
+      pcl::VoxelGrid<Point> grid_objects_;
+      grid_objects_.setLeafSize(clustering_voxel_size_, clustering_voxel_size_, clustering_voxel_size_);
+      grid_objects_.setDownsampleAllData(false);
+
+      typename pcl::PointCloud<Point>::Ptr cloud_objects_downsampled_ptr(new pcl::PointCloud<Point>);
+      grid_objects_.setInputCloud(cloud_objects_ptr);
+      grid_objects_.filter(*cloud_objects_downsampled_ptr);
+
+      // ---[ If flattening the table, adjust the points on the table to be straight also
+      //TODOif(flatten_table_) straightenPoints<pcl::PointCloud<Point> >(*cloud_objects_downsampled_ptr,
+      //table_plane_trans, table_plane_trans_flat);
+
+      // ---[ Split the objects into Euclidean clusters
+      std::vector<pcl::PointIndices> clusters2;
+
+      //pcl_cluster_.setInputCloud (cloud_objects_ptr);
+      pcl::EuclideanClusterExtraction<Point> pcl_cluster_;
+      // Clustering parameters
+      typename pcl::search::KdTree<Point>::Ptr clusters_tree = boost::make_shared<pcl::search::KdTree<Point> >();
+
+      pcl_cluster_.setClusterTolerance(cluster_distance_);
+      pcl_cluster_.setMinClusterSize(min_cluster_size_);
+      pcl_cluster_.setSearchMethod(clusters_tree);
+
+      pcl_cluster_.setInputCloud(cloud_objects_downsampled_ptr);
+      pcl_cluster_.extract(clusters2);
+
+      // ---[ Convert clusters into the PointCloud message
+      getClustersFromPointCloud2<Point>(*cloud_objects_downsampled_ptr, clusters2, clusters);
+    }
+  private:
+
+    template<typename PointT> void
+    getClustersFromPointCloud2(const typename pcl::PointCloud<PointT> &cloud_objects,
+                               const std::vector<pcl::PointIndices> &clusters2,
+                               std::vector<typename pcl::PointCloud<Point>::Ptr> &clusters)
+    {
+      clusters.resize(clusters2.size());
+      for (size_t i = 0; i < clusters2.size(); ++i)
+      {
+        clusters[i]->points.resize(clusters2[i].indices.size());
+        for (size_t j = 0; j < clusters[i]->points.size(); ++j)
+        {
+          clusters[i]->points[j].x = cloud_objects.points[clusters2[i].indices[j]].x;
+          clusters[i]->points[j].y = cloud_objects.points[clusters2[i].indices[j]].y;
+          clusters[i]->points[j].z = cloud_objects.points[clusters2[i].indices[j]].z;
+        }
+      }
+    }
+    //! Size of downsampling grid before performing clustering
+    double clustering_voxel_size_;
+    //! Min distance between two clusters
+    double cluster_distance_;
+    //! Min number of points for a cluster
+    int min_cluster_size_;
+
   };
 }
 

@@ -1,0 +1,10 @@
+This is a port of the old tabletop to the object recognition infrastructure
+Are deprecated:
+- ping_tabletop_node.cpp service to just ping the recognition system: that is not needed anymore with the new OR
+- tabletop_complete_node.cpp: not necessary anymore
+
+Have not been re-implemented:
+- ping_segment_object_in_hand.cpp
+
+Have been modified:
+- Shape is now copied from arm_navigation_msgs
