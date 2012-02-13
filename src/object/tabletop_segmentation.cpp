@@ -65,6 +65,11 @@
 
 #include "tabletop_object_detector/marker_generator.h"
 
+#include <tabletop/table/tabletop_segmenter.h>
+#include <tabletop/Table.h>
+
+using tabletop::Table;
+
 namespace tabletop_object_detector {
 
 class TabletopSegmentor 
@@ -79,8 +84,6 @@ private:
   ros::NodeHandle priv_nh_;
   //! Publisher for markers
   ros::Publisher marker_pub_;
-  //! Service server for object detection
-  ros::ServiceServer segmentation_srv_;
 
   //! Used to remember the number of markers we publish so we can delete them later
   int num_markers_published_;
@@ -131,8 +134,7 @@ private:
   //------------------- Complete processing -----
 
   //! Complete processing for new style point cloud
-  void processCloud(const sensor_msgs::PointCloud2 &cloud,
-		    TabletopSegmentation::Response &response);
+  void processCloud(const sensor_msgs::PointCloud2 &cloud);
   
   //! Clears old published markers and remembers the current number of published markers
   void clearOldMarkers(std::string frame_id);
@@ -146,9 +148,6 @@ public:
     current_marker_id_ = 1;
 
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>(nh_.resolveName("markers_out"), 10);
-
-    segmentation_srv_ = nh_.advertiseService(nh_.resolveName("segmentation_srv"), 
-                                             &TabletopSegmentor::serviceCallback, this);
 
     //initialize operational flags
     priv_nh_.param<int>("inlier_threshold", inlier_threshold_, 300);
@@ -178,55 +177,17 @@ public:
 
 /*! Processes the latest point cloud and gives back the resulting array of models.
  */
-bool TabletopSegmentor::serviceCallback(TabletopSegmentation::Request &request, 
+/*bool TabletopSegmentor::serviceCallback(TabletopSegmentation::Request &request,
                                         TabletopSegmentation::Response &response)
 {
-  ros::Time start_time = ros::Time::now();
-  std::string topic = nh_.resolveName("cloud_in");
-  ROS_INFO("Tabletop detection service called; waiting for a point_cloud2 on topic %s", topic.c_str());
-
-  sensor_msgs::PointCloud2::ConstPtr recent_cloud = 
-    ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic, nh_, ros::Duration(3.0));
-              
-  if (!recent_cloud)
-  {
-    ROS_ERROR("Tabletop object detector: no point_cloud2 has been received");
-    response.result = response.NO_CLOUD_RECEIVED;
-    return true;
-  }
-
-  ROS_INFO_STREAM("Point cloud received after " << ros::Time::now() - start_time << " seconds; processing");
-  if (!processing_frame_.empty())
-  {
-    //convert cloud to base link frame
-    sensor_msgs::PointCloud old_cloud;  
-    sensor_msgs::convertPointCloud2ToPointCloud (*recent_cloud, old_cloud);
-    try
-    {
-      listener_.transformPointCloud(processing_frame_, old_cloud, old_cloud);    
-    }
-    catch (tf::TransformException ex)
-    {
-      ROS_ERROR("Failed to transform cloud from frame %s into frame %s", old_cloud.header.frame_id.c_str(), 
-		processing_frame_.c_str());
-      response.result = response.OTHER_ERROR;
-      return true;
-    }
     sensor_msgs::PointCloud2 converted_cloud;
     sensor_msgs::convertPointCloudToPointCloud2 (old_cloud, converted_cloud);
     ROS_INFO_STREAM("Input cloud converted to " << processing_frame_ << " frame after " <<
              ros::Time::now() - start_time << " seconds");
     processCloud(converted_cloud, response);
     clearOldMarkers(converted_cloud.header.frame_id);
-  }
-  else
-  {
-    processCloud(*recent_cloud, response);
-    clearOldMarkers(recent_cloud->header.frame_id);
-  }
-  ROS_INFO_STREAM("In total, segmentation took " << ros::Time::now() - start_time << " seconds");
   return true;
-}
+}*/
 
 template <class PointCloudType>
 void TabletopSegmentor::addConvexHullTable(Table &table,
@@ -452,48 +413,25 @@ getClustersFromPointCloud2 (const pcl::PointCloud<PointT> &cloud_objects,
   }
 }
 
-void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud,
-                                     TabletopSegmentation::Response &response)
+void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud)
 {
   ROS_INFO("Starting process on new cloud");
   ROS_INFO("In frame %s", cloud.header.frame_id.c_str());
 
 
   // PCL objects
-  KdTreePtr normals_tree_, clusters_tree_;
-  pcl::VoxelGrid<Point> grid_, grid_objects_;
-  pcl::PassThrough<Point> pass_;
-  pcl::NormalEstimation<Point, pcl::Normal> n3d_;
-  pcl::SACSegmentationFromNormals<Point, pcl::Normal> seg_;
-  pcl::ProjectInliers<Point> proj_;
+  KdTreePtr clusters_tree_;
+  pcl::VoxelGrid<Point> grid_objects_;
   pcl::ConvexHull<Point> hull_;
   pcl::ExtractPolygonalPrismData<Point> prism_;
   pcl::EuclideanClusterExtraction<Point> pcl_cluster_;
 
   // Filtering parameters
-  grid_.setLeafSize (plane_detection_voxel_size_, plane_detection_voxel_size_, plane_detection_voxel_size_);
   grid_objects_.setLeafSize (clustering_voxel_size_, clustering_voxel_size_, clustering_voxel_size_);
-  grid_.setFilterFieldName ("z");
-  grid_.setFilterLimits (z_filter_min_, z_filter_max_);
-  grid_.setDownsampleAllData (false);
   grid_objects_.setDownsampleAllData (false);
 
-  normals_tree_ = boost::make_shared<pcl::search::KdTree<Point> > ();
   clusters_tree_ = boost::make_shared<pcl::search::KdTree<Point> > ();
 
-  // Normal estimation parameters
-  n3d_.setKSearch (10);  
-  n3d_.setSearchMethod (normals_tree_);
-  // Table model fitting parameters
-  seg_.setDistanceThreshold (0.05); 
-  seg_.setMaxIterations (10000);
-  seg_.setNormalDistanceWeight (0.1);
-  seg_.setOptimizeCoefficients (true);
-  seg_.setModelType (pcl::SACMODEL_NORMAL_PLANE);
-  seg_.setMethodType (pcl::SAC_RANSAC);
-  seg_.setProbability (0.99);
-
-  proj_.setModelType (pcl::SACMODEL_PLANE);
 
   // Clustering parameters
   pcl_cluster_.setClusterTolerance (cluster_distance_);
@@ -503,84 +441,39 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud,
   // Step 1 : Filter, remove NaNs and downsample
   pcl::PointCloud<Point>::Ptr cloud_ptr (new pcl::PointCloud<Point>); 
   pcl::fromROSMsg (cloud, *cloud_ptr);
-  pass_.setInputCloud (cloud_ptr);
-  pass_.setFilterFieldName ("z");
-  pass_.setFilterLimits (z_filter_min_, z_filter_max_);
-  pcl::PointCloud<Point>::Ptr z_cloud_filtered_ptr (new pcl::PointCloud<Point>); 
-  pass_.filter (*z_cloud_filtered_ptr);
 
-  pass_.setInputCloud (z_cloud_filtered_ptr);
-  pass_.setFilterFieldName ("y");
-  pass_.setFilterLimits (y_filter_min_, y_filter_max_);
-  pcl::PointCloud<Point>::Ptr y_cloud_filtered_ptr (new pcl::PointCloud<Point>); 
-  pass_.filter (*y_cloud_filtered_ptr);
+  int normal_k_search = 10;
+  std::vector<float> filter_limits;
+  filter_limits.push_back(x_filter_min_);
+  filter_limits.push_back(x_filter_max_);
+  filter_limits.push_back(y_filter_min_);
+    filter_limits.push_back(y_filter_max_);
+    filter_limits.push_back(z_filter_min_);
+    filter_limits.push_back(z_filter_max_);
+    int plane_threshold = 0.05;
 
-  pass_.setInputCloud (y_cloud_filtered_ptr);
-  pass_.setFilterFieldName ("x");
-  pass_.setFilterLimits (x_filter_min_, x_filter_max_);
-  pcl::PointCloud<Point>::Ptr cloud_filtered_ptr (new pcl::PointCloud<Point>); 
-  pass_.filter (*cloud_filtered_ptr);
-  
-  ROS_INFO("Step 1 done");
-  if (cloud_filtered_ptr->points.size() < (unsigned int)min_cluster_size_)
-  {
-    ROS_INFO("Filtered cloud only has %d points", (int)cloud_filtered_ptr->points.size());
-    response.result = response.NO_TABLE;
-    return;
-  }
+    pcl::ModelCoefficients::Ptr table_coefficients_ptr(new pcl::ModelCoefficients);
+    pcl::PointCloud<Point>::Ptr table_projected_ptr(new pcl::PointCloud<Point>);
 
-  pcl::PointCloud<Point>::Ptr cloud_downsampled_ptr (new pcl::PointCloud<Point>); 
-  grid_.setInputCloud (cloud_filtered_ptr);
-  grid_.filter (*cloud_downsampled_ptr);
-  if (cloud_downsampled_ptr->points.size() < (unsigned int)min_cluster_size_)
-  {
-    ROS_INFO("Downsampled cloud only has %d points", (int)cloud_downsampled_ptr->points.size());
-    response.result = response.NO_TABLE;    
-    return;
-  }
+    tabletop::TabletopSegmenter<Point> table_segmenter(filter_limits, min_cluster_size_, plane_detection_voxel_size_,
+                                                       normal_k_search, plane_threshold);
+    table_segmenter.findTable(cloud_ptr, table_coefficients_ptr, table_projected_ptr);
 
-  // Step 2 : Estimate normals
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_ptr (new pcl::PointCloud<pcl::Normal>); 
-  n3d_.setInputCloud (cloud_downsampled_ptr);
-  n3d_.compute (*cloud_normals_ptr);
-  ROS_INFO("Step 2 done");
+    pcl::PointCloud<Point>::Ptr  cloud_filtered_ptr;
+    table_segmenter.filterLimits(cloud_ptr, filter_limits, cloud_filtered_ptr);
 
-  // Step 3 : Perform planar segmentation
-  pcl::PointIndices::Ptr table_inliers_ptr (new pcl::PointIndices); 
-  pcl::ModelCoefficients::Ptr table_coefficients_ptr (new pcl::ModelCoefficients); 
-  seg_.setInputCloud (cloud_downsampled_ptr);
-  seg_.setInputNormals (cloud_normals_ptr);
-  seg_.segment (*table_inliers_ptr, *table_coefficients_ptr);
- 
-  if (table_coefficients_ptr->values.size () <=3)
-  {
-    ROS_INFO("Failed to detect table in scan");
-    response.result = response.NO_TABLE;    
-    return;
-  }
 
-  if ( table_inliers_ptr->indices.size() < (unsigned int)inlier_threshold_)
-  {
-    ROS_INFO("Plane detection has %d inliers, below min threshold of %d", (int)table_inliers_ptr->indices.size(),
-	     inlier_threshold_);
-    response.result = response.NO_TABLE;
-    return;
-  }
 
-  ROS_INFO ("[TableObjectDetector::input_callback] Model found with %d inliers: [%f %f %f %f].", 
-	    (int)table_inliers_ptr->indices.size (),
-	    table_coefficients_ptr->values[0], table_coefficients_ptr->values[1], 
-	    table_coefficients_ptr->values[2], table_coefficients_ptr->values[3]);
-  ROS_INFO("Step 3 done");
 
-  // Step 4 : Project the table inliers on the table
-  pcl::PointCloud<Point>::Ptr table_projected_ptr (new pcl::PointCloud<Point>); 
-  proj_.setInputCloud (cloud_downsampled_ptr);
-  proj_.setIndices (table_inliers_ptr);
-  proj_.setModelCoefficients (table_coefficients_ptr);
-  proj_.filter (*table_projected_ptr);
-  ROS_INFO("Step 4 done");
-  
+
+
+
+
+
+
+
+
+
   sensor_msgs::PointCloud table_points;
   sensor_msgs::PointCloud table_hull_points;
   tf::Transform table_plane_trans = getPlaneTransform (*table_coefficients_ptr, up_direction_, false);
@@ -591,23 +484,22 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud,
   hull_.setInputCloud (table_projected_ptr);
   hull_.reconstruct (*table_hull_ptr);
 
+  Table table;
   if(!flatten_table_)
   {
     // --- [ Take the points projected on the table and transform them into the PointCloud message
     //  while also transforming them into the table's coordinate system
     if (!getPlanePoints<Point> (*table_projected_ptr, table_plane_trans, table_points))
     {
-      response.result = response.OTHER_ERROR;
       return;
     }
 
     // ---[ Create the table message
-    response.table = getTable<sensor_msgs::PointCloud>(cloud.header, table_plane_trans, table_points);
+    table = getTable<sensor_msgs::PointCloud>(cloud.header, table_plane_trans, table_points);
 
     // ---[ Convert the convex hull points to table frame
     if (!getPlanePoints<Point> (*table_hull_ptr, table_plane_trans, table_hull_points))
     {
-      response.result = response.OTHER_ERROR;
       return;
     }
   }
@@ -643,26 +535,23 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud,
     sensor_msgs::PointCloud flat_table_points;
     if (!getPlanePoints<Point> (*table_projected_ptr, table_plane_trans_flat, flat_table_points))
     {
-      response.result = response.OTHER_ERROR;
       return;
     }
 
     // ---[ Create the table message
-    response.table = getTable<sensor_msgs::PointCloud>(cloud.header, table_plane_trans_flat, flat_table_points);
+    table = getTable<sensor_msgs::PointCloud>(cloud.header, table_plane_trans_flat, flat_table_points);
 
     // ---[ Convert the convex hull points to flat table frame
     if (!getPlanePoints<Point> (*table_hull_ptr, table_plane_trans_flat, table_hull_points))
     {
-      response.result = response.OTHER_ERROR;
       return;
     }
   }
 
   ROS_INFO("Table computed");
-  response.result = response.SUCCESS;
   
   // ---[ Add the convex hull as a triangle mesh to the Table message
-  addConvexHullTable<sensor_msgs::PointCloud>(response.table, table_hull_points, flatten_table_);
+  addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
 
   // ---[ Get the objects on top of the (non-flat) table
   pcl::PointIndices cloud_object_indices;
@@ -707,7 +596,6 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud,
   std::vector<sensor_msgs::PointCloud> clusters;
   getClustersFromPointCloud2<Point> (*cloud_objects_downsampled_ptr, clusters2, clusters);
   ROS_INFO("Clusters converted");
-  response.clusters = clusters;  
 
   publishClusterMarkers(clusters, cloud.header);
 }

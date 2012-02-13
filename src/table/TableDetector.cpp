@@ -41,7 +41,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include <ecto/ecto.hpp>
-#include <ecto_pcl/ecto_pcl.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -81,11 +80,10 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TableFinder::cloud_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&TableFinder::cloud_in_, "cloud", "The point cloud in which to find a table.");
 
-      outputs.declare(&TableFinder::table_inliers_, "inliers",
-                      "The indices of the original points belonging to the table.");
       outputs.declare(&TableFinder::table_coefficients_, "coefficients", "The coefficients of the table.");
+      inputs.declare(&TableFinder::cloud_out_, "cloud", "The point cloud in which to find a table.");
     }
 
     void
@@ -104,7 +102,7 @@ namespace tabletop
       TabletopSegmenter<pcl::PointXYZ> table_segmenter(*filter_limits_, *min_cluster_size_,
                                                        *plane_detection_voxel_size_, *normal_k_search_,
                                                        *plane_threshold_);
-      table_segmenter.findTable(*cloud_, *table_inliers_, *table_coefficients_);
+      table_segmenter.findTable(*cloud_in_, *table_coefficients_, *cloud_out_);
 
       return ecto::OK;
     }
@@ -121,7 +119,9 @@ namespace tabletop
     ecto::spore<float> plane_threshold_;
 
     /** The input cloud */
-    ecto::spore<ecto_pcl::PointCloud::ConstPtr> cloud_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
+    /** The input cloud */
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_out_;
     /** The minimum number of inliers in order to do pose matching */
     ecto::spore<pcl::PointIndices::Ptr> table_inliers_;
     /** The minimum number of inliers in order to do pose matching */

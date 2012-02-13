@@ -54,7 +54,7 @@ namespace tabletop
   /** Ecto implementation of a module that takes
    *
    */
-  struct TableFinder
+  struct Clusterer
   {
     static void
     declare_params(ecto::tendrils& params)
@@ -63,28 +63,27 @@ namespace tabletop
       { std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(),
         std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::max() };
       std::vector<float> limits(c_limits, c_limits + 6);
-      params.declare(&TableFinder::filter_limits_, "filter_limits",
+      params.declare(&Clusterer::filter_limits_, "filter_limits",
                      "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
                      limits);
-      params.declare(&TableFinder::min_cluster_size_, "min_cluster_size",
+      params.declare(&Clusterer::min_cluster_size_, "min_cluster_size",
                      "The minimum number of points deemed necessary to find a table.", 1000);
-      params.declare(&TableFinder::plane_detection_voxel_size_, "plane_detection_voxel_size",
+      params.declare(&Clusterer::plane_detection_voxel_size_, "plane_detection_voxel_size",
                      "The size of a voxel cell when downsampling ", 0.01);
-      params.declare(&TableFinder::normal_k_search_, "normal_k_search",
+      params.declare(&Clusterer::normal_k_search_, "normal_k_search",
                      "The number of nearest neighbors to use when computing normals", 10);
-      params.declare(&TableFinder::plane_threshold_, "plane_threshold",
+      params.declare(&Clusterer::plane_threshold_, "plane_threshold",
                      "The distance used as a threshold when finding a plane", 0.2);
-      params.declare(&TableFinder::vertical_direction_, "vertical_direction", "The vertical direction");
+      params.declare(&Clusterer::vertical_direction_, "vertical_direction", "The vertical direction");
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TableFinder::cloud_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&Clusterer::cloud_in_, "cloud", "The point cloud in which to find a table.");
 
-      outputs.declare(&TableFinder::table_inliers_, "inliers",
-                      "The indices of the original points belonging to the table.");
-      outputs.declare(&TableFinder::table_coefficients_, "coefficients", "The coefficients of the table.");
+      outputs.declare(&Clusterer::table_coefficients_, "coefficients", "The coefficients of the table.");
+      inputs.declare(&Clusterer::cloud_out_, "cloud", "The point cloud in which to find a table.");
     }
 
     void
@@ -103,7 +102,7 @@ namespace tabletop
       TabletopSegmenter<pcl::PointXYZ> table_segmenter(*filter_limits_, *min_cluster_size_,
                                                        *plane_detection_voxel_size_, *normal_k_search_,
                                                        *plane_threshold_);
-      table_segmenter.findTable(*cloud_, *table_inliers_, *table_coefficients_);
+      table_segmenter.findTable(*cloud_in_, *table_coefficients_, *cloud_out_);
 
       return ecto::OK;
     }
@@ -120,9 +119,9 @@ namespace tabletop
     ecto::spore<float> plane_threshold_;
 
     /** The input cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::PointIndices::Ptr> table_inliers_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
+    /** The output cloud */
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_out_;
     /** The minimum number of inliers in order to do pose matching */
     ecto::spore<pcl::ModelCoefficients::Ptr> table_coefficients_;
     /** The vertical direction */
@@ -130,4 +129,4 @@ namespace tabletop
   };
 }
 
-ECTO_CELL(tabletop_table, tabletop::TableFinder, "TableFinder", "Given a point cloud, find  a potential table.");
+ECTO_CELL(tabletop_table, tabletop::Clusterer, "Clusterer", "Given a point cloud, find  a potential table.");

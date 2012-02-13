@@ -23,6 +23,7 @@ endif()
 
 find_package(Eigen REQUIRED)
 include_directories(${Eigen_INCLUDE_DIRS})
+include_directories(${ecto_pcl_INCLUDE_DIRS})
 
 include_directories(/opt/ros/fuerte/stacks/geometry/tf/include)
 include_directories(/opt/ros/fuerte/stacks/bullet/include/)

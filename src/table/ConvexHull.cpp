@@ -59,20 +59,7 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      float c_limits[6] =
-      { std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(),
-        std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::max() };
-      std::vector<float> limits(c_limits, c_limits + 6);
-      params.declare(&ConvexHull::filter_limits_, "filter_limits",
-                     "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
-                     limits);
-      params.declare(&ConvexHull::min_cluster_size_, "min_cluster_size",
-                     "The minimum number of points deemed necessary to find a table.", 1000);
-      params.declare(&ConvexHull::plane_detection_voxel_size_, "plane_detection_voxel_size",
-                     "The size of a voxel cell when downsampling ", 0.01);
-      params.declare(&ConvexHull::normal_k_search_, "normal_k_search",
-                     "The number of nearest neighbors to use when computing normals", 10);
-      params.declare(&ConvexHull::plane_threshold_, "plane_threshold",
+      params.declare(&ConvexHull::cluster_tolerance_, "cluster_tolerance",
                      "The distance used as a threshold when finding a plane", 0.2);
       params.declare(&ConvexHull::vertical_direction_, "vertical_direction", "The vertical direction");
     }
@@ -80,11 +67,9 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&ConvexHull::cloud_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&ConvexHull::cloud_in_, "cloud", "The point cloud in which to find a table.");
 
-      outputs.declare(&ConvexHull::table_inliers_, "inliers",
-                      "The indices of the original points belonging to the table.");
-      outputs.declare(&ConvexHull::table_coefficients_, "coefficients", "The coefficients of the table.");
+      inputs.declare(&ConvexHull::cloud_hull_, "cloud", "The convex hull of the biggest cluster of the points.");
     }
 
     void
@@ -100,31 +85,19 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      TabletopSegmenter<pcl::PointXYZ> table_segmenter(*filter_limits_, *min_cluster_size_,
-                                                       *plane_detection_voxel_size_, *normal_k_search_,
-                                                       *plane_threshold_, *vertical_direction_);
-      table_segmenter.findTable(*cloud_, *table_inliers_, *table_coefficients_);
+      TabletopHull tabletop_hull(*cluster_tolerance_, *vertical_direction_);
+
+      *cloud_hull_ = tabletop_hull.cluster<pcl::PointXYZ>(*cloud_in_);
 
       return ecto::OK;
     }
   private:
-    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
-    ecto::spore<std::vector<float> > filter_limits_;
-    /** The minimum number of points deemed necessary to find a table */
-    ecto::spore<size_t> min_cluster_size_;
-    /** The size of a voxel cell when downsampling */
-    ecto::spore<float> plane_detection_voxel_size_;
-    /** The number of nearest neighbors to use when computing normals */
-    ecto::spore<unsigned int> normal_k_search_;
-    /** The distance used as a threshold when finding a plane */
-    ecto::spore<float> plane_threshold_;
+    ecto::spore<float> cluster_tolerance_;
 
     /** flag indicating whether we run in debug mode */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::PointIndices::Ptr> table_inliers_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::ModelCoefficients::Ptr> table_coefficients_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
+    /** flag indicating whether we run in debug mode */
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_hull_;
     /** The vertical direction */
     ecto::spore<Eigen::Vector3f> vertical_direction_;
   };
