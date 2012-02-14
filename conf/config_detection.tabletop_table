@@ -11,5 +11,4 @@ pipeline1:
   submethod: ''
   sources: [1]
   sinks: [1]
-  parameters:
-    none: 'none'
+  parameters: {}

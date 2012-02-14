@@ -63,8 +63,7 @@ namespace tabletop
                      "The minimum number of points deemed necessary to find a table.", 1000);
       params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The size of a voxel cell when downsampling ",
                      0.01);
-      params.declare(&Clusterer::min_cluster_size_, "min_cluster_size",
-                     "The number of nearest neighbors to use when computing normals", 10);
+      params.declare(&Clusterer::min_cluster_size_, "min_cluster_size", "Min number of points for a cluster", 300);
     }
 
     static void

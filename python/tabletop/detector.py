@@ -48,16 +48,18 @@ class TabletopTableDetector(ecto.BlackBox):
         vertical_direction = self._parameters.pop('vertical_direction', None)
         if vertical_direction is not None:
             self.table_pose = tabletop_table.TablePose(vertical_direction=self._parameters['vertical_direction'])
+        else:
+            self.table_pose = tabletop_table.TablePose()
         if self._parameters:
             self.table_detector = tabletop_table.TableDetector(**self._parameters)
+        else:
+            self.table_detector = tabletop_table.TableDetector()
 
     def connections(self):
         # make sure the inputs reach the right cells
-        connections = [self.to_cloud_conversion['point_cloud'] >> self.table_detector['image'],
-                       self.passthrough['image'] >> self.guess_generator['image'], ]
-
-        connections += [ self.descriptor_matcher['spans'] >> self.guess_generator['spans'],
-                       self.descriptor_matcher['object_ids'] >> self.guess_generator['object_ids'] ]
+        connections = [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
+                       self.table_detector['coefficients'] >> self.table_pose['coefficients'],
+                       self.table_detector['cloud_hull'] >> self.table_pose['cloud_hull'] ]
 
         return connections
 

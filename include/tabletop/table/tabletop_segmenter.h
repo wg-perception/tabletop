@@ -294,7 +294,8 @@ namespace tabletop
       estimateNormals<Point>(normal_k_search_, cloud_downsampled_ptr, cloud_normals_ptr);
 
       // Perform planar segmentation
-      pcl::PointIndices::Ptr table_inliers_ptr;
+      pcl::PointIndices::Ptr table_inliers_ptr(new pcl::PointIndices);
+      table_coefficients_ptr = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
       if (!segmentPlane<Point>(plane_threshold_, cloud_downsampled_ptr, cloud_normals_ptr, table_inliers_ptr,
                                table_coefficients_ptr))
         return NO_TABLE;
