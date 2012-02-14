@@ -115,10 +115,9 @@ namespace tabletop
       x = y.cross(z).normalized();
 
       Eigen::Matrix3f rotation;
-      rotation.row(0) = x; // x
-      rotation.row(1) = y; // y
-      rotation.row(2) = z; // z
-      rotation = rotation.transpose();
+      rotation << x.coeff(0), x.coeff(1), x.coeff(2), y.coeff(0), y.coeff(1), y.coeff(2),
+                               z.coeff(0), z.coeff(1), z.coeff(2);
+      rotation.transposeInPlace();
       Eigen::Quaternion<float> orientation(rotation);
 
       PoseResult pose_result;

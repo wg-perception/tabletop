@@ -264,10 +264,12 @@ namespace tabletop
     template<typename Point>
     Result
     findTable(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in,
-              typename pcl::ModelCoefficients::Ptr table_coefficients_ptr,
+              typename pcl::ModelCoefficients::Ptr &table_coefficients_ptr,
               typename pcl::PointCloud<Point>::Ptr &table_projected_ptr,
               typename pcl::PointCloud<Point>::Ptr &table_hull_ptr)
     {
+      table_coefficients_ptr = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
+
       // First, filter by an interest box (which also remove NaN's)
       typename pcl::PointCloud<Point>::Ptr cloud_filtered_ptr = typename pcl::PointCloud<Point>::Ptr(
           new pcl::PointCloud<Point>);
@@ -295,7 +297,6 @@ namespace tabletop
 
       // Perform planar segmentation
       pcl::PointIndices::Ptr table_inliers_ptr(new pcl::PointIndices);
-      table_coefficients_ptr = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
       if (!segmentPlane<Point>(plane_threshold_, cloud_downsampled_ptr, cloud_normals_ptr, table_inliers_ptr,
                                table_coefficients_ptr))
         return NO_TABLE;
