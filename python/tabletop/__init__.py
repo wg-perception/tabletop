@@ -1,2 +1,1 @@
-from .trainer import *
-from .detector import *
+from detector import *
