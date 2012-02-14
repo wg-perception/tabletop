@@ -36,7 +36,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -54,7 +53,7 @@ namespace tabletop
   /** Ecto implementation of a module that takes
    *
    */
-  struct TableFinder
+  struct TableDetector
   {
     static void
     declare_params(ecto::tendrils& params)
@@ -63,27 +62,29 @@ namespace tabletop
       { std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(),
         std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::max() };
       std::vector<float> limits(c_limits, c_limits + 6);
-      params.declare(&TableFinder::filter_limits_, "filter_limits",
+      params.declare(&TableDetector::filter_limits_, "filter_limits",
                      "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
                      limits);
-      params.declare(&TableFinder::min_cluster_size_, "min_cluster_size",
+      params.declare(&TableDetector::min_cluster_size_, "min_cluster_size",
                      "The minimum number of points deemed necessary to find a table.", 1000);
-      params.declare(&TableFinder::plane_detection_voxel_size_, "plane_detection_voxel_size",
+      params.declare(&TableDetector::plane_detection_voxel_size_, "plane_detection_voxel_size",
                      "The size of a voxel cell when downsampling ", 0.01);
-      params.declare(&TableFinder::normal_k_search_, "normal_k_search",
+      params.declare(&TableDetector::normal_k_search_, "normal_k_search",
                      "The number of nearest neighbors to use when computing normals", 10);
-      params.declare(&TableFinder::plane_threshold_, "plane_threshold",
+      params.declare(&TableDetector::plane_threshold_, "plane_threshold",
                      "The distance used as a threshold when finding a plane", 0.2);
-      params.declare(&TableFinder::vertical_direction_, "vertical_direction", "The vertical direction");
+      params.declare(&TableDetector::cluster_tolerance_, "cluster_tolerance",
+                     "The distance used as a threshold when finding a plane", 0.2);
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TableFinder::cloud_in_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&TableDetector::cloud_in_, "cloud", "The point cloud in which to find a table.");
 
-      outputs.declare(&TableFinder::table_coefficients_, "coefficients", "The coefficients of the table.");
-      inputs.declare(&TableFinder::cloud_out_, "cloud", "The point cloud in which to find a table.");
+      outputs.declare(&TableDetector::table_coefficients_, "coefficients", "The coefficients of the table.");
+      outputs.declare(&TableDetector::cloud_out_, "cloud", "Samples that belong to the table.");
+      outputs.declare(&TableDetector::cloud_hull_, "cloud_hull", "Samples that belong to the table.");
     }
 
     void
@@ -99,10 +100,12 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      TabletopSegmenter<pcl::PointXYZ> table_segmenter(*filter_limits_, *min_cluster_size_,
-                                                       *plane_detection_voxel_size_, *normal_k_search_,
-                                                       *plane_threshold_);
-      table_segmenter.findTable(*cloud_in_, *table_coefficients_, *cloud_out_);
+      TabletopSegmenter table_segmenter(*filter_limits_, *min_cluster_size_, *plane_detection_voxel_size_,
+                                        *normal_k_search_, *plane_threshold_, *cluster_tolerance_);
+      pcl::ModelCoefficients::Ptr table_coefficients;
+      table_segmenter.findTable<pcl::PointXYZ>(*cloud_in_, table_coefficients, *cloud_out_, *cloud_hull_);
+
+      *table_coefficients_ = std::vector<float>(table_coefficients->values.begin(), table_coefficients->values.end());
 
       return ecto::OK;
     }
@@ -122,13 +125,11 @@ namespace tabletop
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
     /** The input cloud */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_out_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_hull_;
     /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::PointIndices::Ptr> table_inliers_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::ModelCoefficients::Ptr> table_coefficients_;
-    /** The vertical direction */
-    ecto::spore<Eigen::Vector3f> vertical_direction_;
+    ecto::spore<std::vector<float> > table_coefficients_;
+    ecto::spore<float> cluster_tolerance_;
   };
 }
 
-ECTO_CELL(tabletop_table, tabletop::TableFinder, "TableFinder", "Given a point cloud, find  a potential table.");
+ECTO_CELL(tabletop_table, tabletop::TableDetector, "TableDetector", "Given a point cloud, find  a potential table.");

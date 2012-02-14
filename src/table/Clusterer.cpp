@@ -59,31 +59,21 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      float c_limits[6] =
-      { std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(),
-        std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::max() };
-      std::vector<float> limits(c_limits, c_limits + 6);
-      params.declare(&Clusterer::filter_limits_, "filter_limits",
-                     "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
-                     limits);
-      params.declare(&Clusterer::min_cluster_size_, "min_cluster_size",
+      params.declare(&Clusterer::clustering_voxel_size_, "clustering_voxel_size",
                      "The minimum number of points deemed necessary to find a table.", 1000);
-      params.declare(&Clusterer::plane_detection_voxel_size_, "plane_detection_voxel_size",
-                     "The size of a voxel cell when downsampling ", 0.01);
-      params.declare(&Clusterer::normal_k_search_, "normal_k_search",
+      params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The size of a voxel cell when downsampling ",
+                     0.01);
+      params.declare(&Clusterer::min_cluster_size_, "min_cluster_size",
                      "The number of nearest neighbors to use when computing normals", 10);
-      params.declare(&Clusterer::plane_threshold_, "plane_threshold",
-                     "The distance used as a threshold when finding a plane", 0.2);
-      params.declare(&Clusterer::vertical_direction_, "vertical_direction", "The vertical direction");
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&Clusterer::cloud_in_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&Clusterer::cloud_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&Clusterer::cloud_hull_, "cloud_full", "The point cloud in which to find a table.");
 
-      outputs.declare(&Clusterer::table_coefficients_, "coefficients", "The coefficients of the table.");
-      inputs.declare(&Clusterer::cloud_out_, "cloud", "The point cloud in which to find a table.");
+      outputs.declare(&Clusterer::clusters_, "clusters", "The point cloud in which to find a table.");
     }
 
     void
@@ -99,33 +89,23 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      TabletopSegmenter<pcl::PointXYZ> table_segmenter(*filter_limits_, *min_cluster_size_,
-                                                       *plane_detection_voxel_size_, *normal_k_search_,
-                                                       *plane_threshold_);
-      table_segmenter.findTable(*cloud_in_, *table_coefficients_, *cloud_out_);
+      BlobSegmenter blob_segmenter(*clustering_voxel_size_, *cluster_distance_, *min_cluster_size_);
+
+      blob_segmenter.process<pcl::PointXYZ>(*cloud_, *cloud_hull_, *clusters_);
 
       return ecto::OK;
     }
   private:
-    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
-    ecto::spore<std::vector<float> > filter_limits_;
-    /** The minimum number of points deemed necessary to find a table */
-    ecto::spore<size_t> min_cluster_size_;
-    /** The size of a voxel cell when downsampling */
-    ecto::spore<float> plane_detection_voxel_size_;
-    /** The number of nearest neighbors to use when computing normals */
-    ecto::spore<unsigned int> normal_k_search_;
-    /** The distance used as a threshold when finding a plane */
-    ecto::spore<float> plane_threshold_;
+    ecto::spore<float> clustering_voxel_size_;
+    ecto::spore<float> cluster_distance_;
+    ecto::spore<int> min_cluster_size_;
 
     /** The input cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
-    /** The output cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_out_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::ModelCoefficients::Ptr> table_coefficients_;
-    /** The vertical direction */
-    ecto::spore<Eigen::Vector3f> vertical_direction_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;
+    /** The hull of the input cloud */
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_hull_;
+    /** The resulting clusters */
+    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
   };
 }
 

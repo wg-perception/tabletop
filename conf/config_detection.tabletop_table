@@ -6,7 +6,7 @@ sink1:
   type: publisher
 
 pipeline1:
-  method: 'tabletop'
+  method: 'tabletop_table'
   package: 'tabletop'
   submethod: ''
   sources: [1]

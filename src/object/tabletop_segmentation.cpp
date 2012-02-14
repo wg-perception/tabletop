@@ -422,7 +422,6 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud)
   // PCL objects
   KdTreePtr clusters_tree_;
   pcl::VoxelGrid<Point> grid_objects_;
-  pcl::ConvexHull<Point> hull_;
   pcl::ExtractPolygonalPrismData<Point> prism_;
   pcl::EuclideanClusterExtraction<Point> pcl_cluster_;
 
@@ -454,13 +453,15 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud)
 
     pcl::ModelCoefficients::Ptr table_coefficients_ptr(new pcl::ModelCoefficients);
     pcl::PointCloud<Point>::Ptr table_projected_ptr(new pcl::PointCloud<Point>);
+    pcl::PointCloud<Point>::Ptr table_hull_ptr (new pcl::PointCloud<Point>);
+    Eigen::Vector3f vertical_direction(0, 0, up_direction_);
 
-    tabletop::TabletopSegmenter<Point> table_segmenter(filter_limits, min_cluster_size_, plane_detection_voxel_size_,
-                                                       normal_k_search, plane_threshold);
-    table_segmenter.findTable(cloud_ptr, table_coefficients_ptr, table_projected_ptr);
+    tabletop::TabletopSegmenter table_segmenter(filter_limits, min_cluster_size_, plane_detection_voxel_size_,
+                                                       normal_k_search, plane_threshold, cluster_distance_);
+    table_segmenter.findTable<Point>(cloud_ptr, table_coefficients_ptr, table_projected_ptr, table_hull_ptr );
 
-    pcl::PointCloud<Point>::Ptr  cloud_filtered_ptr;
-    table_segmenter.filterLimits(cloud_ptr, filter_limits, cloud_filtered_ptr);
+    pcl::PointCloud<Point>::Ptr cloud_filtered_ptr;
+    table_segmenter.filterLimits<Point>(cloud_ptr, filter_limits, cloud_filtered_ptr);
 
 
 
@@ -478,11 +479,6 @@ void TabletopSegmentor::processCloud(const sensor_msgs::PointCloud2 &cloud)
   sensor_msgs::PointCloud table_hull_points;
   tf::Transform table_plane_trans = getPlaneTransform (*table_coefficients_ptr, up_direction_, false);
   tf::Transform table_plane_trans_flat;
-
-  // ---[ Estimate the convex hull (not in table frame)
-  pcl::PointCloud<Point>::Ptr table_hull_ptr (new pcl::PointCloud<Point>); 
-  hull_.setInputCloud (table_projected_ptr);
-  hull_.reconstruct (*table_hull_ptr);
 
   Table table;
   if(!flatten_table_)

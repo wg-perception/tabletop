@@ -58,7 +58,6 @@ namespace tabletop
     typename pcl::PointIndices::ConstPtr indices_;
   };
 
-  template<typename Point>
   class TabletopSegmenter
   {
   public:
@@ -68,14 +67,15 @@ namespace tabletop
     };
 
     TabletopSegmenter(const std::vector<float> & filter_limits, size_t min_cluster_size,
-                      float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold)
+                      float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold,
+                      float cluster_tolerance)
         :
           filter_limits_(filter_limits),
           min_cluster_size_(min_cluster_size),
           plane_detection_voxel_size_(plane_detection_voxel_size),
           normal_k_search_(normal_k_search),
-          plane_threshold_(plane_threshold)
-
+          plane_threshold_(plane_threshold),
+          cluster_tolerance_(cluster_tolerance)
     {
     }
 
@@ -84,6 +84,7 @@ namespace tabletop
      * @param filter_limits limits of the box in order [xmin,xmax,ymin,ymax,zmin,zmax]
      * @param cloud_out
      */
+    template<typename Point>
     static
     void
     filterLimits(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in, const std::vector<float> & filter_limits,
@@ -91,7 +92,7 @@ namespace tabletop
     {
       if (filter_limits.empty())
       {
-        filterNaNs(cloud_in, cloud_out);
+        filterNaNs<Point>(cloud_in, cloud_out);
         return;
       }
 
@@ -119,6 +120,7 @@ namespace tabletop
      * @param cloud_in
      * @param cloud_out
      */
+    template<typename Point>
     static
     void
     filterNaNs(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in,
@@ -132,6 +134,8 @@ namespace tabletop
       pass_filter.filter(*cloud_out);
     }
 
+    template<typename Point>
+    static
     void
     downsample(float downLeafSize, const typename pcl::PointCloud<Point>::Ptr &cloud_in,
                typename pcl::PointCloud<Point>::Ptr &cloud_out)
@@ -145,6 +149,8 @@ namespace tabletop
       downsampler.filter(*cloud_out);
     }
 
+    template<typename Point>
+    static
     void
     estimateNormals(unsigned int normal_k_search, const typename pcl::PointCloud<Point>::Ptr &cloud,
                     typename pcl::PointCloud<pcl::Normal>::Ptr &normals)
@@ -157,6 +163,8 @@ namespace tabletop
       normalsEstimator.compute(*normals);
     }
 
+    template<typename Point>
+    static
     bool
     segmentPlane(float distanceThreshold, const typename pcl::PointCloud<Point>::Ptr &cloud,
                  const typename pcl::PointCloud<pcl::Normal>::Ptr &normals, pcl::PointIndices::Ptr &inliers,
@@ -179,6 +187,8 @@ namespace tabletop
       return !inliers->indices.empty();
     }
 
+    template<typename Point>
+    static
     void
     projectInliersOnTable(const typename pcl::PointCloud<Point>::ConstPtr &cloud, const pcl::PointIndices::Ptr &inliers,
                           const pcl::ModelCoefficients::Ptr &coefficients,
@@ -194,89 +204,8 @@ namespace tabletop
       projector.filter(*projectedInliers);
     }
 
-    Result
-    findTable(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in,
-              typename pcl::ModelCoefficients::Ptr table_coefficients_ptr,
-              typename pcl::PointCloud<Point>::Ptr &table_projected_ptr)
-    {
-      // First, filter by an interest box (which also remove NaN's)
-      typename pcl::PointCloud<Point>::Ptr cloud_filtered_ptr = typename pcl::PointCloud<Point>::Ptr(
-          new pcl::PointCloud<Point>);
-      filterLimits(cloud_in, filter_limits_, cloud_filtered_ptr);
-
-      if (cloud_filtered_ptr->points.size() < min_cluster_size_)
-      {
-        // TODO
-        //ROS_INFO("Filtered cloud only has %d points", (int)cloud_filtered_ptr->points.size());
-        return NO_TABLE;
-      }
-
-      // Then, downsample
-      typename pcl::PointCloud<Point>::Ptr cloud_downsampled_ptr(new typename pcl::PointCloud<Point>);
-      downsample(plane_detection_voxel_size_, cloud_filtered_ptr, cloud_downsampled_ptr);
-      if (cloud_downsampled_ptr->points.size() < min_cluster_size_)
-      {
-        //ROS_INFO("Downsampled cloud only has %d points", (int)cloud_downsampled_ptr->points.size());
-        return NO_TABLE;
-      }
-
-      // Estimate the normals
-      pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_ptr(new pcl::PointCloud<pcl::Normal>);
-      estimateNormals(normal_k_search_, cloud_downsampled_ptr, cloud_normals_ptr);
-
-      // Perform planar segmentation
-      pcl::PointIndices::Ptr table_inliers_ptr;
-      if (!segmentPlane(plane_threshold_, cloud_downsampled_ptr, cloud_normals_ptr, table_inliers_ptr,
-                        table_coefficients_ptr))
-        return NO_TABLE;
-
-      if (table_coefficients_ptr->values.size() <= 3)
-      {
-        //ROS_INFO("Failed to detect table in scan");
-        return NO_TABLE;
-      }
-      /*
-       if (table_inliers_ptr->indices.size() < (unsigned int) inlier_threshold_)
-       {
-       //ROS_INFO(
-       //  "Plane detection has %d inliers, below min threshold of %d", (int)table_inliers_ptr->indices.size(), inlier_threshold_);
-       return NO_TABLE;
-       }
-       */
-      //ROS_INFO(
-      //  "[TableObjectDetector::input_callback] Model found with %d inliers: [%f %f %f %f].", (int)table_inliers_ptr->indices.size (), table_coefficients_ptr->values[0], table_coefficients_ptr->values[1], table_coefficients_ptr->values[2], table_coefficients_ptr->values[3]);
-      // Set the vertical direction properly
-      // Project the inliers on the table
-      projectInliersOnTable(cloud_downsampled_ptr, table_inliers_ptr, table_coefficients_ptr, table_projected_ptr);
-
-      return SUCCESS;
-    }
-  private:
-    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
-    std::vector<float> filter_limits_;
-    /** The minimum number of points deemed necessary to find a table */
-    size_t min_cluster_size_;
-    /** The size of a voxel cell when downsampling */
-    float plane_detection_voxel_size_;
-    /** The number of nearest neighbors to use when computing normals */
-    unsigned int normal_k_search_;
-    /** The distance used as a threshold when finding a plane */
-    float plane_threshold_;
-  };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  class TabletopHull
-  {
-  public:
-    TabletopHull(float cluster_tolerance, const Eigen::Vector3f &vertical_direction)
-        :
-          cluster_tolerance_(cluster_tolerance),
-          vertical_direction_(vertical_direction)
-    {
-    }
-
     template<typename Point>
+    static
     void
     extractPointCloud(const typename pcl::PointCloud<Point> &cloud, const pcl::PointIndices::ConstPtr &inliers,
                       typename pcl::PointCloud<Point> &extractedCloud)
@@ -301,7 +230,7 @@ namespace tabletop
 
     template<typename Point>
     typename pcl::PointCloud<Point>::Ptr
-    cluster(const typename pcl::PointCloud<Point>::ConstPtr & projected_inliers)
+    getBestHull(const typename pcl::PointCloud<Point>::ConstPtr & projected_inliers)
     {
       typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>);
       tree->setInputCloud(projected_inliers);
@@ -328,19 +257,80 @@ namespace tabletop
 
       typename pcl::PointCloud<Point>::Ptr table_hull(new typename pcl::PointCloud<Point>);
       reconstructConvexHull(table, *table_hull);
+
       return table_hull;
     }
 
+    template<typename Point>
+    Result
+    findTable(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in,
+              typename pcl::ModelCoefficients::Ptr table_coefficients_ptr,
+              typename pcl::PointCloud<Point>::Ptr &table_projected_ptr,
+              typename pcl::PointCloud<Point>::Ptr &table_hull_ptr)
+    {
+      // First, filter by an interest box (which also remove NaN's)
+      typename pcl::PointCloud<Point>::Ptr cloud_filtered_ptr = typename pcl::PointCloud<Point>::Ptr(
+          new pcl::PointCloud<Point>);
+      filterLimits<Point>(cloud_in, filter_limits_, cloud_filtered_ptr);
+
+      if (cloud_filtered_ptr->points.size() < min_cluster_size_)
+      {
+        // TODO
+        //ROS_INFO("Filtered cloud only has %d points", (int)cloud_filtered_ptr->points.size());
+        return NO_TABLE;
+      }
+
+      // Then, downsample
+      typename pcl::PointCloud<Point>::Ptr cloud_downsampled_ptr(new typename pcl::PointCloud<Point>);
+      downsample<Point>(plane_detection_voxel_size_, cloud_filtered_ptr, cloud_downsampled_ptr);
+      if (cloud_downsampled_ptr->points.size() < min_cluster_size_)
+      {
+        //ROS_INFO("Downsampled cloud only has %d points", (int)cloud_downsampled_ptr->points.size());
+        return NO_TABLE;
+      }
+
+      // Estimate the normals
+      pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_ptr(new pcl::PointCloud<pcl::Normal>);
+      estimateNormals<Point>(normal_k_search_, cloud_downsampled_ptr, cloud_normals_ptr);
+
+      // Perform planar segmentation
+      pcl::PointIndices::Ptr table_inliers_ptr;
+      if (!segmentPlane<Point>(plane_threshold_, cloud_downsampled_ptr, cloud_normals_ptr, table_inliers_ptr,
+                               table_coefficients_ptr))
+        return NO_TABLE;
+
+      if (table_coefficients_ptr->values.size() <= 3)
+      {
+        //ROS_INFO("Failed to detect table in scan");
+        return NO_TABLE;
+      }
+
+      // Project the inliers on the table
+      projectInliersOnTable<Point>(cloud_downsampled_ptr, table_inliers_ptr, table_coefficients_ptr,
+                                   table_projected_ptr);
+
+      // Get the final hull
+      table_hull_ptr = getBestHull<Point>(table_projected_ptr);
+
+      return SUCCESS;
+    }
   private:
+    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
+    std::vector<float> filter_limits_;
+    /** The minimum number of points deemed necessary to find a table */
+    size_t min_cluster_size_;
+    /** The size of a voxel cell when downsampling */
+    float plane_detection_voxel_size_;
+    /** The number of nearest neighbors to use when computing normals */
+    unsigned int normal_k_search_;
+    /** The distance used as a threshold when finding a plane */
+    float plane_threshold_;
     /** The cluster tolerance when calling EuclideanClusterExtraction */
     float cluster_tolerance_;
-    /** The vertical direction vector */
-    Eigen::Vector3f vertical_direction_;
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  template<typename Point>
   class BlobSegmenter
   {
   public:
@@ -352,9 +342,10 @@ namespace tabletop
     {
     }
 
+    template<typename Point>
     void
-    process(typename pcl::PointCloud<Point>::Ptr cloud_filtered_ptr,
-            typename pcl::PointCloud<Point>::Ptr table_hull_ptr,
+    process(typename pcl::PointCloud<Point>::ConstPtr cloud_filtered_ptr,
+            typename pcl::PointCloud<Point>::ConstPtr table_hull_ptr,
             std::vector<typename pcl::PointCloud<Point>::Ptr> & clusters)
     {
       typename pcl::ExtractPolygonalPrismData<Point> prism_;
@@ -411,8 +402,8 @@ namespace tabletop
     }
   private:
 
-    template<typename PointT> void
-    getClustersFromPointCloud2(const typename pcl::PointCloud<PointT> &cloud_objects,
+    template<typename Point> void
+    getClustersFromPointCloud2(const typename pcl::PointCloud<Point> &cloud_objects,
                                const std::vector<pcl::PointIndices> &clusters2,
                                std::vector<typename pcl::PointCloud<Point>::Ptr> &clusters)
     {
