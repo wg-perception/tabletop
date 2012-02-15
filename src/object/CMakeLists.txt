@@ -4,13 +4,6 @@ add_dependencies(marker_generator tabletop_gencpp)
 rosbuild_add_executable(tabletop_segmentation tabletop_segmentation.cpp )
 target_link_libraries(tabletop_segmentation marker_generator)
 
-find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
-find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)
-find_library(roscpp_LIBRARIES roscpp /opt/ros/fuerte/lib/)
-find_library(roscpp_serialization_LIBRARIES roscpp_serialization /opt/ros/fuerte/lib/)
-find_library(rostime_LIBRARIES rostime /opt/ros/fuerte/lib/)
-find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
-
 target_link_libraries(tabletop_segmentation
     ${PCL_LIBRARIES}
     ${pcl_ros_tf_LIBRARIES}

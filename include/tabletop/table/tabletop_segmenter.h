@@ -51,6 +51,17 @@
 
 namespace tabletop
 {
+  /** Assumes plane coefficients are of the form ax+by+cz+d=0, normalized
+   * @param plane_coefficients
+   * @param up_direction_in
+   * @param flatten_plane if true, the plane coefficients are modified so that up_direction_in is the normal
+   */
+  void
+  getPlaneTransform(const Eigen::Vector4f &plane_coefficients, const Eigen::Vector3f &up_direction, bool flatten_plane,
+                    Eigen::Vector3f & translation, Eigen::Matrix3f & rotation);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   template<typename Point>
   struct PointCloudView
   {
@@ -346,8 +357,7 @@ namespace tabletop
 
     template<typename Point>
     void
-    process(typename pcl::PointCloud<Point>::ConstPtr cloud_filtered_ptr,
-            typename pcl::PointCloud<Point>::ConstPtr table_hull_ptr,
+    process(typename pcl::PointCloud<Point>::ConstPtr cloud, typename pcl::PointCloud<Point>::ConstPtr table_hull_ptr,
             std::vector<typename pcl::PointCloud<Point>::Ptr> & clusters)
     {
       typename pcl::ExtractPolygonalPrismData<Point> prism_;
@@ -355,14 +365,14 @@ namespace tabletop
       // ---[ Get the objects on top of the (non-flat) table
       pcl::PointIndices cloud_object_indices;
       //prism_.setInputCloud (cloud_all_minus_table_ptr);
-      prism_.setInputCloud(cloud_filtered_ptr);
+      prism_.setInputCloud(cloud);
       prism_.setInputPlanarHull(table_hull_ptr);
       prism_.setHeightLimits(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
       prism_.segment(cloud_object_indices);
 
       typename pcl::PointCloud<Point>::Ptr cloud_objects_ptr(new pcl::PointCloud<Point>);
       pcl::ExtractIndices<Point> extract_object_indices;
-      extract_object_indices.setInputCloud(cloud_filtered_ptr);
+      extract_object_indices.setInputCloud(cloud);
       extract_object_indices.setIndices(boost::make_shared<const pcl::PointIndices>(cloud_object_indices));
       extract_object_indices.filter(*cloud_objects_ptr);
 

@@ -36,9 +36,10 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <visualization_msgs/Marker.h>
 
 #include <ecto/ecto.hpp>
 
@@ -54,6 +55,8 @@
 #include <tabletop/Table.h>
 #include <tabletop/table/tabletop_segmenter.h>
 
+#include "tabletop_object_detector/marker_generator.h"
+
 using ecto::tendrils;
 
 namespace tabletop
@@ -66,32 +69,22 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      params.declare(&TablePublisher::table_coefficients_ptr_, "filter_limits",
-                     "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]");
-      params.declare(&TablePublisher::min_cluster_size_, "min_cluster_size",
-                     "The minimum number of points deemed necessary to find a table.", 1000);
-      params.declare(&TablePublisher::plane_detection_voxel_size_, "plane_detection_voxel_size",
-                     "The size of a voxel cell when downsampling ", 0.01);
-      params.declare(&TablePublisher::normal_k_search_, "normal_k_search",
-                     "The number of nearest neighbors to use when computing normals", 10);
       params.declare(&TablePublisher::up_direction_, "vertical_direction", "The vertical direction");
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePublisher::cloud_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&TablePublisher::table_coefficients_ptr_, "filter_limits",
+                     "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]");
       inputs.declare(&TablePublisher::table_projected_ptr_, "cloud_projected", "The projected points on the table.");
       inputs.declare(&TablePublisher::table_hull_ptr_, "cloud_hull", "The projected points on the table.");
-
-      outputs.declare(&TablePublisher::table_inliers_, "inliers",
-                      "The indices of the original points belonging to the table.");
-      outputs.declare(&TablePublisher::table_coefficients_, "coefficients", "The coefficients of the table.");
     }
 
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
+      current_marker_id_ = 1;
     }
 
     /** Get the 2d keypoints and figure out their 3D position from the depth map
@@ -117,11 +110,12 @@ namespace tabletop
         if (!getPlanePoints<Point>(*(*table_projected_ptr_), table_plane_trans, table_points))
         {
           //response.result = response.OTHER_ERROR;
-          return;
+          return ecto::OK;
         }
 
         // ---[ Create the table message
-        table = getTable<sensor_msgs::PointCloud>(cloud.header, table_plane_trans, table_points);
+        // TODO use the original cloud header
+        table = getTable<sensor_msgs::PointCloud>(std_msgs::Header(), table_plane_trans, table_points);
 
         // ---[ Convert the convex hull points to table frame
         if (!getPlanePoints<Point>(*(*table_hull_ptr_), table_plane_trans, table_hull_points))
@@ -137,16 +131,15 @@ namespace tabletop
         tf::Vector3 flat_table_pos;
         double avg_x, avg_y, avg_z;
         avg_x = avg_y = avg_z = 0;
-        for (size_t i = 0; i < table_projected_ptr->points.size(); i++)
+        for (size_t i = 0; i < (*table_projected_ptr_)->points.size(); i++)
         {
-          avg_x += table_projected_ptr->points[i].x;
-          avg_y += table_projected_ptr->points[i].y;
-          avg_z += table_projected_ptr->points[i].z;
+          avg_x += (*table_projected_ptr_)->points[i].x;
+          avg_y += (*table_projected_ptr_)->points[i].y;
+          avg_z += (*table_projected_ptr_)->points[i].z;
         }
-        avg_x /= table_projected_ptr->points.size();
-        avg_y /= table_projected_ptr->points.size();
-        avg_z /= table_projected_ptr->points.size();
-        ROS_INFO("average x,y,z = (%.5f, %.5f, %.5f)", avg_x, avg_y, avg_z);
+        avg_x /= (*table_projected_ptr_)->points.size();
+        avg_y /= (*table_projected_ptr_)->points.size();
+        avg_z /= (*table_projected_ptr_)->points.size();
 
         // place the new table frame in the center of the convex hull
         flat_table_pos[0] = avg_x;
@@ -160,25 +153,22 @@ namespace tabletop
         // --- [ Take the points projected on the table and transform them into the PointCloud message
         //  while also transforming them into the flat table's coordinate system
         sensor_msgs::PointCloud flat_table_points;
-        if (!getPlanePoints<Point>(*table_projected_ptr, table_plane_trans_flat, flat_table_points))
+        if (!getPlanePoints<Point>(**table_projected_ptr_, table_plane_trans_flat, flat_table_points))
         {
           //TODOresponse.result = response.OTHER_ERROR;
           return ecto::OK;
         }
 
         // ---[ Create the table message
-        // TODO table = getTable<sensor_msgs::PointCloud>(cloud.header, table_plane_trans_flat, flat_table_points);
+        // TODO use the original cloud header
+        table = getTable<sensor_msgs::PointCloud>(std_msgs::Header(), table_plane_trans_flat, flat_table_points);
 
         // ---[ Convert the convex hull points to flat table frame
-        if (!getPlanePoints<Point>(*table_hull_ptr, table_plane_trans_flat, table_hull_points))
+        if (!getPlanePoints<Point>(**table_hull_ptr_, table_plane_trans_flat, table_hull_points))
         {
-          //TODOresponse.result = response.OTHER_ERROR;
-          return;
+          return ecto::OK;
         }
       }
-
-      ROS_INFO("Table computed");
-      //TODOresponse.result = response.SUCCESS;
 
       // ---[ Add the convex hull as a triangle mesh to the Table message
       addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
@@ -191,48 +181,20 @@ namespace tabletop
     tf::Transform
     getPlaneTransform(pcl::ModelCoefficients coeffs, bool flatten_plane)
     {
-      double a = coeffs.values[0], b = coeffs.values[1], c = coeffs.values[2], d = coeffs.values[3];
-      //asume plane coefficients are normalized
-      tf::Vector3 position(-a * d, -b * d, -c * d);
-      tf::Vector3 z(a, b, c);
+      Eigen::Vector3f translation;
+      Eigen::Matrix3f rotation;
+      Eigen::Vector4f plane_coefficients(coeffs.values[0], coeffs.values[1], coeffs.values[2], coeffs.values[3]);
+      tabletop::getPlaneTransform(plane_coefficients, *up_direction_, flatten_plane, translation, rotation);
 
-      //if we are flattening the plane, make z just be (0,0,up_direction)
-      if (flatten_plane)
-      {
-        ROS_INFO("flattening plane");
-        z[0] = z[1] = 0;
-        z[2] = (*up_direction_)[2];
-      }
-      else
-      {
-        //make sure z points "up"
-        ROS_DEBUG("in getPlaneTransform, z: %0.3f, %0.3f, %0.3f", z[0], z[1], z[2]);
-        if (z.dot(*up_direction_) < 0)
-        {
-          z = -1.0 * z;
-          ROS_INFO("flipped z");
-        }
-      }
+      tf::Vector3 position_tf(translation[0], translation[1], translation[2]);
+      tf::Matrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
+                                rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
+                                rotation.coeff(2, 2));
 
-      //try to align the x axis with the x axis of the original frame
-      //or the y axis if z and x are too close too each other
-      tf::Vector3 x(1, 0, 0);
-      if (fabs(z.dot(x)) > 1.0 - 1.0e-4)
-        x = tf::Vector3(0, 1, 0);
-      tf::Vector3 y = z.cross(x).normalized();
-      x = y.cross(z).normalized();
-
-      tf::Matrix3x3 rotation;
-      rotation[0] = x; // x
-      rotation[1] = y; // y
-      rotation[2] = z; // z
-      rotation = rotation.transpose();
       tf::Quaternion orientation;
-      rotation.getRotation(orientation);
-      ROS_DEBUG("in getPlaneTransform, x: %0.3f, %0.3f, %0.3f", x[0], x[1], x[2]);
-      ROS_DEBUG("in getPlaneTransform, y: %0.3f, %0.3f, %0.3f", y[0], y[1], y[2]);
-      ROS_DEBUG("in getPlaneTransform, z: %0.3f, %0.3f, %0.3f", z[0], z[1], z[2]);
-      return tf::Transform(orientation, position);
+      rotation_tf.getRotation(orientation);
+
+      return tf::Transform(orientation, position_tf);
     }
 
     template<typename PointT>
@@ -258,17 +220,13 @@ namespace tabletop
       std::string error_msg;
       if (!listener.canTransform("table_frame", table_points.header.frame_id, table_points.header.stamp, &error_msg))
       {
-        ROS_ERROR("Can not transform point cloud from frame %s to table frame; error %s",
-                  table_points.header.frame_id.c_str(), error_msg.c_str());
         return false;
       }
       try
       {
         listener.transformPointCloud("table_frame", table_points, table_points);
-      } catch (tf::TransformException ex)
+      } catch (tf::TransformException &ex)
       {
-        ROS_ERROR("Failed to transform point cloud from frame %s into table_frame; error %s",
-                  table_points.header.frame_id.c_str(), ex.what());
         return false;
       }
       table_points.header.stamp = table.header.stamp;
@@ -299,18 +257,17 @@ namespace tabletop
         table.convex_hull.triangles.push_back(i);
         table.convex_hull.triangles.push_back(i + 1);
       }
-      visualization_msgs::Marker tableMarker = MarkerGenerator::getConvexHullTableMarker(table.convex_hull);
+      visualization_msgs::Marker tableMarker = tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(
+          table.convex_hull);
       tableMarker.header = table.pose.header;
       tableMarker.pose = table.pose.pose;
       tableMarker.ns = "tabletop_node";
       tableMarker.id = current_marker_id_++;
       marker_pub_.publish(tableMarker);
 
-      visualization_msgs::Marker originMarker = MarkerGenerator::createMarker(table.pose.header.frame_id, 0, .0025,
-                                                                              .0025, .01, 0, 1, 1,
-                                                                              visualization_msgs::Marker::CUBE,
-                                                                              current_marker_id_++, "tabletop_node",
-                                                                              table.pose.pose);
+      visualization_msgs::Marker originMarker = tabletop_object_detector::MarkerGenerator::createMarker(
+          table.pose.header.frame_id, 0, .0025, .0025, .01, 0, 1, 1, visualization_msgs::Marker::CUBE,
+          current_marker_id_++, "tabletop_node", table.pose.pose);
       marker_pub_.publish(originMarker);
     }
 
@@ -345,8 +302,10 @@ namespace tabletop
       table.pose.pose = table_pose;
       table.pose.header = cloud_header;
 
-      visualization_msgs::Marker tableMarker = MarkerGenerator::getTableMarker(table.x_min, table.x_max, table.y_min,
-                                                                               table.y_max);
+      visualization_msgs::Marker tableMarker = tabletop_object_detector::MarkerGenerator::getTableMarker(table.x_min,
+                                                                                                         table.x_max,
+                                                                                                         table.y_min,
+                                                                                                         table.y_max);
       tableMarker.header = cloud_header;
       tableMarker.pose = table_pose;
       tableMarker.ns = "tabletop_node";
@@ -358,23 +317,18 @@ namespace tabletop
 
     /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
     ecto::spore<pcl::ModelCoefficients> table_coefficients_ptr_;
-    /** The minimum number of points deemed necessary to find a table */
-    ecto::spore<size_t> min_cluster_size_;
-    /** The size of a voxel cell when downsampling */
-    ecto::spore<float> plane_detection_voxel_size_;
-    /** The number of nearest neighbors to use when computing normals */
-    ecto::spore<unsigned int> normal_k_search_;
     /** The distance used as a threshold when finding a plane */
     ecto::spore<float> flatten_table_;
 
     /** flag indicating whether we run in debug mode */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_, table_projected_ptr_, table_hull_ptr_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::PointIndices::Ptr> table_inliers_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<pcl::ModelCoefficients::Ptr> table_coefficients_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> table_projected_ptr_, table_hull_ptr_;
     /** The vertical direction */
     ecto::spore<Eigen::Vector3f> up_direction_;
+
+    //! The current marker being published
+    size_t current_marker_id_;
+    //! Publisher for markers
+    ros::Publisher marker_pub_;
   };
 
 }

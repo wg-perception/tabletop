@@ -3,7 +3,8 @@ source1:
   rgb_frame_id: '/camera_rgb_optical_frame'
 
 sink1:
-  type: publisher
+  type: table_publisher
+  package: 'tabletop'
 
 pipeline1:
   method: 'tabletop_table'

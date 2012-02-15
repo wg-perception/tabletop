@@ -75,7 +75,6 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePose::cloud_, "cloud_hull", "The point cloud defining the table (the hull usually).");
       inputs.declare(&TablePose::table_coefficients_, "coefficients", "The coefficients of the table.");
 
       outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
@@ -86,7 +85,7 @@ namespace tabletop
     {
     }
 
-    /** Get the 2d keypoints and figure out their 3D position from the depth map
+    /** Compute the pose of the table plane
      * @param inputs
      * @param outputs
      * @return
@@ -94,46 +93,24 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      double a = (*table_coefficients_)[0], b = (*table_coefficients_)[1], c = (*table_coefficients_)[2], d =
-          (*table_coefficients_)[3];
-      // assume plane coefficients are normalized
-      Eigen::Vector3f position(-a * d, -b * d, -c * d);
-      Eigen::Vector3f z(a, b, c);
-
-      //make sure z points "up"
-      if (z.dot(*up_direction_) < 0)
-      {
-        z = -1.0 * z;
-      }
-
-      //try to align the x axis with the x axis of the original frame
-      //or the y axis if z and x are too close too each other
-      Eigen::Vector3f x(1, 0, 0);
-      if (fabs(z.dot(x)) > 1.0 - 1.0e-4)
-        x = Eigen::Vector3f(0, 1, 0);
-      Eigen::Vector3f y = z.cross(x).normalized();
-      x = y.cross(z).normalized();
-
+      Eigen::Vector3f translation;
       Eigen::Matrix3f rotation;
-      rotation << x.coeff(0), x.coeff(1), x.coeff(2), y.coeff(0), y.coeff(1), y.coeff(2),
-                               z.coeff(0), z.coeff(1), z.coeff(2);
-      rotation.transposeInPlace();
-      Eigen::Quaternion<float> orientation(rotation);
+      getPlaneTransform(*table_coefficients_, *up_direction_, *flatten_plane_, translation, rotation);
 
       PoseResult pose_result;
       pose_result.set_R(rotation);
-      pose_result.set_T(position);
+      pose_result.set_T(translation);
       pose_results_->push_back(pose_result);
 
       return ecto::OK;
     }
   private:
-    /** flag indicating whether we run in debug mode */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_, table_projected_ptr_, table_hull_ptr_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<std::vector<float> > table_coefficients_;
+    /** The coefficients of the table plane */
+    ecto::spore<Eigen::Vector4f> table_coefficients_;
     /** The vertical direction */
     ecto::spore<Eigen::Vector3f> up_direction_;
+    /** if true, the plane coefficients are modified so that up_direction_in is the normal */
+    ecto::spore<bool> flatten_plane_;
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
   };

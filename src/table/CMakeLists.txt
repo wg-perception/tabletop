@@ -1,8 +1,7 @@
 # create some messages for ROS
 find_package(genmsg)
 if (genmsg_FOUND)
-#TODO
-  #SET(TABLETOP_ROS_CELLS TablePublisher)
+  SET(TABLETOP_ROS_CELLS TablePublisher)
 endif()
 
 find_package(object_recognition REQUIRED)
@@ -14,6 +13,7 @@ ectomodule(tabletop_table
   Clusterer.cpp
   TableDetector.cpp
   TablePose.cpp
+  tabletop_segmenter.cpp
   ${TABLETOP_ROS_CELLS}
 )
 
@@ -21,6 +21,12 @@ link_ecto(tabletop_table
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   object_recognition_common
+    ${pcl_ros_tf_LIBRARIES}
+    ${roscpp_LIBRARIES}
+    ${roscpp_serialization_LIBRARIES}
+    ${rostime_LIBRARIES}
+    ${rosconsole_LIBRARIES}
+    ${tf_LIBRARIES}
 )
 
 install_ecto_module(tabletop_table)

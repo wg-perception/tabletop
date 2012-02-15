@@ -8,7 +8,7 @@ find_package(PCL REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
 
-
+find_package(object_recognition REQUIRED)
 find_package(genmsg REQUIRED)
 
 if (genmsg_FOUND)
@@ -24,6 +24,14 @@ endif()
 find_package(Eigen REQUIRED)
 include_directories(${Eigen_INCLUDE_DIRS})
 include_directories(${ecto_pcl_INCLUDE_DIRS})
+
+find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
+find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)
+find_library(roscpp_LIBRARIES roscpp /opt/ros/fuerte/lib/)
+find_library(roscpp_serialization_LIBRARIES roscpp_serialization /opt/ros/fuerte/lib/)
+find_library(rostime_LIBRARIES rostime /opt/ros/fuerte/lib/)
+find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
+
 
 include_directories(/opt/ros/fuerte/stacks/geometry/tf/include)
 include_directories(/opt/ros/fuerte/stacks/bullet/include/)
@@ -48,3 +56,6 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/
 )
 
 catkin_add_env_hooks(10tabletop SHELLS all)
+
+# add the tests
+add_subdirectory(test)
