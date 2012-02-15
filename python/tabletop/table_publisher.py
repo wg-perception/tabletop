@@ -14,5 +14,5 @@ class TablePublisherPython(Sink):
         return 'table_publisher'
 
     @classmethod
-    def source(self, *args, **kwargs):
+    def sink(self, *args, **kwargs):
         return TablePublisher(**kwargs)
