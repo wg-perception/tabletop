@@ -105,7 +105,8 @@ namespace tabletop
       pcl::ModelCoefficients::Ptr table_coefficients;
       table_segmenter.findTable<pcl::PointXYZ>(*cloud_in_, table_coefficients, *cloud_out_, *cloud_hull_);
 
-      *table_coefficients_ = std::vector<float>(table_coefficients->values.begin(), table_coefficients->values.end());
+      *table_coefficients_ = Eigen::Vector4f(table_coefficients->values[0], table_coefficients->values[1],
+                                             table_coefficients->values[2], table_coefficients->values[3]);
 
       return ecto::OK;
     }
@@ -127,7 +128,7 @@ namespace tabletop
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_out_;
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_hull_;
     /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<std::vector<float> > table_coefficients_;
+    ecto::spore<Eigen::Vector4f> table_coefficients_;
     ecto::spore<float> cluster_tolerance_;
   };
 }

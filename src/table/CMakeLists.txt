@@ -27,6 +27,7 @@ link_ecto(tabletop_table
     ${rostime_LIBRARIES}
     ${rosconsole_LIBRARIES}
     ${tf_LIBRARIES}
+    marker_generator
 )
 
 install_ecto_module(tabletop_table)

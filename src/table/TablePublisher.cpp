@@ -48,6 +48,7 @@
 #include <pcl/point_types.h>
 #include <pcl/PointIndices.h>
 
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -56,6 +57,9 @@
 #include <tabletop/table/tabletop_segmenter.h>
 
 #include "tabletop_object_detector/marker_generator.h"
+#include <object_recognition/common/pose_result.h>
+
+using object_recognition::common::PoseResult;
 
 using ecto::tendrils;
 
@@ -69,22 +73,25 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      params.declare(&TablePublisher::up_direction_, "vertical_direction", "The vertical direction");
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePublisher::table_coefficients_ptr_, "filter_limits",
-                     "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]");
-      inputs.declare(&TablePublisher::table_projected_ptr_, "cloud_projected", "The projected points on the table.");
-      inputs.declare(&TablePublisher::table_hull_ptr_, "cloud_hull", "The projected points on the table.");
+      inputs.declare(&TablePublisher::image_message_, "image_message", "the image message to get the header").required(
+          true);
+      inputs.declare(&TablePublisher::pose_results_, "pose_results", "The results of object recognition").required(
+          true);
+      inputs.declare(&TablePublisher::table_projected_ptr_, "cloud", "Some samples from the table.").required(true);
+      inputs.declare(&TablePublisher::table_hull_ptr_, "cloud_hull", "The hull of the samples.").required(true);
     }
 
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
       current_marker_id_ = 1;
+      flatten_table_ = false;
+      marker_pub_ = ros::Publisher();
     }
 
     /** Get the 2d keypoints and figure out their 3D position from the depth map
@@ -97,94 +104,101 @@ namespace tabletop
     {
       typedef pcl::PointXYZ Point;
 
-      sensor_msgs::PointCloud table_points;
-      sensor_msgs::PointCloud table_hull_points;
-      tf::Transform table_plane_trans = getPlaneTransform(*table_coefficients_ptr_, false);
-      tf::Transform table_plane_trans_flat;
+      std::string frame_id;
+      if (*image_message_)
+        frame_id = (*image_message_)->header.frame_id;
+      std::cout << frame_id << std::endl;
 
-      Table table;
-      if (!flatten_table_)
-      {
-        // --- [ Take the points projected on the table and transform them into the PointCloud message
-        //  while also transforming them into the table's coordinate system
-        if (!getPlanePoints<Point>(*(*table_projected_ptr_), table_plane_trans, table_points))
-        {
-          //response.result = response.OTHER_ERROR;
-          return ecto::OK;
-        }
+      BOOST_FOREACH(const PoseResult & pose_result, *pose_results_)
+          {
+            sensor_msgs::PointCloud table_points;
+            sensor_msgs::PointCloud table_hull_points;
+            tf::Transform table_plane_trans = getPlaneTransform(pose_result);
 
-        // ---[ Create the table message
-        // TODO use the original cloud header
-        table = getTable<sensor_msgs::PointCloud>(std_msgs::Header(), table_plane_trans, table_points);
+            Table table;
 
-        // ---[ Convert the convex hull points to table frame
-        if (!getPlanePoints<Point>(*(*table_hull_ptr_), table_plane_trans, table_hull_points))
-        {
-          //response.result = response.OTHER_ERROR;
-          return ecto::OK;
-        }
-      }
-      if (flatten_table_)
-      {
-        // if flattening the table, find the center of the convex hull and move the table frame there
-        table_plane_trans_flat = getPlaneTransform(*table_coefficients_ptr_, flatten_table_);
-        tf::Vector3 flat_table_pos;
-        double avg_x, avg_y, avg_z;
-        avg_x = avg_y = avg_z = 0;
-        for (size_t i = 0; i < (*table_projected_ptr_)->points.size(); i++)
-        {
-          avg_x += (*table_projected_ptr_)->points[i].x;
-          avg_y += (*table_projected_ptr_)->points[i].y;
-          avg_z += (*table_projected_ptr_)->points[i].z;
-        }
-        avg_x /= (*table_projected_ptr_)->points.size();
-        avg_y /= (*table_projected_ptr_)->points.size();
-        avg_z /= (*table_projected_ptr_)->points.size();
+            std_msgs::Header message_header;
+            message_header.frame_id = frame_id;
+            table_points.header.frame_id = frame_id;
+            table_hull_points.header.frame_id = frame_id;
+            (*table_projected_ptr_)->header.frame_id = frame_id;
 
-        // place the new table frame in the center of the convex hull
-        flat_table_pos[0] = avg_x;
-        flat_table_pos[1] = avg_y;
-        flat_table_pos[2] = avg_z;
-        table_plane_trans_flat.setOrigin(flat_table_pos);
+            if (!flatten_table_)
+            {
+              // --- [ Take the points projected on the table and transform them into the PointCloud message
+              //  while also transforming them into the table's coordinate system
+              if (!getPlanePoints<Point>(*(*table_projected_ptr_), table_plane_trans, table_points))
+              {
+                //response.result = response.OTHER_ERROR;
+                return ecto::OK;
+              }
 
-        // shift the non-flat table frame to the center of the convex hull as well
-        table_plane_trans.setOrigin(flat_table_pos);
+              // ---[ Create the table message
+              // TODO use the original cloud header
+              table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, table_points);
 
-        // --- [ Take the points projected on the table and transform them into the PointCloud message
-        //  while also transforming them into the flat table's coordinate system
-        sensor_msgs::PointCloud flat_table_points;
-        if (!getPlanePoints<Point>(**table_projected_ptr_, table_plane_trans_flat, flat_table_points))
-        {
-          //TODOresponse.result = response.OTHER_ERROR;
-          return ecto::OK;
-        }
+              // ---[ Convert the convex hull points to table frame
+              if (!getPlanePoints<Point>(*(*table_hull_ptr_), table_plane_trans, table_hull_points))
+              {
+                //response.result = response.OTHER_ERROR;
+                return ecto::OK;
+              }
+            }
+            if (flatten_table_)
+            {
+              // if flattening the table, find the center of the convex hull and move the table frame there
+              tf::Vector3 flat_table_pos;
+              double avg_x, avg_y, avg_z;
+              avg_x = avg_y = avg_z = 0;
+              for (size_t i = 0; i < (*table_projected_ptr_)->points.size(); i++)
+              {
+                avg_x += (*table_projected_ptr_)->points[i].x;
+                avg_y += (*table_projected_ptr_)->points[i].y;
+                avg_z += (*table_projected_ptr_)->points[i].z;
+              }
+              avg_x /= (*table_projected_ptr_)->points.size();
+              avg_y /= (*table_projected_ptr_)->points.size();
+              avg_z /= (*table_projected_ptr_)->points.size();
 
-        // ---[ Create the table message
-        // TODO use the original cloud header
-        table = getTable<sensor_msgs::PointCloud>(std_msgs::Header(), table_plane_trans_flat, flat_table_points);
+              // place the new table frame in the center of the convex hull
+              flat_table_pos[0] = avg_x;
+              flat_table_pos[1] = avg_y;
+              flat_table_pos[2] = avg_z;
+              table_plane_trans.setOrigin(flat_table_pos);
 
-        // ---[ Convert the convex hull points to flat table frame
-        if (!getPlanePoints<Point>(**table_hull_ptr_, table_plane_trans_flat, table_hull_points))
-        {
-          return ecto::OK;
-        }
-      }
+              // --- [ Take the points projected on the table and transform them into the PointCloud message
+              //  while also transforming them into the flat table's coordinate system
+              sensor_msgs::PointCloud flat_table_points;
+              if (!getPlanePoints<Point>(**table_projected_ptr_, table_plane_trans, flat_table_points))
+              {
+                //TODOresponse.result = response.OTHER_ERROR;
+                return ecto::OK;
+              }
 
-      // ---[ Add the convex hull as a triangle mesh to the Table message
-      addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
+              // ---[ Create the table message
+              // TODO use the original cloud header
+              table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, flat_table_points);
 
+              // ---[ Convert the convex hull points to flat table frame
+              if (!getPlanePoints<Point>(**table_hull_ptr_, table_plane_trans, table_hull_points))
+              {
+                return ecto::OK;
+              }
+            }
+
+            // ---[ Add the convex hull as a triangle mesh to the Table message
+            //addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
+          }
       return ecto::OK;
     }
   private:
 
     /*! Assumes plane coefficients are of the form ax+by+cz+d=0, normalized */
     tf::Transform
-    getPlaneTransform(pcl::ModelCoefficients coeffs, bool flatten_plane)
+    getPlaneTransform(const PoseResult & pose_result)
     {
-      Eigen::Vector3f translation;
-      Eigen::Matrix3f rotation;
-      Eigen::Vector4f plane_coefficients(coeffs.values[0], coeffs.values[1], coeffs.values[2], coeffs.values[3]);
-      tabletop::getPlaneTransform(plane_coefficients, *up_direction_, flatten_plane, translation, rotation);
+      Eigen::Vector3f translation = pose_result.T<Eigen::Vector3f>();
+      Eigen::Matrix3f rotation = pose_result.R<Eigen::Matrix3f>();
 
       tf::Vector3 position_tf(translation[0], translation[1], translation[2]);
       tf::Matrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
@@ -315,10 +329,8 @@ namespace tabletop
       return table;
     }
 
-    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
-    ecto::spore<pcl::ModelCoefficients> table_coefficients_ptr_;
     /** The distance used as a threshold when finding a plane */
-    ecto::spore<float> flatten_table_;
+    bool flatten_table_;
 
     /** flag indicating whether we run in debug mode */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> table_projected_ptr_, table_hull_ptr_;
@@ -329,6 +341,9 @@ namespace tabletop
     size_t current_marker_id_;
     //! Publisher for markers
     ros::Publisher marker_pub_;
+    ecto::spore<sensor_msgs::ImageConstPtr> image_message_;
+
+    ecto::spore<std::vector<PoseResult> > pose_results_;
   };
 
 }

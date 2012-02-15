@@ -69,13 +69,16 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      params.declare(&TablePose::up_direction_, "vertical_direction", "The vertical direction");
+      Eigen::Vector3f default_up(0, 0, 1);
+      params.declare(&TablePose::up_direction_, "vertical_direction", "The vertical direction", default_up);
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePose::table_coefficients_, "coefficients", "The coefficients of the table.");
+      inputs.declare(&TablePose::table_coefficients_, "coefficients", "The coefficients of the table.").required(true);
+      inputs.declare(&TablePose::flatten_plane_, "flatten_plane", "If true, the plane's normal is vertical_driection.",
+                     false);
 
       outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
     }
@@ -100,6 +103,7 @@ namespace tabletop
       PoseResult pose_result;
       pose_result.set_R(rotation);
       pose_result.set_T(translation);
+      pose_results_->clear();
       pose_results_->push_back(pose_result);
 
       return ecto::OK;

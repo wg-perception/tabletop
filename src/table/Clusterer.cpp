@@ -70,7 +70,7 @@ namespace tabletop
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
       inputs.declare(&Clusterer::cloud_, "cloud", "The point cloud in which to find a table.");
-      inputs.declare(&Clusterer::cloud_hull_, "cloud_full", "The point cloud in which to find a table.");
+      inputs.declare(&Clusterer::cloud_hull_, "cloud_hull", "The point cloud in which to find a table.");
 
       outputs.declare(&Clusterer::clusters_, "clusters", "The point cloud in which to find a table.");
     }

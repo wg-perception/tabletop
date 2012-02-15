@@ -43,11 +43,13 @@ class TabletopTableDetector(ecto.BlackBox):
         i.forward('points3d', cell_name='to_cloud_conversion', cell_key='points')
 
         o.forward('pose_results', cell_name='table_pose', cell_key='pose_results')
+        o.forward('cloud', cell_name='table_detector', cell_key='cloud')
+        o.forward('cloud_hull', cell_name='table_detector', cell_key='cloud_hull')
 
     def configure(self, p, _i, _o):
         vertical_direction = self._parameters.pop('vertical_direction', None)
         if vertical_direction is not None:
-            self.table_pose = tabletop_table.TablePose(vertical_direction=self._parameters['vertical_direction'])
+            self.table_pose = tabletop_table.TablePose(vertical_direction=vertical_direction)
         else:
             self.table_pose = tabletop_table.TablePose()
         if self._parameters:
@@ -58,8 +60,7 @@ class TabletopTableDetector(ecto.BlackBox):
     def connections(self):
         # make sure the inputs reach the right cells
         connections = [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
-                       self.table_detector['coefficients'] >> self.table_pose['coefficients'],
-                       self.table_detector['cloud_hull'] >> self.table_pose['cloud_hull'] ]
+                       self.table_detector['coefficients'] >> self.table_pose['coefficients'] ]
 
         return connections
 
