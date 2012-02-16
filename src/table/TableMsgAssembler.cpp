@@ -84,8 +84,8 @@ namespace tabletop
           true);
       inputs.declare(&TableMsgAssembler::pose_results_, "pose_results", "The results of object recognition").required(
           true);
-      inputs.declare(&TableMsgAssembler::table_projected_ptr_, "cloud", "Some samples from the table.").required(true);
-      inputs.declare(&TableMsgAssembler::table_hull_ptr_, "cloud_hull", "The hull of the samples.").required(true);
+      inputs.declare(&TableMsgAssembler::clouds_, "clouds", "Some samples from the table.").required(true);
+      inputs.declare(&TableMsgAssembler::clouds_hull_, "clouds_hull", "The hull of the samples.").required(true);
 
       outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
       outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
@@ -122,85 +122,89 @@ namespace tabletop
       std_msgs::Header message_header;
       message_header.frame_id = frame_id;
 
-      BOOST_FOREACH(const PoseResult & pose_result, *pose_results_)
+      for (size_t i = 0; i < pose_results_->size(); ++i)
+      {
+        const PoseResult & pose_result = (*pose_results_)[i];
+        pcl::PointCloud<pcl::PointXYZ>::Ptr & cloud = (*clouds_)[i];
+        pcl::PointCloud<pcl::PointXYZ>::Ptr & cloud_hull = (*clouds_hull_)[i];
+
+        sensor_msgs::PointCloud table_points;
+        sensor_msgs::PointCloud table_hull_points;
+        tf::Transform table_plane_trans = getPlaneTransform(pose_result);
+
+        Table table;
+
+        table_points.header.frame_id = frame_id;
+        table_hull_points.header.frame_id = frame_id;
+        cloud->header.frame_id = frame_id;
+        cloud_hull->header.frame_id = frame_id;
+
+        if (!flatten_table_)
+        {
+          // --- [ Take the points projected on the table and transform them into the PointCloud message
+          //  while also transforming them into the table's coordinate system
+          if (!getPlanePoints<Point>(*cloud, table_plane_trans, table_points))
           {
-            sensor_msgs::PointCloud table_points;
-            sensor_msgs::PointCloud table_hull_points;
-            tf::Transform table_plane_trans = getPlaneTransform(pose_result);
-
-            Table table;
-
-            table_points.header.frame_id = frame_id;
-            table_hull_points.header.frame_id = frame_id;
-            (*table_projected_ptr_)->header.frame_id = frame_id;
-            (*table_hull_ptr_)->header.frame_id = frame_id;
-
-            if (!flatten_table_)
-            {
-              // --- [ Take the points projected on the table and transform them into the PointCloud message
-              //  while also transforming them into the table's coordinate system
-              if (!getPlanePoints<Point>(*(*table_projected_ptr_), table_plane_trans, table_points))
-              {
-                //response.result = response.OTHER_ERROR;
-                return ecto::OK;
-              }
-
-              // ---[ Create the table message
-              // TODO use the original cloud header
-              table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, table_points);
-
-              // ---[ Convert the convex hull points to table frame
-              if (!getPlanePoints<Point>(*(*table_hull_ptr_), table_plane_trans, table_hull_points))
-              {
-                //response.result = response.OTHER_ERROR;
-                return ecto::OK;
-              }
-            }
-            if (flatten_table_)
-            {
-              // if flattening the table, find the center of the convex hull and move the table frame there
-              tf::Vector3 flat_table_pos;
-              double avg_x, avg_y, avg_z;
-              avg_x = avg_y = avg_z = 0;
-              for (size_t i = 0; i < (*table_projected_ptr_)->points.size(); i++)
-              {
-                avg_x += (*table_projected_ptr_)->points[i].x;
-                avg_y += (*table_projected_ptr_)->points[i].y;
-                avg_z += (*table_projected_ptr_)->points[i].z;
-              }
-              avg_x /= (*table_projected_ptr_)->points.size();
-              avg_y /= (*table_projected_ptr_)->points.size();
-              avg_z /= (*table_projected_ptr_)->points.size();
-
-              // place the new table frame in the center of the convex hull
-              flat_table_pos[0] = avg_x;
-              flat_table_pos[1] = avg_y;
-              flat_table_pos[2] = avg_z;
-              table_plane_trans.setOrigin(flat_table_pos);
-
-              // --- [ Take the points projected on the table and transform them into the PointCloud message
-              //  while also transforming them into the flat table's coordinate system
-              sensor_msgs::PointCloud flat_table_points;
-              if (!getPlanePoints<Point>(**table_projected_ptr_, table_plane_trans, flat_table_points))
-              {
-                //TODOresponse.result = response.OTHER_ERROR;
-                return ecto::OK;
-              }
-
-              // ---[ Create the table message
-              // TODO use the original cloud header
-              table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, flat_table_points);
-
-              // ---[ Convert the convex hull points to flat table frame
-              if (!getPlanePoints<Point>(**table_hull_ptr_, table_plane_trans, table_hull_points))
-              {
-                return ecto::OK;
-              }
-            }
-
-            // ---[ Add the convex hull as a triangle mesh to the Table message
-            addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
+            //response.result = response.OTHER_ERROR;
+            return ecto::OK;
           }
+
+          // ---[ Create the table message
+          // TODO use the original cloud header
+          table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, table_points);
+
+          // ---[ Convert the convex hull points to table frame
+          if (!getPlanePoints<Point>(*cloud, table_plane_trans, table_hull_points))
+          {
+            //response.result = response.OTHER_ERROR;
+            return ecto::OK;
+          }
+        }
+        if (flatten_table_)
+        {
+          // if flattening the table, find the center of the convex hull and move the table frame there
+          tf::Vector3 flat_table_pos;
+          double avg_x, avg_y, avg_z;
+          avg_x = avg_y = avg_z = 0;
+          for (size_t i = 0; i < cloud->points.size(); i++)
+          {
+            avg_x += cloud->points[i].x;
+            avg_y += cloud->points[i].y;
+            avg_z += cloud->points[i].z;
+          }
+          avg_x /= cloud->points.size();
+          avg_y /= cloud->points.size();
+          avg_z /= cloud->points.size();
+
+          // place the new table frame in the center of the convex hull
+          flat_table_pos[0] = avg_x;
+          flat_table_pos[1] = avg_y;
+          flat_table_pos[2] = avg_z;
+          table_plane_trans.setOrigin(flat_table_pos);
+
+          // --- [ Take the points projected on the table and transform them into the PointCloud message
+          //  while also transforming them into the flat table's coordinate system
+          sensor_msgs::PointCloud flat_table_points;
+          if (!getPlanePoints<Point>(*cloud, table_plane_trans, flat_table_points))
+          {
+            //TODOresponse.result = response.OTHER_ERROR;
+            return ecto::OK;
+          }
+
+          // ---[ Create the table message
+          // TODO use the original cloud header
+          table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, flat_table_points);
+
+          // ---[ Convert the convex hull points to flat table frame
+          if (!getPlanePoints<Point>(*cloud_hull, table_plane_trans, table_hull_points))
+          {
+            return ecto::OK;
+          }
+        }
+
+        // ---[ Add the convex hull as a triangle mesh to the Table message
+        addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
+      }
 
       // Publish each clusters
       addClusterMarkers(*clusters_, message_header);
@@ -390,7 +394,7 @@ namespace tabletop
     bool flatten_table_;
 
     /** flag indicating whether we run in debug mode */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> table_projected_ptr_, table_hull_ptr_;
+    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_, clouds_hull_;
     /** The vertical direction */
     ecto::spore<Eigen::Vector3f> up_direction_;
 

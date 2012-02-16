@@ -82,9 +82,9 @@ namespace tabletop
     {
       inputs.declare(&TableDetector::cloud_in_, "cloud", "The point cloud in which to find a table.");
 
-      outputs.declare(&TableDetector::table_coefficients_, "coefficients", "The coefficients of the table.");
-      outputs.declare(&TableDetector::cloud_out_, "cloud", "Samples that belong to the table.");
-      outputs.declare(&TableDetector::cloud_hull_, "cloud_hull", "Samples that belong to the table.");
+      outputs.declare(&TableDetector::table_coefficients_, "coefficients", "The coefficients of planar surfaces.");
+      outputs.declare(&TableDetector::clouds_out_, "clouds", "Samples that belong to the table.");
+      outputs.declare(&TableDetector::clouds_hull_, "clouds_hull", "Hulls of the samples.");
     }
 
     void
@@ -103,10 +103,22 @@ namespace tabletop
       TabletopSegmenter table_segmenter(*filter_limits_, *min_cluster_size_, *plane_detection_voxel_size_,
                                         *normal_k_search_, *plane_threshold_, *cluster_tolerance_);
       pcl::ModelCoefficients::Ptr table_coefficients;
-      table_segmenter.findTable<pcl::PointXYZ>(*cloud_in_, table_coefficients, *cloud_out_, *cloud_hull_);
 
-      *table_coefficients_ = Eigen::Vector4f(table_coefficients->values[0], table_coefficients->values[1],
-                                             table_coefficients->values[2], table_coefficients->values[3]);
+      // Find the table, it assumes only one plane for now TODO
+      clouds_out_->clear();
+      clouds_hull_->clear();
+      table_coefficients_->clear();
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out;
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull;
+      if (table_segmenter.findTable<pcl::PointXYZ>(*cloud_in_, table_coefficients, cloud_out, cloud_hull)
+          == TabletopSegmenter::SUCCESS)
+      {
+        clouds_out_->push_back(cloud_out);
+        clouds_hull_->push_back(cloud_hull);
+        table_coefficients_->push_back(
+            Eigen::Vector4f(table_coefficients->values[0], table_coefficients->values[1], table_coefficients->values[2],
+                            table_coefficients->values[3]));
+      }
 
       return ecto::OK;
     }
@@ -125,10 +137,11 @@ namespace tabletop
     /** The input cloud */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
     /** The input cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_out_;
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_hull_;
+    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_out_;
+    /** The output cloud */
+    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
     /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<Eigen::Vector4f> table_coefficients_;
+    ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
     ecto::spore<float> cluster_tolerance_;
   };
 }

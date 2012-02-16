@@ -36,7 +36,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -70,7 +69,7 @@ namespace tabletop
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
       inputs.declare(&Clusterer::cloud_, "cloud", "The point cloud in which to find a table.");
-      inputs.declare(&Clusterer::cloud_hull_, "cloud_hull", "The point cloud in which to find a table.");
+      inputs.declare(&Clusterer::clouds_hull_, "clouds_hull", "The point cloud in which to find a table.");
 
       outputs.declare(&Clusterer::clusters_, "clusters", "The point cloud in which to find a table.");
     }
@@ -90,7 +89,13 @@ namespace tabletop
     {
       BlobSegmenter blob_segmenter(*clustering_voxel_size_, *cluster_distance_, *min_cluster_size_);
 
-      blob_segmenter.process<pcl::PointXYZ>(*cloud_, *cloud_hull_, *clusters_);
+      clusters_->clear();
+      for (size_t i = 0; i < clouds_hull_->size(); ++i)
+      {
+        std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters;
+        blob_segmenter.process<pcl::PointXYZ>(*cloud_, (*clouds_hull_)[i], clusters);
+        clusters_->insert(clusters_->end(), clusters.begin(), clusters.end());
+      }
 
       return ecto::OK;
     }
@@ -102,7 +107,7 @@ namespace tabletop
     /** The input cloud */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;
     /** The hull of the input cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_hull_;
+    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
     /** The resulting clusters */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
   };

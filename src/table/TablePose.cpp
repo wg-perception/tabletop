@@ -98,19 +98,23 @@ namespace tabletop
     {
       Eigen::Vector3f translation;
       Eigen::Matrix3f rotation;
-      getPlaneTransform(*table_coefficients_, *up_direction_, *flatten_plane_, translation, rotation);
 
-      PoseResult pose_result;
-      pose_result.set_R(rotation);
-      pose_result.set_T(translation);
       pose_results_->clear();
-      pose_results_->push_back(pose_result);
+      BOOST_FOREACH(const Eigen::Vector4f & coefficients, *table_coefficients_)
+          {
+            getPlaneTransform(coefficients, *up_direction_, *flatten_plane_, translation, rotation);
+
+            PoseResult pose_result;
+            pose_result.set_R(rotation);
+            pose_result.set_T(translation);
+            pose_results_->push_back(pose_result);
+          }
 
       return ecto::OK;
     }
   private:
     /** The coefficients of the table plane */
-    ecto::spore<Eigen::Vector4f> table_coefficients_;
+    ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
     /** The vertical direction */
     ecto::spore<Eigen::Vector3f> up_direction_;
     /** if true, the plane coefficients are modified so that up_direction_in is the normal */

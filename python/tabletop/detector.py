@@ -43,8 +43,8 @@ class TabletopTableDetector(ecto.BlackBox):
         #i.forward('mask', cell_name='to_cloud_conversion', cell_key='mask')
         i.forward('points3d', cell_name='to_cloud_conversion', cell_key='points')
 
-        o.forward('cloud', cell_name='table_detector', cell_key='cloud')
-        o.forward('cloud_hull', cell_name='table_detector', cell_key='cloud_hull')
+        o.forward('clouds', cell_name='table_detector', cell_key='clouds')
+        o.forward('clouds_hull', cell_name='table_detector', cell_key='clouds_hull')
         o.forward('clusters', cell_name='_clusterer', cell_key='clusters')
         o.forward('pose_results', cell_name='table_pose', cell_key='pose_results')
 
@@ -65,7 +65,7 @@ class TabletopTableDetector(ecto.BlackBox):
                        self.table_detector['coefficients'] >> self.table_pose['coefficients'] ]
         # also find the clusters of points
         connections += [self.to_cloud_conversion['point_cloud'] >> self._clusterer['cloud'],
-                       self.table_detector['cloud_hull'] >> self._clusterer['cloud_hull'] ]
+                       self.table_detector['clouds_hull'] >> self._clusterer['clouds_hull'] ]
 
         return connections
 
