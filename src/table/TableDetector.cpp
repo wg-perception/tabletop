@@ -59,8 +59,8 @@ namespace tabletop
     declare_params(ecto::tendrils& params)
     {
       float c_limits[6] =
-      { std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), std::numeric_limits<float>::min(),
-        std::numeric_limits<float>::max(), std::numeric_limits<float>::min(), std::numeric_limits<float>::max() };
+      { -std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
       std::vector<float> limits(c_limits, c_limits + 6);
       params.declare(&TableDetector::filter_limits_, "filter_limits",
                      "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
