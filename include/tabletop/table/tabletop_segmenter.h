@@ -422,6 +422,7 @@ namespace tabletop
       clusters.resize(clusters2.size());
       for (size_t i = 0; i < clusters2.size(); ++i)
       {
+        clusters[i] = typename pcl::PointCloud<Point>::Ptr(new pcl::PointCloud<Point>);
         clusters[i]->points.resize(clusters2[i].indices.size());
         for (size_t j = 0; j < clusters[i]->points.size(); ++j)
         {

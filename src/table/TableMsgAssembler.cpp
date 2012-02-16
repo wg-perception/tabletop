@@ -79,6 +79,7 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
+      inputs.declare(&TableMsgAssembler::clusters_, "clusters", "The clusters on top of the table.").required(true);
       inputs.declare(&TableMsgAssembler::image_message_, "image_message", "the image message to get the header").required(
           true);
       inputs.declare(&TableMsgAssembler::pose_results_, "pose_results", "The results of object recognition").required(
@@ -86,10 +87,12 @@ namespace tabletop
       inputs.declare(&TableMsgAssembler::table_projected_ptr_, "cloud", "Some samples from the table.").required(true);
       inputs.declare(&TableMsgAssembler::table_hull_ptr_, "cloud_hull", "The hull of the samples.").required(true);
 
+      outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
+      outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
+                      "The markers of the clusters");
       outputs.declare(&TableMsgAssembler::marker_hull_, "marker_hull", "The marker for the table hull");
       outputs.declare(&TableMsgAssembler::marker_origin_, "marker_origin", "The marker for the origin of the table");
       outputs.declare(&TableMsgAssembler::marker_table_, "marker_table", "The marker for the table");
-      outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
     }
 
     void
@@ -116,6 +119,9 @@ namespace tabletop
       // Delete the old markers
       clearOldMarkers(frame_id);
 
+      std_msgs::Header message_header;
+      message_header.frame_id = frame_id;
+
       BOOST_FOREACH(const PoseResult & pose_result, *pose_results_)
           {
             sensor_msgs::PointCloud table_points;
@@ -124,8 +130,6 @@ namespace tabletop
 
             Table table;
 
-            std_msgs::Header message_header;
-            message_header.frame_id = frame_id;
             table_points.header.frame_id = frame_id;
             table_hull_points.header.frame_id = frame_id;
             (*table_projected_ptr_)->header.frame_id = frame_id;
@@ -197,6 +201,10 @@ namespace tabletop
             // ---[ Add the convex hull as a triangle mesh to the Table message
             addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
           }
+
+      // Publish each clusters
+      addClusterMarkers(*clusters_, message_header);
+
       return ecto::OK;
     }
   private:
@@ -359,6 +367,25 @@ namespace tabletop
       return table;
     }
 
+    void
+    addClusterMarkers(const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters, std_msgs::Header cloud_header)
+    {
+      visualization_msgs::MarkerArrayPtr marker_array_clusters(new visualization_msgs::MarkerArray);
+
+      for (size_t i = 0; i < clusters.size(); i++)
+      {
+        visualization_msgs::Marker cloud_marker = tabletop_object_detector::MarkerGenerator::getCloudMarker(
+            *(clusters[i]));
+        cloud_marker.header = cloud_header;
+        cloud_marker.pose.orientation.w = 1;
+        cloud_marker.ns = "tabletop_node";
+        cloud_marker.id = current_marker_id_++;
+        marker_array_clusters->markers.push_back(cloud_marker);
+      }
+
+      *marker_array_clusters_ = marker_array_clusters;
+    }
+
     /** The distance used as a threshold when finding a plane */
     bool flatten_table_;
 
@@ -378,8 +405,12 @@ namespace tabletop
     ecto::spore<visualization_msgs::MarkerConstPtr> marker_hull_;
     /** The markers to delete before showing new ones */
     ecto::spore<visualization_msgs::MarkerArrayConstPtr> marker_array_delete_;
+    /** The markers of the clusters */
+    ecto::spore<visualization_msgs::MarkerArrayConstPtr> marker_array_clusters_;
     /** Number of markers published */
     size_t num_markers_published_;
+    /** The point clusters */
+    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
   };
 
 }

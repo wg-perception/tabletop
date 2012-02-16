@@ -21,6 +21,7 @@ class TabletopTableDetector(ecto.BlackBox):
     table_pose = tabletop_table.TablePose
     to_cloud_conversion = MatToPointCloudXYZOrganized
     passthrough = ecto.PassthroughN
+    _clusterer = tabletop_table.Clusterer
     if ECTO_ROS_FOUND:
         message_cvt = ecto_ros.Mat2Image
 
@@ -42,9 +43,10 @@ class TabletopTableDetector(ecto.BlackBox):
         #i.forward('mask', cell_name='to_cloud_conversion', cell_key='mask')
         i.forward('points3d', cell_name='to_cloud_conversion', cell_key='points')
 
-        o.forward('pose_results', cell_name='table_pose', cell_key='pose_results')
         o.forward('cloud', cell_name='table_detector', cell_key='cloud')
         o.forward('cloud_hull', cell_name='table_detector', cell_key='cloud_hull')
+        o.forward('clusters', cell_name='_clusterer', cell_key='clusters')
+        o.forward('pose_results', cell_name='table_pose', cell_key='pose_results')
 
     def configure(self, p, _i, _o):
         vertical_direction = self._parameters.pop('vertical_direction', None)
@@ -58,9 +60,12 @@ class TabletopTableDetector(ecto.BlackBox):
             self.table_detector = tabletop_table.TableDetector()
 
     def connections(self):
-        # make sure the inputs reach the right cells
+        # First find the table, then the pose
         connections = [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
                        self.table_detector['coefficients'] >> self.table_pose['coefficients'] ]
+        # also find the clusters of points
+        connections += [self.to_cloud_conversion['point_cloud'] >> self._clusterer['cloud'],
+                       self.table_detector['cloud_hull'] >> self._clusterer['cloud_hull'] ]
 
         return connections
 

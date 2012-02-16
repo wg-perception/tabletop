@@ -60,7 +60,7 @@ namespace tabletop
     declare_params(ecto::tendrils& params)
     {
       params.declare(&Clusterer::clustering_voxel_size_, "clustering_voxel_size",
-                     "The minimum number of points deemed necessary to find a table.", 1000);
+                     "The minimum number of points deemed necessary to find a table.", 0.003);
       params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The size of a voxel cell when downsampling ",
                      0.01);
       params.declare(&Clusterer::min_cluster_size_, "min_cluster_size", "Min number of points for a cluster", 300);
@@ -102,7 +102,7 @@ namespace tabletop
     /** The input cloud */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;
     /** The hull of the input cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_hull_;
+    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloud_hull_;
     /** The resulting clusters */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
   };
