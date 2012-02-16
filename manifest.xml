@@ -1,0 +1,16 @@
+<package>
+  <catkin/>
+  <description brief="Tabltop segmenter">
+
+std_msgs contains common message types representing primitive data types and other basic message constructs, such as multiarrays. For common, generic robot-specific message types, please see <a href="http://www.ros.org/wiki/common_msgs">common_msgs</a>. 
+
+  </description>
+  <author>Marius Muja, Matei, Vincent Rabaud vrabaud@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="Doc reviewed" notes="2010-01-10"/>
+  <url>http://www.ros.org/wiki/tabletop</url>
+  <export>
+    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags tabletop`"
+         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs tabletop`"/>
+  </export>
+</package>

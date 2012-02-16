@@ -1,7 +1,7 @@
 # create some messages for ROS
 find_package(genmsg)
 if (genmsg_FOUND)
-  SET(TABLETOP_ROS_CELLS TablePublisher)
+  SET(TABLETOP_ROS_CELLS TableMsgAssembler)
 endif()
 
 find_package(object_recognition REQUIRED)

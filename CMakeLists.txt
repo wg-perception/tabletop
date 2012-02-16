@@ -12,15 +12,19 @@ find_package(object_recognition REQUIRED)
 find_package(genmsg REQUIRED)
 
 if (genmsg_FOUND)
-  find_package(ROS REQUIRED geometry_msgs sensor_msgs std_msgs)
-  add_message_files(DIRECTORY msg FILES TabletopDetectionResult.msg Shape.msg Table.msg)
-  generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
+    find_package(ROS REQUIRED geometry_msgs sensor_msgs std_msgs)
+    add_message_files(DIRECTORY msg FILES TabletopDetectionResult.msg Shape.msg Table.msg)
+    generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
+    # generate ecto cells to wrap the different messages
+    pubsub_gen_wrap(tabletop)
 endif()
 
 
 
-# temporary building of the ancient table finder
 
+
+
+# temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
 include_directories(${Eigen_INCLUDE_DIRS})
 include_directories(${ecto_pcl_INCLUDE_DIRS})
@@ -59,3 +63,12 @@ catkin_add_env_hooks(10tabletop SHELLS all)
 
 # add the tests
 add_subdirectory(test)
+
+# deal with some ROS stuff
+install(FILES manifest.xml stack.yaml
+    DESTINATION share/tabletop
+)
+install(DIRECTORY msg
+    DESTINATION share/tabletop
+    PATTERN ".svn" EXCLUDE
+)

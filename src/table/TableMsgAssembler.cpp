@@ -40,6 +40,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <ecto/ecto.hpp>
 
@@ -68,7 +69,7 @@ namespace tabletop
   /** Ecto implementation of a module that takes
    *
    */
-  struct TablePublisher
+  struct TableMsgAssembler
   {
     static void
     declare_params(ecto::tendrils& params)
@@ -78,20 +79,25 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePublisher::image_message_, "image_message", "the image message to get the header").required(
+      inputs.declare(&TableMsgAssembler::image_message_, "image_message", "the image message to get the header").required(
           true);
-      inputs.declare(&TablePublisher::pose_results_, "pose_results", "The results of object recognition").required(
+      inputs.declare(&TableMsgAssembler::pose_results_, "pose_results", "The results of object recognition").required(
           true);
-      inputs.declare(&TablePublisher::table_projected_ptr_, "cloud", "Some samples from the table.").required(true);
-      inputs.declare(&TablePublisher::table_hull_ptr_, "cloud_hull", "The hull of the samples.").required(true);
+      inputs.declare(&TableMsgAssembler::table_projected_ptr_, "cloud", "Some samples from the table.").required(true);
+      inputs.declare(&TableMsgAssembler::table_hull_ptr_, "cloud_hull", "The hull of the samples.").required(true);
+
+      outputs.declare(&TableMsgAssembler::marker_hull_, "marker_hull", "The marker for the table hull");
+      outputs.declare(&TableMsgAssembler::marker_origin_, "marker_origin", "The marker for the origin of the table");
+      outputs.declare(&TableMsgAssembler::marker_table_, "marker_table", "The marker for the table");
+      outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
     }
 
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
-      current_marker_id_ = 1;
+      current_marker_id_ = 0;
+      num_markers_published_ = 0;
       flatten_table_ = false;
-      marker_pub_ = ros::Publisher();
     }
 
     /** Get the 2d keypoints and figure out their 3D position from the depth map
@@ -107,7 +113,8 @@ namespace tabletop
       std::string frame_id;
       if (*image_message_)
         frame_id = (*image_message_)->header.frame_id;
-      std::cout << frame_id << std::endl;
+      // Delete the old markers
+      clearOldMarkers(frame_id);
 
       BOOST_FOREACH(const PoseResult & pose_result, *pose_results_)
           {
@@ -122,6 +129,7 @@ namespace tabletop
             table_points.header.frame_id = frame_id;
             table_hull_points.header.frame_id = frame_id;
             (*table_projected_ptr_)->header.frame_id = frame_id;
+            (*table_hull_ptr_)->header.frame_id = frame_id;
 
             if (!flatten_table_)
             {
@@ -187,11 +195,31 @@ namespace tabletop
             }
 
             // ---[ Add the convex hull as a triangle mesh to the Table message
-            //addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
+            addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
           }
       return ecto::OK;
     }
   private:
+    void
+    clearOldMarkers(std::string frame_id)
+    {
+      visualization_msgs::MarkerArrayPtr marker_array_delete(new visualization_msgs::MarkerArray);
+
+      for (size_t id = current_marker_id_; id < num_markers_published_; id++)
+      {
+        visualization_msgs::Marker marker_delete;
+        marker_delete.header.stamp = ros::Time::now();
+        marker_delete.header.frame_id = frame_id;
+        marker_delete.id = id;
+        marker_delete.action = visualization_msgs::Marker::DELETE;
+        marker_delete.ns = "tabletop_node";
+        marker_array_delete->markers.push_back(marker_delete);
+      }
+      num_markers_published_ = current_marker_id_;
+      current_marker_id_ = 0;
+
+      *marker_array_delete_ = marker_array_delete;
+    }
 
     /*! Assumes plane coefficients are of the form ax+by+cz+d=0, normalized */
     tf::Transform
@@ -271,18 +299,21 @@ namespace tabletop
         table.convex_hull.triangles.push_back(i);
         table.convex_hull.triangles.push_back(i + 1);
       }
-      visualization_msgs::Marker tableMarker = tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(
-          table.convex_hull);
-      tableMarker.header = table.pose.header;
-      tableMarker.pose = table.pose.pose;
-      tableMarker.ns = "tabletop_node";
-      tableMarker.id = current_marker_id_++;
-      marker_pub_.publish(tableMarker);
+      visualization_msgs::MarkerPtr marker_hull(new visualization_msgs::Marker);
+      *marker_hull = tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(table.convex_hull);
+      marker_hull->header = table.pose.header;
+      marker_hull->pose = table.pose.pose;
+      marker_hull->ns = "tabletop_node";
+      marker_hull->id = current_marker_id_++;
+      *marker_hull_ = marker_hull;
 
-      visualization_msgs::Marker originMarker = tabletop_object_detector::MarkerGenerator::createMarker(
-          table.pose.header.frame_id, 0, .0025, .0025, .01, 0, 1, 1, visualization_msgs::Marker::CUBE,
-          current_marker_id_++, "tabletop_node", table.pose.pose);
-      marker_pub_.publish(originMarker);
+      visualization_msgs::MarkerPtr marker_origin(new visualization_msgs::Marker);
+      *marker_origin = tabletop_object_detector::MarkerGenerator::createMarker(table.pose.header.frame_id, 0, .0025,
+                                                                               .0025, .01, 0, 1, 1,
+                                                                               visualization_msgs::Marker::CUBE,
+                                                                               current_marker_id_++, "tabletop_node",
+                                                                               table.pose.pose);
+      *marker_origin_ = marker_origin;
     }
 
     template<class PointCloudType>
@@ -316,15 +347,14 @@ namespace tabletop
       table.pose.pose = table_pose;
       table.pose.header = cloud_header;
 
-      visualization_msgs::Marker tableMarker = tabletop_object_detector::MarkerGenerator::getTableMarker(table.x_min,
-                                                                                                         table.x_max,
-                                                                                                         table.y_min,
-                                                                                                         table.y_max);
-      tableMarker.header = cloud_header;
-      tableMarker.pose = table_pose;
-      tableMarker.ns = "tabletop_node";
-      tableMarker.id = current_marker_id_++;
-      marker_pub_.publish(tableMarker);
+      visualization_msgs::MarkerPtr marker_table(new visualization_msgs::Marker);
+      *marker_table = tabletop_object_detector::MarkerGenerator::getTableMarker(table.x_min, table.x_max, table.y_min,
+                                                                                table.y_max);
+      marker_table->header = cloud_header;
+      marker_table->pose = table_pose;
+      marker_table->ns = "tabletop_node";
+      marker_table->id = current_marker_id_++;
+      *marker_table_ = marker_table;
 
       return table;
     }
@@ -339,13 +369,20 @@ namespace tabletop
 
     //! The current marker being published
     size_t current_marker_id_;
-    //! Publisher for markers
-    ros::Publisher marker_pub_;
     ecto::spore<sensor_msgs::ImageConstPtr> image_message_;
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
+
+    ecto::spore<visualization_msgs::MarkerConstPtr> marker_table_;
+    ecto::spore<visualization_msgs::MarkerConstPtr> marker_origin_;
+    ecto::spore<visualization_msgs::MarkerConstPtr> marker_hull_;
+    /** The markers to delete before showing new ones */
+    ecto::spore<visualization_msgs::MarkerArrayConstPtr> marker_array_delete_;
+    /** Number of markers published */
+    size_t num_markers_published_;
   };
 
 }
 
-ECTO_CELL(tabletop_table, tabletop::TablePublisher, "TablePublisher", "Given a point cloud, find  a potential table.");
+ECTO_CELL(tabletop_table, tabletop::TableMsgAssembler, "TableMsgAssembler",
+          "Given a point cloud, find  a potential table.");
