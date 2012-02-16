@@ -367,7 +367,7 @@ namespace tabletop
       //prism_.setInputCloud (cloud_all_minus_table_ptr);
       prism_.setInputCloud(cloud);
       prism_.setInputPlanarHull(table_hull_ptr);
-      prism_.setHeightLimits(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+      prism_.setHeightLimits(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
       prism_.segment(cloud_object_indices);
 
       typename pcl::PointCloud<Point>::Ptr cloud_objects_ptr(new pcl::PointCloud<Point>);

@@ -154,7 +154,7 @@ namespace tabletop
           table = getTable<sensor_msgs::PointCloud>(message_header, table_plane_trans, table_points);
 
           // ---[ Convert the convex hull points to table frame
-          if (!getPlanePoints<Point>(*cloud, table_plane_trans, table_hull_points))
+          if (!getPlanePoints<Point>(*cloud_hull, table_plane_trans, table_hull_points))
           {
             //response.result = response.OTHER_ERROR;
             return ecto::OK;
