@@ -35,7 +35,7 @@ find_library(roscpp_LIBRARIES roscpp /opt/ros/fuerte/lib/)
 find_library(roscpp_serialization_LIBRARIES roscpp_serialization /opt/ros/fuerte/lib/)
 find_library(rostime_LIBRARIES rostime /opt/ros/fuerte/lib/)
 find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
-
+find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 
 include_directories(/opt/ros/fuerte/stacks/geometry/tf/include)
 include_directories(/opt/ros/fuerte/stacks/bullet/include/)

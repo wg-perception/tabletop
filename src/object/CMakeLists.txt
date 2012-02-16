@@ -17,18 +17,32 @@ add_dependencies(marker_generator tabletop_gencpp)
 
 include_directories(/opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/)
 include_directories(/opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
+include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/)
+include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/)
 
 add_library(tabletop_model_fitter SHARED
     model_fitter.cpp
     iterative_distance_fitter.cpp
+    tabletop_object_recognition.cpp
 )
 
-#rosbuild_add_executable(tabletop_object_recognition tabletop_object_recognition.cpp
-#                                                    marker_generator.cpp)
-#target_link_libraries(tabletop_object_recognition tabletop_model_fitter)
+find_package(Boost REQUIRED)
+target_link_libraries(tabletop_model_fitter
+    marker_generator
+    ${Boost_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  object_recognition_common
+    ${pcl_ros_tf_LIBRARIES}
+    ${roscpp_LIBRARIES}
+    ${roscpp_serialization_LIBRARIES}
+    ${rostime_LIBRARIES}
+    ${rosconsole_LIBRARIES}
+    ${tf_LIBRARIES}
+    marker_generator
+    ${distance_field_LIBRARIES}
+)
 
-#find_package(Boost REQUIRED)
-#target_link_libraries(tabletop_object_recognition
-#    ${Boost_LIBRARIES}
-#)
+# old stuff, useless now
+#rosbuild_add_executable(tabletop_object_recognition tabletop_object_recognition.cpp)
 

@@ -169,7 +169,7 @@ std::vector<tf::Vector3> interpolateTriangle(tf::Vector3 v0,
   return vectors;
 }
 
-void ModelToCloudFitter::sampleMesh(const tabletop::Shape &mesh,
+void ModelToCloudFitter::sampleMesh(const arm_navigation_msgs::Shape &mesh,
 				    std::vector<tf::Vector3> &btVectors,
 				    double resolution)
 {
@@ -201,7 +201,7 @@ void ModelToCloudFitter::sampleMesh(const tabletop::Shape &mesh,
 }
 
 
-void DistanceFieldFitter::initializeFromMesh(const tabletop::Shape &mesh)
+void DistanceFieldFitter::initializeFromMesh(const arm_navigation_msgs::Shape &mesh)
 {
   std::vector<tf::Vector3> btVectors;
   //we use a slightly larger resolution than the distance field, in an attempt to bring

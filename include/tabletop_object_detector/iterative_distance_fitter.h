@@ -34,6 +34,9 @@
 
 // Author(s): Marius Muja, Matei Ciocarlie and Romain Thibaux
 
+#ifndef _ITERATIVE_DISTANCE_FITTER_H_
+#define _ITERATIVE_DISTANCE_FITTER_H_
+
 #include "tabletop_object_detector/model_fitter.h"
 
 #include <math.h>
@@ -220,3 +223,6 @@ ModelFitInfo IterativeTranslationFitter::fitPointCloud(const PointCloudType& clo
 }
 
 } //namespace
+
+#endif
+
