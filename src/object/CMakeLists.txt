@@ -66,6 +66,7 @@ link_ecto(tabletop_object
     ${rosconsole_LIBRARIES}
     ${tf_LIBRARIES}
     marker_generator
+    tabletop_model_fitter
 )
 
 install_ecto_module(tabletop_object)
