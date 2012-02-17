@@ -111,7 +111,6 @@ namespace tabletop
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
       inputs.declare(&ObjectRecognizer::clusters_, "clusters", "The object clusters.").required(true);
-      inputs.declare(&ObjectRecognizer::table_, "table", "The Table object.").required(true);
 
       outputs.declare(&ObjectRecognizer::pose_results_, "pose_results", "The results of object recognition");
     }
@@ -129,12 +128,26 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      object_recognizer_.objectDetection(*clusters_, num_models_, *table_, perform_fit_merge_, *raw_fit_results,
+      object_recognizer_.objectDetection(*clusters_, num_models_, perform_fit_merge_, *raw_fit_results,
                                          *cluster_model_indices_);
+      BOOST_FOREACH(const ModelFitInfos & model_fit_infos, *raw_fit_results)
+          {
+            BOOST_FOREACH(const tabletop_object_detector::ModelFitInfo & model_fit_info, model_fit_infos)
+                {
+                  PoseResult pose_result;
+                  geometry_msgs::Pose pose = model_fit_info.getPose();
+                  pose_result.set_T(Eigen::Vector3f(pose.position.x, pose.position.y, pose.position.z));
+                  pose_result.set_R(
+                      Eigen::Quaternionf(pose.orientation.w, pose.orientation.x, pose.orientation.y,
+                                         pose.orientation.z));
+                  pose_results_->push_back(pose_result);
+                }
+          }
 
       return ecto::OK;
     }
   private:
+    typedef std::vector<tabletop_object_detector::ModelFitInfo> ModelFitInfos;
     /** The object recognizer */
     tabletop_object_detector::TabletopObjectRecognizer object_recognizer_;
     /** The resulting poses of the objects */
@@ -142,9 +155,8 @@ namespace tabletop
 
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ> > > clusters_;
     int num_models_;
-    ecto::spore<tabletop::Table> table_;
     bool perform_fit_merge_;
-    ecto::spore<std::vector<std::vector<tabletop_object_detector::ModelFitInfo> > > raw_fit_results;
+    ecto::spore<std::vector<ModelFitInfos> > raw_fit_results;
     ecto::spore<std::vector<size_t> > cluster_model_indices_;
   };
 }

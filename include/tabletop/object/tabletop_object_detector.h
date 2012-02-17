@@ -79,8 +79,8 @@ namespace tabletop_object_detector
      */
     template<class PointCloudType>
     void
-    objectDetection(std::vector<PointCloudType> &clusters, int num_models, const tabletop::Table &table,
-                    bool perform_fit_merge, std::vector<std::vector<ModelFitInfo> > &raw_fit_results,
+    objectDetection(std::vector<PointCloudType> &clusters, int num_models, bool perform_fit_merge,
+                    std::vector<std::vector<ModelFitInfo> > &raw_fit_results,
                     std::vector<size_t> &cluster_model_indices)
     {
       //do the model fitting part
