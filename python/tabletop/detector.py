@@ -8,6 +8,7 @@ from object_recognition_core.utils import json_helper
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from image_pipeline_conversion import MatToPointCloudXYZOrganized
 import tabletop_table
+import tabletop_object
 import ecto
 
 try:
@@ -85,15 +86,15 @@ class TabletopTableDetectionPipeline(DetectionPipeline):
 
 ########################################################################################################################
 
-#class TabletopObjectDetectionPipeline(DetectionPipeline):
-#    @classmethod
-#    def type_name(cls):
-#        return 'tabletop_object'
-#
-#    #def detector(self, submethod, parameters, db_params, model_documents, args):
-#    def detector(self, *args, **kwargs):
-#        visualize = kwargs.pop('visualize', False)
-#        submethod = kwargs.pop('submethod')
-#        parameters = kwargs.pop('parameters')
-#
-#        return tabletop_cells.ObjectDetector(visualize=visualize)
+class TabletopObjectDetectionPipeline(DetectionPipeline):
+    @classmethod
+    def type_name(cls):
+        return 'tabletop_object'
+
+    @classmethod
+    def detector(self, *args, **kwargs):
+        visualize = kwargs.pop('visualize', False)
+        submethod = kwargs.pop('submethod')
+        parameters = kwargs.pop('parameters')
+
+        return tabletop_object.ObjectRecognizer()

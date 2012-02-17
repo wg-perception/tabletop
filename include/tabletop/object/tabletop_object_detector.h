@@ -66,6 +66,15 @@ namespace tabletop_object_detector
     //! The threshold for merging two models that were fit very close to each other
     double fit_merge_threshold_;
 
+  public:
+    //! Subscribes to and advertises topics; initializes fitter
+    TabletopObjectRecognizer();
+
+    //! Empty stub
+    ~TabletopObjectRecognizer()
+    {
+    }
+
     /*! Performs the detection on each of the clusters, and populates the returned message.
      */
     template<class PointCloudType>
@@ -191,15 +200,6 @@ namespace tabletop_object_detector
         dist = std::min(d, dist);
       }
       return sqrt(dist);
-    }
-
-  public:
-    //! Subscribes to and advertises topics; initializes fitter
-    TabletopObjectRecognizer();
-
-    //! Empty stub
-    ~TabletopObjectRecognizer()
-    {
     }
   };
 }

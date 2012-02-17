@@ -30,9 +30,9 @@ find_package(Boost REQUIRED)
 target_link_libraries(tabletop_model_fitter
     marker_generator
     ${Boost_LIBRARIES}
-  ${PCL_LIBRARIES}
-  ${Boost_LIBRARIES}
-  object_recognition_common
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    object_recognition_common
     ${pcl_ros_tf_LIBRARIES}
     ${roscpp_LIBRARIES}
     ${roscpp_serialization_LIBRARIES}
@@ -46,3 +46,26 @@ target_link_libraries(tabletop_model_fitter
 # old stuff, useless now
 #rosbuild_add_executable(tabletop_object_recognition tabletop_object_recognition.cpp)
 
+# deal with the detection module
+find_package(object_recognition REQUIRED)
+include_directories(${object_recognition_INCLUDE_DIRS})
+
+ectomodule(tabletop_object
+  module.cpp
+  ObjectRecognizer.cpp
+)
+
+link_ecto(tabletop_object
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    object_recognition_common
+    ${pcl_ros_tf_LIBRARIES}
+    ${roscpp_LIBRARIES}
+    ${roscpp_serialization_LIBRARIES}
+    ${rostime_LIBRARIES}
+    ${rosconsole_LIBRARIES}
+    ${tf_LIBRARIES}
+    marker_generator
+)
+
+install_ecto_module(tabletop_object)
