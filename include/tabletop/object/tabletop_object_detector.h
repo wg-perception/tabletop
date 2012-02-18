@@ -75,11 +75,14 @@ namespace tabletop_object_detector
     {
     }
 
+    void
+    addObject(int model_id, arm_navigation_msgs::Shape mesh);
+
     /*! Performs the detection on each of the clusters, and populates the returned message.
      */
     template<class PointCloudType>
     void
-    objectDetection(std::vector<PointCloudType> &clusters, int num_models, bool perform_fit_merge,
+    objectDetection(std::vector<typename PointCloudType::Ptr> &clusters, int num_models, bool perform_fit_merge,
                     std::vector<std::vector<ModelFitInfo> > &raw_fit_results,
                     std::vector<size_t> &cluster_model_indices)
     {
@@ -87,7 +90,7 @@ namespace tabletop_object_detector
       cluster_model_indices.resize(clusters.size(), -1);
       for (size_t i = 0; i < clusters.size(); i++)
       {
-        raw_fit_results.push_back(detector_.fitBestModels<PointCloudType>(clusters[i], std::max(1, num_models)));
+        raw_fit_results.push_back(detector_.fitBestModels<PointCloudType>(*(clusters[i]), std::max(1, num_models)));
         cluster_model_indices[i] = i;
       }
 
@@ -113,7 +116,7 @@ namespace tabletop_object_detector
             //if there are no fits, merge based on cluster vs. fit
             if (raw_fit_results.at(j).empty())
             {
-              if (fitClusterDistance<PointCloudType>(raw_fit_results.at(i).at(0), clusters.at(j))
+              if (fitClusterDistance<PointCloudType>(raw_fit_results.at(i).at(0), *clusters[j])
                   < fit_merge_threshold_)
                 break;
               else
@@ -126,13 +129,13 @@ namespace tabletop_object_detector
           if (j < clusters.size())
           {
             //merge cluster j into i
-            clusters[i].points.insert(clusters[i].points.end(), clusters[j].points.begin(), clusters[j].points.end());
+            clusters[i]->points.insert(clusters[i]->points.end(), clusters[j]->points.begin(), clusters[j]->points.end());
             //delete fits for cluster j so we ignore it from now on
             raw_fit_results.at(j).clear();
             //fits for cluster j now point at fit for cluster i
             cluster_model_indices[j] = i;
             //refit cluster i
-            raw_fit_results.at(i) = detector_.fitBestModels(clusters[i], std::max(1, num_models));
+            raw_fit_results.at(i) = detector_.fitBestModels(*(clusters[i]), std::max(1, num_models));
           }
           else
           {

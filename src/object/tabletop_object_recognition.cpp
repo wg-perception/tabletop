@@ -60,23 +60,23 @@ namespace tabletop_object_detector
     num_markers_published_ = 1;
     current_marker_id_ = 1;
 
-    std::string get_model_mesh_srv_name;
-    /*priv_nh_.param < std::string > ("get_model_mesh_srv", get_model_mesh_srv_name, "get_model_mesh_srv");
-    while (!ros::service::waitForService(get_model_mesh_srv_name, ros::Duration(2.0)) && nh_.ok())
-    {
-      ROS_INFO("Waiting for %s service to come up", get_model_mesh_srv_name.c_str());
-    }
-    if (!nh_.ok())
-      exit(0);
-    get_model_mesh_srv_ = nh_.serviceClient < household_objects_database_msgs::GetModelMesh
-                          > (get_model_mesh_srv_name, true);
-    //ask fitter to load models from database
-    priv_nh_.param < std::string > ("model_set", model_set_, "");*/
-    detector_.loadDatabaseModels(model_set_);
+    const std::string database_host;
+    const std::string database_port;
+    const std::string database_user;
+    const std::string database_pass;
+    const std::string database_name;
+    detector_ = ExhaustiveFitDetector<IterativeTranslationFitter>();
 
     //initialize operational flags
     fit_merge_threshold_ = 0.05;
     min_marker_quality_ = 0.003;
+  }
+
+
+  void
+  TabletopObjectRecognizer::addObject(int model_id, arm_navigation_msgs::Shape mesh)
+  {
+    detector_.addObject(model_id, mesh);
   }
 
   double

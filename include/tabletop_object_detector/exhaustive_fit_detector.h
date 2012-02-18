@@ -44,8 +44,7 @@
 
 #include <sensor_msgs/PointCloud.h>
 
-#include <household_objects_database_msgs/GetModelList.h>
-#include <household_objects_database_msgs/GetModelMesh.h>
+#include <household_objects_database/objects_database.h>
 
 #include "tabletop_object_detector/model_fitter.h"
 
@@ -64,10 +63,6 @@ template <class Fitter>
 class ExhaustiveFitDetector
 {
  private:
-  //! Node handle in the private namespace
-  ros::NodeHandle priv_nh_;
-  //! Node handle in the roote namespace
-  ros::NodeHandle nh_;  
   //! Stores the individual model to cloud fitters, each initialized with a model
   std::vector<Fitter*> templates;
 
@@ -75,9 +70,12 @@ class ExhaustiveFitDetector
   std::set<int> model_exclusion_set_;
   bool negate_exclusions_;
 
+  //! The database connection itself
+  household_objects_database::ObjectsDatabase *database_;
+
  public:
   //! Just a stub; does not load models
- ExhaustiveFitDetector() : priv_nh_("~"), nh_(""), negate_exclusions_(false) {}
+ ExhaustiveFitDetector() : negate_exclusions_(false) {}
   //! Deletes any loaded models
   ~ExhaustiveFitDetector();
 
@@ -97,7 +95,20 @@ class ExhaustiveFitDetector
   }
 
   //! Loads all the models that are in the model database
-  void loadDatabaseModels(std::string model_set);
+    void
+    loadDatabaseModels(const std::string &model_set, const std::string &database_host, const std::string database_port,
+                       const std::string &database_user, const std::string &database_pass,
+                       const std::string &database_name);
+
+    void
+    addObject(int model_id, arm_navigation_msgs::Shape mesh)
+    {
+      Fitter* fitter = new Fitter();
+      fitter->initializeFromMesh(mesh);
+      templates.push_back(fitter);
+      //set the model ID in the template so that we can use it later
+      templates.back()->setModelId( model_id );
+    }
 
   //! Main fitting function; fits all meshes against \a cloud and sorts the fits
   /*! Fits the point cloud \a cloud against all the models in the internal list.
@@ -156,66 +167,30 @@ ExhaustiveFitDetector<Fitter>::~ExhaustiveFitDetector()
   operating under this class are capable of handling) plus they do not have "filled insides"
   which makes them easier to grasp.
 */
-template <class Fitter>
-void ExhaustiveFitDetector<Fitter>::loadDatabaseModels(std::string model_set)
-{
-  std::string get_model_list_srv_name;
-  priv_nh_.param<std::string>("get_model_list_srv", get_model_list_srv_name, "get_model_list_srv");
-  while ( !ros::service::waitForService(get_model_list_srv_name, ros::Duration(2.0)) && nh_.ok() ) 
+  template<class Fitter>
+  void
+  ExhaustiveFitDetector<Fitter>::loadDatabaseModels(const std::string & model_set, const std::string &database_host,
+                                                    const std::string database_port, const std::string &database_user,
+                                                    const std::string &database_pass, const std::string &database_name)
   {
-    ROS_INFO("Waiting for %s service to come up", get_model_list_srv_name.c_str());
-  }
-  if (!nh_.ok()) exit(0);
-  ros::ServiceClient get_model_list_srv = nh_.serviceClient<household_objects_database_msgs::GetModelList>
-    (get_model_list_srv_name, true);
+    database_ = new household_objects_database::ObjectsDatabase(database_host, database_port, database_user,
+                                                                database_pass, database_name);
 
-
-  std::string get_model_mesh_srv_name;
-  priv_nh_.param<std::string>("get_model_mesh_srv", get_model_mesh_srv_name, "get_model_mesh_srv");
-  while ( !ros::service::waitForService(get_model_mesh_srv_name, ros::Duration(2.0)) && nh_.ok() ) 
-  {
-    ROS_INFO("Waiting for %s service to come up", get_model_mesh_srv_name.c_str());
-  }
-  if (!nh_.ok()) exit(0);
-  ros::ServiceClient get_model_mesh_srv = nh_.serviceClient<household_objects_database_msgs::GetModelMesh>
-    (get_model_mesh_srv_name, true);
-
-
-  household_objects_database_msgs::GetModelList model_list;
-  model_list.request.model_set = model_set;
-  if (!get_model_list_srv.call(model_list) || 
-      model_list.response.return_code.code != model_list.response.return_code.SUCCESS )
-  {
-    ROS_ERROR("Could not retrieve list of models from database");
+  std::vector< boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
+  if (!database_->getScaledModelsBySet(models, model_set))
     return;
-  }
-  if (model_list.response.model_ids.empty()) 
-  {
-    ROS_ERROR("Empty model list retrieved from database");
-    return;
-  }
 
-  ROS_INFO("Object detector: loading object models");
-  for(size_t i=0; i<model_list.response.model_ids.size(); i++) 
+  templates.clear();
+  for(size_t i=0; i<models.size(); i++)
   {
-    int model_id = model_list.response.model_ids[i];
+    int model_id = models[i]->id_.data();
+    arm_navigation_msgs::Shape mesh;
 
-    household_objects_database_msgs::GetModelMesh get_mesh;
-    get_mesh.request.model_id = model_id;
-    if ( !get_model_mesh_srv.call(get_mesh) || 
-	 get_mesh.response.return_code.code != get_mesh.response.return_code.SUCCESS )
-    {
-      ROS_ERROR("Failed to retrieve mesh for model %d", model_id);
+    if (!database_->getScaledModelMesh(model_id, mesh))
       continue;
-    }
-    if (get_mesh.response.mesh.vertices.empty() || get_mesh.response.mesh.triangles.empty() )
-    {
-      ROS_ERROR("Empty mesh for model %d", model_id);
-      continue;
-    }
 
     Fitter* fitter = new Fitter();
-    fitter->initializeFromMesh(get_mesh.response.mesh);
+    fitter->initializeFromMesh(mesh);
     templates.push_back(fitter);  
     //set the model ID in the template so that we can use it later
     templates.back()->setModelId( model_id );

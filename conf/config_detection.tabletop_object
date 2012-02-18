@@ -7,9 +7,21 @@ sink1:
   package: 'tabletop'
 
 pipeline1:
+  method: 'tabletop_table'
+  package: 'tabletop'
+  submethod: ''
+  sources: [source1]
+  sinks: [sink1]
+  parameters: {}
+
+sink2:
+  type: publisher
+  object_ids: 'all'
+
+pipeline2:
   method: 'tabletop_object'
   package: 'tabletop'
   submethod: ''
-  sources: [1]
-  sinks: [1]
+  sources: [source1, pipeline1]
+  sinks: [sink2]
   parameters: {}

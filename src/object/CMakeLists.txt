@@ -19,6 +19,8 @@ include_directories(/opt/ros/fuerte/stacks/arm_navigation_experimental/distance_
 include_directories(/opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
 include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/)
 include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/)
+include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/)
+include_directories(/opt/ros/fuerte/stacks/sql_database/database_interface/include/)
 
 add_library(tabletop_model_fitter SHARED
     model_fitter.cpp
@@ -43,6 +45,25 @@ target_link_libraries(tabletop_model_fitter
     ${distance_field_LIBRARIES}
 )
 
+# Create a library for tabletop db interfaces
+add_library(tabletop_db SHARED
+    db_sql_household.cpp
+    db_mesh.cpp
+)
+
+find_package(object_recognition REQUIRED)
+include_directories(${object_recognition_INCLUDE_DIRS})
+include_directories(/opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
+target_link_libraries(tabletop_db
+    object_recognition_db
+)
+
+install(TARGETS tabletop_db
+    DESTINATION lib
+)
+
+
+
 # old stuff, useless now
 #rosbuild_add_executable(tabletop_object_recognition tabletop_object_recognition.cpp)
 
@@ -51,8 +72,8 @@ find_package(object_recognition REQUIRED)
 include_directories(${object_recognition_INCLUDE_DIRS})
 
 ectomodule(tabletop_object
-  module.cpp
-  ObjectRecognizer.cpp
+    module.cpp
+    ObjectRecognizer.cpp
 )
 
 link_ecto(tabletop_object
@@ -67,6 +88,7 @@ link_ecto(tabletop_object
     ${tf_LIBRARIES}
     marker_generator
     tabletop_model_fitter
+    tabletop_db
 )
 
 install_ecto_module(tabletop_object)
