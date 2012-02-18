@@ -52,7 +52,7 @@
 #include <object_recognition/common/pose_result.h>
 #include <object_recognition/db/ModelReader.h>
 
-#include "db/db_mesh.h"
+#include "db_mesh.h"
 
 using object_recognition::common::PoseResult;
 
