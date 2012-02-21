@@ -2,12 +2,11 @@
 Module defining the Table Publisher
 """
 
+from ecto_object_recognition_core.io_ros import Publisher_Marker, Publisher_MarkerArray
 from object_recognition_core.io.sink import Sink
-
+from tabletop_table import TableMsgAssembler
 import ecto
 import ecto_tabletop
-from ecto_object_recognition.io_ros import Publisher_Marker, Publisher_MarkerArray
-from tabletop_table import TableMsgAssembler
 
 TablePub = ecto_tabletop.Publisher_Table
 MarkerPub = Publisher_Marker

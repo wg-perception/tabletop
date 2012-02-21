@@ -8,7 +8,8 @@ find_package(PCL REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
 
-find_package(object_recognition REQUIRED)
+find_package(object_recognition_core REQUIRED)
+
 find_package(genmsg REQUIRED)
 
 if (genmsg_FOUND)
@@ -26,8 +27,10 @@ endif()
 
 # temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
-include_directories(${Eigen_INCLUDE_DIRS})
-include_directories(${ecto_pcl_INCLUDE_DIRS})
+include_directories(SYSTEM
+    ${Eigen_INCLUDE_DIRS}
+    ${ecto_pcl_INCLUDE_DIRS}
+)
 
 find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
 find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)

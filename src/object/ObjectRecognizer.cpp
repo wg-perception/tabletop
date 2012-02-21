@@ -37,6 +37,8 @@
 #include <iostream>
 
 #include <boost/foreach.hpp>
+#include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <ecto/ecto.hpp>
@@ -49,12 +51,10 @@
 #include <tabletop/table/tabletop_segmenter.h>
 #include <tabletop/object/tabletop_object_detector.h>
 
-#include <object_recognition/common/pose_result.h>
-#include <object_recognition/db/ModelReader.h>
+#include <object_recognition_core/common/pose_result.h>
+#include <object_recognition_core/common/types.h>
 
-#include "db_mesh.h"
-
-using object_recognition::common::PoseResult;
+using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
 
@@ -63,25 +63,27 @@ namespace tabletop
   /** Ecto implementation of a module that recognizes objects using the tabletop code
    *
    */
-  struct ObjectRecognizer: public object_recognition::db::bases::ModelReaderImpl
+  struct ObjectRecognizer
   {
-    virtual void
-    ParameterCallback(const object_recognition::db::Documents & db_documents)
+    void
+    ParameterCallback(const object_recognition_core::db::Documents & db_documents)
     {
       object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
-      BOOST_FOREACH(const object_recognition::db::Document & document, db_documents)
-          {
-            int model_id = document.get_value("model_id").get_int();
-            arm_navigation_msgs::Shape mesh;
-            document.get_attachment("mesh", mesh);
+      /*      BOOST_FOREACH(const object_recognition_core::db::Document & document, db_documents)
+       {
+       int model_id = document.get_value("model_id").get_int();
+       arm_navigation_msgs::Shape mesh;
+       document.get_attachment("mesh", mesh);
 
-            object_recognizer_.addObject(model_id, mesh);
-          }
+       object_recognizer_.addObject(model_id, mesh);
+       }*/
     }
 
     static void
     declare_params(ecto::tendrils& params)
     {
+      //params.declare<boost::python::object>("model_ids", "The DB id of the model to load.");
+      //params.declare(&ModelReaderIterative::db_params_, "db_params", "The DB parameters").required(true);
     }
 
     static void
@@ -95,6 +97,12 @@ namespace tabletop
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
+      //db_params_ = params["db_params"];
+      //db_ = db::ObjectDb(*db_params_);
+
+      const boost::python::object & python_object_ids = params.get<boost::python::object>("object_ids");
+      boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
+      std::copy(begin, end, std::back_inserter(model_ids_));
     }
 
     /** Compute the pose of the table plane
@@ -135,8 +143,9 @@ namespace tabletop
     bool perform_fit_merge_;
     ecto::spore<std::vector<ModelFitInfos> > raw_fit_results;
     ecto::spore<std::vector<size_t> > cluster_model_indices_;
+    std::vector<object_recognition_core::db::ModelId> model_ids_;
   };
 }
 
-ECTO_CELL(tabletop_object, object_recognition::db::bases::ModelReaderBase<tabletop::ObjectRecognizer>,
-          "ObjectRecognizer", "Given clusters on a table, identify them as objects.");
+ECTO_CELL(tabletop_object, tabletop::ObjectRecognizer, "ObjectRecognizer",
+          "Given clusters on a table, identify them as objects.");

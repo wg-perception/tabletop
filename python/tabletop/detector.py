@@ -3,13 +3,13 @@
 Module defining the transparent objects detector to find objects in a scene
 """
 
-from ecto_object_recognition.object_recognition_db import DbModels, ObjectDbParameters
-from object_recognition_core.utils import json_helper
-from object_recognition_core.pipelines.detection import DetectionPipeline
+from ecto_object_recognition_core.object_recognition_core_db import DbModels, ObjectDbParameters
 from image_pipeline_conversion import MatToPointCloudXYZOrganized
-import tabletop_table
-import tabletop_object
+from object_recognition_core.pipelines.detection import DetectionPipeline
+from object_recognition_core.utils import json_helper
 import ecto
+import tabletop_object
+import tabletop_table
 
 try:
     import ecto_ros

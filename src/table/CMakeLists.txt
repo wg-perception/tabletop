@@ -4,8 +4,10 @@ if (genmsg_FOUND)
   SET(TABLETOP_ROS_CELLS TableMsgAssembler)
 endif()
 
-find_package(object_recognition REQUIRED)
-include_directories(${object_recognition_INCLUDE_DIRS})
+find_package(object_recognition_core REQUIRED)
+include_directories(SYSTEM
+    ${object_recognition_core_INCLUDE_DIRS}
+)
 
 # deal with the detection TOD module
 ectomodule(tabletop_table
@@ -18,9 +20,9 @@ ectomodule(tabletop_table
 )
 
 link_ecto(tabletop_table
-  ${PCL_LIBRARIES}
-  ${Boost_LIBRARIES}
-  object_recognition_common
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${object_recognition_core_LIBRARIES}
     ${pcl_ros_tf_LIBRARIES}
     ${roscpp_LIBRARIES}
     ${roscpp_serialization_LIBRARIES}

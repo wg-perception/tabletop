@@ -58,9 +58,9 @@
 #include <tabletop/table/tabletop_segmenter.h>
 
 #include "tabletop_object_detector/marker_generator.h"
-#include <object_recognition/common/pose_result.h>
+#include <object_recognition_core/common/pose_result.h>
 
-using object_recognition::common::PoseResult;
+using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
 
