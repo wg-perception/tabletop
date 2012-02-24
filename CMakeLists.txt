@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(tabletop)
 
+set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/object_recognition_core)
+
 find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
 find_package(PCL REQUIRED)

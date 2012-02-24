@@ -76,11 +76,13 @@ namespace tabletop
 
       object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
       std::stringstream port;
-      port << db_params_->raw_["port"].get_int();
+      port << db_->parameters().raw_.find("port")->second.get_int();
 
       household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
-          db_params_->raw_["host"].get_str(), port.str(), db_params_->raw_["user"].get_str(),
-          db_params_->raw_["password"].get_str(), db_params_->raw_["name"].get_str());
+          db_->parameters().raw_.find("host")->second.get_str(), port.str(),
+          db_->parameters().raw_.find("user")->second.get_str(),
+          db_->parameters().raw_.find("password")->second.get_str(),
+          db_->parameters().raw_.find("name")->second.get_str());
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
       if (!database->getScaledModelsBySet(models, model_set))
@@ -104,7 +106,7 @@ namespace tabletop
     {
       params.declare(&ObjectRecognizer::object_ids_, "object_ids",
                      "The DB id of the objects to load in the household database.").required(true);
-      params.declare(&ObjectRecognizer::db_params_, "db_params", "The DB parameters").required(true);
+      params.declare(&ObjectRecognizer::db_, "db", "The DB parameters").required(true);
     }
 
     static void
@@ -144,6 +146,9 @@ namespace tabletop
                 {
                   PoseResult pose_result;
                   geometry_msgs::Pose pose = model_fit_info.getPose();
+                  std::stringstream ss;
+                  ss << model_fit_info.getModelId();
+                  pose_result.set_object_id(*db_, ss.str());
                   pose_result.set_T(Eigen::Vector3f(pose.position.x, pose.position.y, pose.position.z));
                   pose_result.set_R(
                       Eigen::Quaternionf(pose.orientation.w, pose.orientation.x, pose.orientation.y,
@@ -167,8 +172,7 @@ namespace tabletop
     ecto::spore<std::vector<ModelFitInfos> > raw_fit_results_;
     ecto::spore<std::vector<size_t> > cluster_model_indices_;
     ecto::spore<std::string> object_ids_;
-    object_recognition_core::db::ObjectDb db_;
-    ecto::spore<object_recognition_core::db::ObjectDbParameters> db_params_;
+    ecto::spore<object_recognition_core::db::ObjectDb> db_;
   };
 }
 

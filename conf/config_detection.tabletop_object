@@ -33,3 +33,4 @@ pipeline2:
       user: 'willow'
       password: 'willow'
       name: 'household_objects'
+      module: 'tabletop'

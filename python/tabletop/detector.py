@@ -5,6 +5,7 @@ Module defining the transparent objects detector to find objects in a scene
 
 from image_pipeline_conversion import MatToPointCloudXYZOrganized
 from object_recognition_core.db.interface import DbModels, ObjectDbParameters
+from object_recognition_core.db.object_db import ObjectDb
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
 import ecto
@@ -96,6 +97,7 @@ class TabletopObjectDetectionPipeline(DetectionPipeline):
         visualize = kwargs.pop('visualize', False)
         submethod = kwargs.pop('submethod')
         parameters = kwargs.pop('parameters')
+        db = ObjectDb(parameters['db'])
 
         return tabletop_object.ObjectRecognizer(object_ids=parameters['object_ids'],
-                                                db_params=ObjectDbParameters(parameters['db']))
+                                                db=object_db)

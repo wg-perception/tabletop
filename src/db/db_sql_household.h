@@ -36,6 +36,7 @@
 #ifndef DB_COUCH_H_
 #define DB_COUCH_H_
 
+#include <object_recognition_core/db/db.h>
 #include <object_recognition_core/db/db_base.h>
 #include <object_recognition_core/common/types.h>
 
@@ -56,7 +57,7 @@ class ObjectDbSqlHousehold: public object_recognition_core::db::ObjectDbBase
 public:
   ObjectDbSqlHousehold();
 
-  ObjectDbSqlHousehold(const std::string &url, const std::string & collection);
+  ObjectDbSqlHousehold(const object_recognition_core::db::ObjectDbParameters & parameters);
 
   virtual void
   insert_object(const or_json::mObject &fields, DocumentId & document_id, RevisionId & revision_id);

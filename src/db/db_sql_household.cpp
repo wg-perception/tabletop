@@ -40,13 +40,13 @@
 
 ObjectDbSqlHousehold::ObjectDbSqlHousehold()
     :
-      ObjectDbBase("http://localhost:5984", "object_recognition")
+      ObjectDbBase("", "")
 {
 }
 
-ObjectDbSqlHousehold::ObjectDbSqlHousehold(const std::string &root, const std::string &collection)
+ObjectDbSqlHousehold::ObjectDbSqlHousehold(const object_recognition_core::db::ObjectDbParameters & parameters)
     :
-      ObjectDbBase(root, collection)
+      ObjectDbBase("", "")
 {
 }
 
@@ -57,7 +57,8 @@ ObjectDbSqlHousehold::insert_object(const or_json::mObject &fields, DocumentId &
 }
 
 void
-ObjectDbSqlHousehold::persist_fields(const DocumentId & document_id, const or_json::mObject &fields, RevisionId & revision_id)
+ObjectDbSqlHousehold::persist_fields(const DocumentId & document_id, const or_json::mObject &fields,
+                                     RevisionId & revision_id)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
@@ -70,14 +71,16 @@ ObjectDbSqlHousehold::load_fields(const DocumentId & document_id, or_json::mObje
 
 void
 ObjectDbSqlHousehold::set_attachment_stream(const DocumentId & document_id, const AttachmentName& attachment_name,
-                                     const MimeType& mime_type, const std::istream& stream, RevisionId & revision_id)
+                                            const MimeType& mime_type, const std::istream& stream,
+                                            RevisionId & revision_id)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
 
 void
 ObjectDbSqlHousehold::get_attachment_stream(const DocumentId & document_id, const std::string& attachment_name,
-                                     const std::string& content_type, std::ostream& stream, RevisionId & revision_id)
+                                            const std::string& content_type, std::ostream& stream,
+                                            RevisionId & revision_id)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
@@ -101,15 +104,15 @@ ObjectDbSqlHousehold::Delete(const ObjectId & id)
 }
 
 void
-ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int limit_rows, int start_offset, int& total_rows,
-                     int& offset, std::vector<ViewElement> & view_elements)
+ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int limit_rows, int start_offset,
+                            int& total_rows, int& offset, std::vector<ViewElement> & view_elements)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
 
 void
 ObjectDbSqlHousehold::Query(const std::vector<std::string> & queries, int limit_rows, int start_offset, int& total_rows,
-                     int& offset, std::vector<ViewElement> & view_elements)
+                            int& offset, std::vector<ViewElement> & view_elements)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
@@ -118,8 +121,9 @@ ObjectDbSqlHousehold::Query(const std::vector<std::string> & queries, int limit_
  *
  */
 void
-ObjectDbSqlHousehold::QueryView(const std::string & in_url, int limit_rows, int start_offset, const std::string &options,
-                         int& total_rows, int& offset, std::vector<ViewElement> & view_elements, bool do_throw)
+ObjectDbSqlHousehold::QueryView(const std::string & in_url, int limit_rows, int start_offset,
+                                const std::string &options, int& total_rows, int& offset,
+                                std::vector<ViewElement> & view_elements, bool do_throw)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
