@@ -101,13 +101,19 @@ class ExhaustiveFitDetector
                        const std::string &database_name);
 
     void
+    clearObjects()
+    {
+      templates.clear();
+    }
+
+    void
     addObject(int model_id, arm_navigation_msgs::Shape mesh)
     {
       Fitter* fitter = new Fitter();
       fitter->initializeFromMesh(mesh);
       templates.push_back(fitter);
       //set the model ID in the template so that we can use it later
-      templates.back()->setModelId( model_id );
+      templates.back()->setModelId(model_id);
     }
 
   //! Main fitting function; fits all meshes against \a cloud and sorts the fits

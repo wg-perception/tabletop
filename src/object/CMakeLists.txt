@@ -78,6 +78,8 @@ ectomodule(tabletop_object
     ObjectRecognizer.cpp
 )
 
+find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
+
 link_ecto(tabletop_object
     ${PCL_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -87,6 +89,7 @@ link_ecto(tabletop_object
     ${roscpp_serialization_LIBRARIES}
     ${rostime_LIBRARIES}
     ${rosconsole_LIBRARIES}
+    ${household_objects_database_LIBRARIES}
     ${tf_LIBRARIES}
     marker_generator
     tabletop_model_fitter

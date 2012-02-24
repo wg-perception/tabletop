@@ -47,6 +47,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
+#include <household_objects_database/objects_database.h>
 #include <tabletop/Table.h>
 #include <tabletop/table/tabletop_segmenter.h>
 #include <tabletop/object/tabletop_object_detector.h>
@@ -66,24 +67,44 @@ namespace tabletop
   struct ObjectRecognizer
   {
     void
-    ParameterCallback(const object_recognition_core::db::Documents & db_documents)
+    ParameterCallback(const std::string &model_set)
     {
-      object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
-      /*      BOOST_FOREACH(const object_recognition_core::db::Document & document, db_documents)
-       {
-       int model_id = document.get_value("model_id").get_int();
-       arm_navigation_msgs::Shape mesh;
-       document.get_attachment("mesh", mesh);
+      //std::vector<object_recognition_core::db::ModelId> object_ids;
 
-       object_recognizer_.addObject(model_id, mesh);
-       }*/
+      //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
+      //std::copy(begin, end, std::back_inserter(object_ids));
+
+      object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
+      std::stringstream port;
+      port << db_params_->raw_["port"].get_int();
+
+      household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
+          db_params_->raw_["host"].get_str(), port.str(), db_params_->raw_["user"].get_str(),
+          db_params_->raw_["password"].get_str(), db_params_->raw_["name"].get_str());
+
+      std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
+      if (!database->getScaledModelsBySet(models, model_set))
+        return;
+
+      object_recognizer_.clearObjects();
+      for (size_t i = 0; i < models.size(); i++)
+      {
+        int model_id = models[i]->id_.data();
+        arm_navigation_msgs::Shape mesh;
+
+        if (!database->getScaledModelMesh(model_id, mesh))
+          continue;
+
+        object_recognizer_.addObject(model_id, mesh);
+      }
     }
 
     static void
     declare_params(ecto::tendrils& params)
     {
-      //params.declare<boost::python::object>("model_ids", "The DB id of the model to load.");
-      //params.declare(&ModelReaderIterative::db_params_, "db_params", "The DB parameters").required(true);
+      params.declare(&ObjectRecognizer::object_ids_, "object_ids",
+                     "The DB id of the objects to load in the household database.").required(true);
+      params.declare(&ObjectRecognizer::db_params_, "db_params", "The DB parameters").required(true);
     }
 
     static void
@@ -97,12 +118,10 @@ namespace tabletop
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
-      //db_params_ = params["db_params"];
-      //db_ = db::ObjectDb(*db_params_);
+      object_ids_.set_callback(boost::bind(&ObjectRecognizer::ParameterCallback, this, _1));
+      object_ids_.dirty(true);
 
-      const boost::python::object & python_object_ids = params.get<boost::python::object>("object_ids");
-      boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
-      std::copy(begin, end, std::back_inserter(model_ids_));
+      perform_fit_merge_ = true;
     }
 
     /** Compute the pose of the table plane
@@ -113,9 +132,13 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
+      std::vector<ModelFitInfos> raw_fit_results;
+      std::vector<size_t> cluster_model_indices;
+
       object_recognizer_.objectDetection<pcl::PointCloud<pcl::PointXYZ> >(*clusters_, num_models_, perform_fit_merge_,
-                                                                          *raw_fit_results, *cluster_model_indices_);
-      BOOST_FOREACH(const ModelFitInfos & model_fit_infos, *raw_fit_results)
+                                                                          raw_fit_results, cluster_model_indices);
+
+      BOOST_FOREACH(const ModelFitInfos & model_fit_infos, raw_fit_results)
           {
             BOOST_FOREACH(const tabletop_object_detector::ModelFitInfo & model_fit_info, model_fit_infos)
                 {
@@ -141,9 +164,11 @@ namespace tabletop
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
     int num_models_;
     bool perform_fit_merge_;
-    ecto::spore<std::vector<ModelFitInfos> > raw_fit_results;
+    ecto::spore<std::vector<ModelFitInfos> > raw_fit_results_;
     ecto::spore<std::vector<size_t> > cluster_model_indices_;
-    std::vector<object_recognition_core::db::ModelId> model_ids_;
+    ecto::spore<std::string> object_ids_;
+    object_recognition_core::db::ObjectDb db_;
+    ecto::spore<object_recognition_core::db::ObjectDbParameters> db_params_;
   };
 }
 

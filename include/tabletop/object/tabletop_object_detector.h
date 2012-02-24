@@ -76,6 +76,9 @@ namespace tabletop_object_detector
     }
 
     void
+    clearObjects();
+
+    void
     addObject(int model_id, arm_navigation_msgs::Shape mesh);
 
     /*! Performs the detection on each of the clusters, and populates the returned message.

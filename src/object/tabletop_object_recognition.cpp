@@ -72,6 +72,11 @@ namespace tabletop_object_detector
     min_marker_quality_ = 0.003;
   }
 
+  void
+  TabletopObjectRecognizer::clearObjects()
+  {
+    detector_.clearObjects();
+  }
 
   void
   TabletopObjectRecognizer::addObject(int model_id, arm_navigation_msgs::Shape mesh)

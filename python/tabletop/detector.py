@@ -3,8 +3,8 @@
 Module defining the transparent objects detector to find objects in a scene
 """
 
-from ecto_object_recognition_core.object_recognition_core_db import DbModels, ObjectDbParameters
 from image_pipeline_conversion import MatToPointCloudXYZOrganized
+from object_recognition_core.db.interface import DbModels, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
 import ecto
@@ -97,4 +97,5 @@ class TabletopObjectDetectionPipeline(DetectionPipeline):
         submethod = kwargs.pop('submethod')
         parameters = kwargs.pop('parameters')
 
-        return tabletop_object.ObjectRecognizer()
+        return tabletop_object.ObjectRecognizer(object_ids=parameters['object_ids'],
+                                                db_params=ObjectDbParameters(parameters['db']))
