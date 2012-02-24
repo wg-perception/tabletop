@@ -33,33 +33,67 @@
  *
  */
 
-#ifndef DB_TRANSPARENT_OBJECTS_HPP_
-#define DB_TRANSPARENT_OBJECTS_HPP_
+#include <boost/filesystem.hpp>
 
-#include <object_recognition/db/db.h>
+#include <object_recognition_core/db/opencv.h>
 
-#include <arm_navigation_msgs/Shape.h>
+#include "db_mesh.h"
 
-namespace object_recognition
+namespace
+{
+  object_recognition_core::db::MimeType MIME_TYPE = "text/x-yaml";
+}
+namespace object_recognition_core
 {
   namespace db
   {
     // Specializations for cv::FileNode
     template<>
     void
-    object_recognition::db::Document::get_attachment<arm_navigation_msgs::Shape>(
-        const AttachmentName &attachment_name, arm_navigation_msgs::Shape &value) const;
+    object_recognition_core::db::Document::get_attachment<arm_navigation_msgs::Shape>(
+        const AttachmentName &attachment_name, arm_navigation_msgs::Shape &value) const
+    {
+      // Get the binary file
+      std::string file_name = temporary_yml_file_name(false);
+      std::stringstream ss;
+      this->get_attachment_stream(attachment_name, ss, MIME_TYPE);
+
+      // Write it to disk
+      std::ofstream writer(file_name.c_str());
+      writer << ss.rdbuf() << std::flush;
+
+      // Read it
+      //value.read(file_name);
+      //boost::filesystem::remove(file_name.c_str());
+    }
 
     template<>
     void
-    object_recognition::db::Document::get_attachment_and_cache<arm_navigation_msgs::Shape>(
-        const AttachmentName &attachment_name, arm_navigation_msgs::Shape &value);
+    object_recognition_core::db::Document::get_attachment_and_cache<arm_navigation_msgs::Shape>(
+        const AttachmentName &attachment_name, arm_navigation_msgs::Shape &value)
+    {
+    }
 
     template<>
     void
-    object_recognition::db::Document::set_attachment<arm_navigation_msgs::Shape>(const AttachmentName &attachment_name,
-                                                                                const arm_navigation_msgs::Shape &value);
+    object_recognition_core::db::Document::set_attachment<arm_navigation_msgs::Shape>(
+        const AttachmentName &attachment_name, const arm_navigation_msgs::Shape &value)
+    {
+      /*// First write the class to a file
+      std::string file_name = temporary_yml_file_name(false);
+      {
+        cv::FileStorage fs(file_name, cv::FileStorage::WRITE);
+        value.write(fs);
+        fs.release();
+      }
+
+      // Read the file as a stream
+      std::ifstream reader(file_name.c_str());
+      std::stringstream out;
+      out << reader.rdbuf();
+
+      set_attachment_stream(attachment_name, out, MIME_TYPE);
+      boost::filesystem::remove(file_name.c_str());*/
+    }
   }
 }
-
-#endif

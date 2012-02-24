@@ -37,21 +37,21 @@
 #define DB_COUCH_H_
 
 #include <object_recognition_core/db/db_base.h>
-#include "object_recognition/common/types.h"
+#include <object_recognition_core/common/types.h>
 
-using object_recognition::db::AttachmentName;
-using object_recognition::db::CollectionName;
-using object_recognition::db::DbType;
-using object_recognition::db::DocumentId;
-using object_recognition::db::ObjectId;
-using object_recognition::db::MimeType;
-using object_recognition::db::RevisionId;
-using object_recognition::db::View;
-using object_recognition::db::ViewElement;
+using object_recognition_core::db::AttachmentName;
+using object_recognition_core::db::CollectionName;
+using object_recognition_core::db::DbType;
+using object_recognition_core::db::DocumentId;
+using object_recognition_core::db::ObjectId;
+using object_recognition_core::db::MimeType;
+using object_recognition_core::db::RevisionId;
+using object_recognition_core::db::View;
+using object_recognition_core::db::ViewElement;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ObjectDbSqlHousehold: public object_recognition::db::ObjectDbBase
+class ObjectDbSqlHousehold: public object_recognition_core::db::ObjectDbBase
 {
 public:
   ObjectDbSqlHousehold();

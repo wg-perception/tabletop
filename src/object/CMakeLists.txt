@@ -45,25 +45,6 @@ target_link_libraries(tabletop_model_fitter
     ${distance_field_LIBRARIES}
 )
 
-# Create a library for tabletop db interfaces
-add_library(tabletop_db SHARED
-    db_sql_household.cpp
-    db_mesh.cpp
-)
-
-find_package(object_recognition REQUIRED)
-include_directories(${object_recognition_INCLUDE_DIRS})
-include_directories(/opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
-target_link_libraries(tabletop_db
-    object_recognition_db
-)
-
-install(TARGETS tabletop_db
-    DESTINATION lib
-)
-
-
-
 # old stuff, useless now
 #rosbuild_add_executable(tabletop_object_recognition tabletop_object_recognition.cpp)
 
