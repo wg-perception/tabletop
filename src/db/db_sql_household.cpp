@@ -107,7 +107,7 @@ void
 ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int limit_rows, int start_offset,
                             int& total_rows, int& offset, std::vector<ViewElement> & view_elements)
 {
-  throw std::runtime_error("Function not implemented in the SQL household DB.");
+  //throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
 
 void

@@ -97,7 +97,7 @@ class TabletopObjectDetectionPipeline(DetectionPipeline):
         visualize = kwargs.pop('visualize', False)
         submethod = kwargs.pop('submethod')
         parameters = kwargs.pop('parameters')
-        db = ObjectDb(parameters['db'])
+        object_db = ObjectDb(parameters['db'])
 
         return tabletop_object.ObjectRecognizer(object_ids=parameters['object_ids'],
                                                 db=object_db)

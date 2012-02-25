@@ -27,12 +27,12 @@ add_library(tabletop_db_interface SHARED
 )
 
 target_link_libraries(tabletop_db_interface
-                      object_recognition_core_db
+                      tabletop_db
 )
 
 set_target_properties(tabletop_db_interface PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${python_LIBRARY_OUTPUT_DIRECTORY}/
-                      OUTPUT_NAME interface
+                      OUTPUT_NAME db_interface
                       PREFIX ""
 )
 
