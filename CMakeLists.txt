@@ -16,7 +16,7 @@ find_package(genmsg REQUIRED)
 
 if (genmsg_FOUND)
     find_package(ROS REQUIRED geometry_msgs sensor_msgs std_msgs)
-    add_message_files(DIRECTORY msg FILES TabletopDetectionResult.msg Shape.msg Table.msg)
+    add_message_files(DIRECTORY msg FILES TabletopDetectionResult.msg Shape.msg Table.msg TableArray.msg)
     generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
     # generate ecto cells to wrap the different messages
     pubsub_gen_wrap(tabletop)

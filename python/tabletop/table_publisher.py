@@ -18,9 +18,9 @@ class TablePublisher(ecto.BlackBox):
     Class publishing the different results of tabletop
     """
     _table_msg_assembler = TableMsgAssembler
-    _marker_hull_pub = MarkerPub
-    _marker_origin_pub = MarkerPub
-    _marker_table_pub = MarkerPub
+    _marker_array_hull_ = MarkerArrayPub
+    _marker_array_origin_ = MarkerArrayPub
+    _marker_array_table_ = MarkerArrayPub
     _marker_array_delete = MarkerArrayPub
     _marker_array_clusters = MarkerArrayPub
 
@@ -37,16 +37,16 @@ class TablePublisher(ecto.BlackBox):
 
     def configure(self, p, _i, _o):
         self._table_msg_assembler = TablePublisher._table_msg_assembler()
-        self._marker_hull_pub = TablePublisher._marker_hull_pub(topic_name=p.marker_hull_topic, latched=p.latched)
-        self._marker_origin_pub = TablePublisher._marker_origin_pub(topic_name=p.marker_origin_topic, latched=p.latched)
-        self._marker_table_pub = TablePublisher._marker_table_pub(topic_name=p.marker_table_topic, latched=p.latched)
+        self._marker_array_hull_ = TablePublisher._marker_array_hull_(topic_name=p.marker_hull_topic, latched=p.latched)
+        self._marker_array_origin_ = TablePublisher._marker_array_origin_(topic_name=p.marker_origin_topic, latched=p.latched)
+        self._marker_array_table_ = TablePublisher._marker_array_table_(topic_name=p.marker_table_topic, latched=p.latched)
         self._marker_array_delete = TablePublisher._marker_array_delete(topic_name=p.marker_array_delete)
         self._marker_array_clusters = TablePublisher._marker_array_clusters(topic_name=p.marker_array_clusters)
 
     def connections(self):
-        return [self._table_msg_assembler['marker_hull'] >> self._marker_hull_pub[:],
-                self._table_msg_assembler['marker_origin'] >> self._marker_origin_pub[:],
-                self._table_msg_assembler['marker_table'] >> self._marker_table_pub[:],
+        return [self._table_msg_assembler['marker_hull'] >> self._marker_array_hull_[:],
+                self._table_msg_assembler['marker_origin'] >> self._marker_array_origin_[:],
+                self._table_msg_assembler['marker_table'] >> self._marker_array_table_[:],
                 self._table_msg_assembler['marker_array_delete'] >> self._marker_array_delete[:],
                 self._table_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:] ]
 

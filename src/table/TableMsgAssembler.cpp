@@ -90,9 +90,10 @@ namespace tabletop
       outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
       outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
                       "The markers of the clusters");
-      outputs.declare(&TableMsgAssembler::marker_hull_, "marker_hull", "The marker for the table hull");
-      outputs.declare(&TableMsgAssembler::marker_origin_, "marker_origin", "The marker for the origin of the table");
-      outputs.declare(&TableMsgAssembler::marker_table_, "marker_table", "The marker for the table");
+      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_hull", "The marker for the table hull");
+      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_origin",
+                                                               "The marker for the origin of the table");
+      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_table", "The marker for the table");
     }
 
     void
@@ -118,6 +119,13 @@ namespace tabletop
         frame_id = (*image_message_)->header.frame_id;
       // Delete the old markers
       clearOldMarkers(frame_id);
+
+      marker_array_table_.markers.clear();
+      marker_array_table_.markers.reserve(pose_results_->size());
+      marker_array_origin_.markers.clear();
+      marker_array_origin_.markers.reserve(pose_results_->size());
+      marker_array_hull_.markers.clear();
+      marker_array_hull_.markers.reserve(pose_results_->size());
 
       std_msgs::Header message_header;
       message_header.frame_id = frame_id;
@@ -208,6 +216,13 @@ namespace tabletop
 
       // Publish each clusters
       addClusterMarkers(*clusters_, message_header);
+
+      outputs["marker_hull"]
+          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_hull_));
+      outputs["marker_origin"]
+          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
+      outputs["marker_table"]
+          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
 
       return ecto::OK;
     }
@@ -317,7 +332,7 @@ namespace tabletop
       marker_hull->pose = table.pose.pose;
       marker_hull->ns = "tabletop_node";
       marker_hull->id = current_marker_id_++;
-      *marker_hull_ = marker_hull;
+      marker_array_hull_.markers.push_back(*marker_hull);
 
       visualization_msgs::MarkerPtr marker_origin(new visualization_msgs::Marker);
       *marker_origin = tabletop_object_detector::MarkerGenerator::createMarker(table.pose.header.frame_id, 0, .0025,
@@ -325,7 +340,7 @@ namespace tabletop
                                                                                visualization_msgs::Marker::CUBE,
                                                                                current_marker_id_++, "tabletop_node",
                                                                                table.pose.pose);
-      *marker_origin_ = marker_origin;
+      marker_array_origin_.markers.push_back(*marker_origin);
     }
 
     template<class PointCloudType>
@@ -359,14 +374,15 @@ namespace tabletop
       table.pose.pose = table_pose;
       table.pose.header = cloud_header;
 
-      visualization_msgs::MarkerPtr marker_table(new visualization_msgs::Marker);
-      *marker_table = tabletop_object_detector::MarkerGenerator::getTableMarker(table.x_min, table.x_max, table.y_min,
-                                                                                table.y_max);
-      marker_table->header = cloud_header;
-      marker_table->pose = table_pose;
-      marker_table->ns = "tabletop_node";
-      marker_table->id = current_marker_id_++;
-      *marker_table_ = marker_table;
+      visualization_msgs::Marker marker_table = tabletop_object_detector::MarkerGenerator::getTableMarker(table.x_min,
+                                                                                                          table.x_max,
+                                                                                                          table.y_min,
+                                                                                                          table.y_max);
+      marker_table.header = cloud_header;
+      marker_table.pose = table_pose;
+      marker_table.ns = "tabletop_node";
+      marker_table.id = current_marker_id_++;
+      marker_array_table_.markers.push_back(marker_table);
 
       return table;
     }
@@ -404,9 +420,9 @@ namespace tabletop
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
 
-    ecto::spore<visualization_msgs::MarkerConstPtr> marker_table_;
-    ecto::spore<visualization_msgs::MarkerConstPtr> marker_origin_;
-    ecto::spore<visualization_msgs::MarkerConstPtr> marker_hull_;
+    visualization_msgs::MarkerArray marker_array_table_;
+    visualization_msgs::MarkerArray marker_array_origin_;
+    visualization_msgs::MarkerArray marker_array_hull_;
     /** The markers to delete before showing new ones */
     ecto::spore<visualization_msgs::MarkerArrayConstPtr> marker_array_delete_;
     /** The markers of the clusters */
