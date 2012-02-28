@@ -139,6 +139,7 @@ namespace tabletop
 
       object_recognizer_.objectDetection<pcl::PointCloud<pcl::PointXYZ> >(*clusters_, num_models_, perform_fit_merge_,
                                                                           raw_fit_results, cluster_model_indices);
+      pose_results_->clear();
 
       BOOST_FOREACH(const ModelFitInfos & model_fit_infos, raw_fit_results)
           {
@@ -169,8 +170,6 @@ namespace tabletop
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
     int num_models_;
     bool perform_fit_merge_;
-    ecto::spore<std::vector<ModelFitInfos> > raw_fit_results_;
-    ecto::spore<std::vector<size_t> > cluster_model_indices_;
     ecto::spore<std::string> object_ids_;
     ecto::spore<object_recognition_core::db::ObjectDb> db_;
   };
