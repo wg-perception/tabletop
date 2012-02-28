@@ -63,13 +63,17 @@ namespace tabletop
       params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The size of a voxel cell when downsampling ",
                      0.01);
       params.declare(&Clusterer::min_cluster_size_, "min_cluster_size", "Min number of points for a cluster", 300);
+      params.declare(&Clusterer::table_z_filter_min_, "table_z_filter_min",
+                     "Min distance (in meters) from the table to get clusters from.", 0.01);
+      params.declare(&Clusterer::table_z_filter_max_, "table_z_filter_max",
+                     "Max distance (in meters) from the table to get clusters from.", 0.5);
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&Clusterer::cloud_, "cloud", "The point cloud in which to find a table.");
-      inputs.declare(&Clusterer::clouds_hull_, "clouds_hull", "The point cloud in which to find a table.");
+      inputs.declare(&Clusterer::cloud_, "cloud", "The point cloud in which to find the clusters.");
+      inputs.declare(&Clusterer::clouds_hull_, "clouds_hull", "The hull in which to find the clusters.");
 
       outputs.declare(&Clusterer::clusters_, "clusters", "The point cloud in which to find a table.");
     }
@@ -87,7 +91,8 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      BlobSegmenter blob_segmenter(*clustering_voxel_size_, *cluster_distance_, *min_cluster_size_);
+      BlobSegmenter blob_segmenter(*clustering_voxel_size_, *cluster_distance_, *min_cluster_size_,
+                                   *table_z_filter_min_, *table_z_filter_max_);
 
       clusters_->clear();
       for (size_t i = 0; i < clouds_hull_->size(); ++i)
@@ -100,9 +105,15 @@ namespace tabletop
       return ecto::OK;
     }
   private:
+    /** Size of downsampling grid before performing clustering */
     ecto::spore<float> clustering_voxel_size_;
+    /** Min distance between two clusters */
     ecto::spore<float> cluster_distance_;
+    /** Min number of points for a cluster */
     ecto::spore<int> min_cluster_size_;
+    /** Limits used when clustering points off the plane */
+    ecto::spore<float> table_z_filter_min_;
+    ecto::spore<float> table_z_filter_max_;
 
     /** The input cloud */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;

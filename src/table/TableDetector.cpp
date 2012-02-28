@@ -72,7 +72,7 @@ namespace tabletop
       params.declare(&TableDetector::normal_k_search_, "normal_k_search",
                      "The number of nearest neighbors to use when computing normals", 10);
       params.declare(&TableDetector::plane_threshold_, "plane_threshold",
-                     "The distance used as a threshold when finding a plane", 0.2);
+                     "The distance used as a threshold when finding a plane", 0.1);
       params.declare(&TableDetector::cluster_tolerance_, "cluster_tolerance",
                      "The distance used as a threshold when finding a plane", 0.2);
     }

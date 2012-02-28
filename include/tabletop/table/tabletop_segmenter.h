@@ -347,11 +347,14 @@ namespace tabletop
   class BlobSegmenter
   {
   public:
-    BlobSegmenter(double clustering_voxel_size, double cluster_distance, int min_cluster_size)
+    BlobSegmenter(double clustering_voxel_size, double cluster_distance, int min_cluster_size, float table_z_filter_min,
+                  float table_z_filter_max)
         :
           clustering_voxel_size_(clustering_voxel_size),
           cluster_distance_(cluster_distance),
-          min_cluster_size_(min_cluster_size)
+          min_cluster_size_(min_cluster_size),
+          table_z_filter_min_(table_z_filter_min),
+          table_z_filter_max_(table_z_filter_max)
     {
     }
 
@@ -367,7 +370,7 @@ namespace tabletop
       //prism_.setInputCloud (cloud_all_minus_table_ptr);
       prism_.setInputCloud(cloud);
       prism_.setInputPlanarHull(table_hull_ptr);
-      prism_.setHeightLimits(-std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+      prism_.setHeightLimits(table_z_filter_min_, table_z_filter_max_);
       prism_.segment(cloud_object_indices);
 
       typename pcl::PointCloud<Point>::Ptr cloud_objects_ptr(new pcl::PointCloud<Point>);
@@ -438,7 +441,8 @@ namespace tabletop
     double cluster_distance_;
     //! Min number of points for a cluster
     int min_cluster_size_;
-
+    /** Limits used when clustering points off the plane */
+    float table_z_filter_min_, table_z_filter_max_;
   };
 }
 
