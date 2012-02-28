@@ -10,6 +10,6 @@ pipeline1:
   method: 'tabletop_table'
   package: 'tabletop'
   submethod: ''
-  sources: [1]
-  sinks: [1]
+  sources: [source1]
+  sinks: [sink1]
   parameters: {}

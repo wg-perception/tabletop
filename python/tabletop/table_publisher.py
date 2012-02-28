@@ -8,7 +8,6 @@ from tabletop_table import TableMsgAssembler
 import ecto
 import ecto_tabletop
 
-TablePub = ecto_tabletop.Publisher_Table
 MarkerPub = Publisher_Marker
 MarkerArrayPub = Publisher_MarkerArray
 
@@ -19,7 +18,6 @@ class TablePublisher(ecto.BlackBox):
     Class publishing the different results of tabletop
     """
     _table_msg_assembler = TableMsgAssembler
-    _table_pub = TablePub
     _marker_hull_pub = MarkerPub
     _marker_origin_pub = MarkerPub
     _marker_table_pub = MarkerPub
