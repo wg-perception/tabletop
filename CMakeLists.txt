@@ -1,17 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(tabletop)
 
-set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/tabletop)
-
 find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
 find_pcl_package()
 
-set_ecto_install_package_name(ecto_tabletop)
+set_ecto_install_package_name(tabletop)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
-
 find_package(object_recognition_core REQUIRED)
 
 find_package(genmsg REQUIRED)
@@ -25,15 +21,19 @@ if (genmsg_FOUND)
 endif()
 
 
+#set the default path for built libraries to the "ecto_opencv" directory
+if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+endif()
 
-
-
+set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PYTHON_PACKAGES_PATH}/tabletop)
 
 # temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
 include_directories(SYSTEM
     ${Eigen_INCLUDE_DIRS}
     ${ecto_pcl_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
 )
 
 find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)

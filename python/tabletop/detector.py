@@ -13,7 +13,7 @@ import tabletop_object
 import tabletop_table
 
 try:
-    import ecto_ros
+    import ecto_ros.ecto_ros as ecto_ros
     ECTO_ROS_FOUND = True
 except ImportError:
     ECTO_ROS_FOUND = False

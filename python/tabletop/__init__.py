@@ -1,5 +1,5 @@
 """
-Next lines inspired from obejct_recognition_core/db/__init__.py
+Next lines inspired from object_recognition_core/db/__init__.py
 """
 
 import os
