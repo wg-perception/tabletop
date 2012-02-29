@@ -5,7 +5,7 @@ set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/tabletop)
 
 find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
-find_package(PCL REQUIRED)
+find_pcl_package()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
