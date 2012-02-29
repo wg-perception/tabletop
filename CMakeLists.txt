@@ -7,6 +7,8 @@ find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
 find_pcl_package()
 
+set_ecto_install_package_name(ecto_tabletop)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
 
