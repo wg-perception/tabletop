@@ -1,20 +1,6 @@
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
-# old stuff, useless now
-#rosbuild_add_executable(tabletop_segmentation tabletop_segmentation.cpp )
-#target_link_libraries(tabletop_segmentation marker_generator)
-
-#target_link_libraries(tabletop_segmentation
-#    ${PCL_LIBRARIES}
-#    ${pcl_ros_tf_LIBRARIES}
-#    ${roscpp_LIBRARIES}
-#    ${roscpp_serialization_LIBRARIES}
-#    ${rostime_LIBRARIES}
-#    ${rosconsole_LIBRARIES}
-#    ${tf_LIBRARIES}
-#)
-
 if (ROS_ELECTRIC_FOUND)
     include_directories(/opt/ros/electric/stacks/arm_navigation_experimental/distance_field/include/)
     include_directories(/opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
