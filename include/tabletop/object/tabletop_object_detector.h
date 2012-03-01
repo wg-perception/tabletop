@@ -40,6 +40,8 @@
 
 #include <string>
 
+#include <pcl/point_cloud.h>
+
 #include "tabletop_object_detector/exhaustive_fit_detector.h"
 #include "tabletop_object_detector/marker_generator.h"
 #include "tabletop_object_detector/iterative_distance_fitter.h"
@@ -50,18 +52,8 @@ namespace tabletop_object_detector
   class TabletopObjectRecognizer
   {
   private:
-    //! Fit results below this quality are not published as markers
-    double min_marker_quality_;
-    //! Used to remember the number of markers we publish so we can delete them later
-    int num_markers_published_;
-    //! The current marker being published
-    int current_marker_id_;
-
     //! The instance of the detector used for all detecting tasks
     ExhaustiveFitDetector<IterativeTranslationFitter> detector_;
-
-    //! Whether to use a reduced model set from the database
-    std::string model_set_;
 
     //! The threshold for merging two models that were fit very close to each other
     double fit_merge_threshold_;
@@ -81,19 +73,42 @@ namespace tabletop_object_detector
     void
     addObject(int model_id, arm_navigation_msgs::Shape mesh);
 
+    /** Structure used a return type for objectDetection */
+    template<class PointType>
+    struct TabletopResult
+    {
+      geometry_msgs::Pose pose_;
+      float confidence_;
+      int object_id_;
+      typename pcl::PointCloud<PointType>::Ptr cloud_;
+    };
+
     /*! Performs the detection on each of the clusters, and populates the returned message.
      */
-    template<class PointCloudType>
+    template<class PointType>
     void
-    objectDetection(std::vector<typename PointCloudType::Ptr> &clusters, int num_models, bool perform_fit_merge,
-                    std::vector<std::vector<ModelFitInfo> > &raw_fit_results,
-                    std::vector<size_t> &cluster_model_indices)
+    objectDetection(std::vector<typename pcl::PointCloud<PointType>::Ptr> &clusters, float confidence_cutoff,
+                    bool perform_fit_merge, std::vector<TabletopResult<PointType> > &results)
     {
       //do the model fitting part
+      std::vector<size_t> cluster_model_indices;
+      std::vector<std::vector<ModelFitInfo> > raw_fit_results;
       cluster_model_indices.resize(clusters.size(), -1);
+      int num_models = 10;
       for (size_t i = 0; i < clusters.size(); i++)
       {
-        raw_fit_results.push_back(detector_.fitBestModels<PointCloudType>(*(clusters[i]), std::max(1, num_models)));
+        std::vector<ModelFitInfo> fit_results = detector_.fitBestModels<typename pcl::PointCloud<PointType> >(
+            *(clusters[i]), std::max(1, num_models));
+        raw_fit_results.push_back(std::vector<ModelFitInfo>());
+        std::vector<ModelFitInfo> &final_fit_results = raw_fit_results.back();
+
+        final_fit_results.reserve(fit_results.size());
+        BOOST_FOREACH(const ModelFitInfo & fit_info, fit_results)
+            {
+              if (fit_info.getScore() >= confidence_cutoff)
+                final_fit_results.push_back(fit_info);
+            }
+
         cluster_model_indices[i] = i;
       }
 
@@ -119,7 +134,7 @@ namespace tabletop_object_detector
             //if there are no fits, merge based on cluster vs. fit
             if (raw_fit_results.at(j).empty())
             {
-              if (fitClusterDistance<PointCloudType>(raw_fit_results.at(i).at(0), *clusters[j])
+              if (fitClusterDistance<typename pcl::PointCloud<PointType> >(raw_fit_results.at(i).at(0), *clusters[j])
                   < fit_merge_threshold_)
                 break;
               else
@@ -132,7 +147,8 @@ namespace tabletop_object_detector
           if (j < clusters.size())
           {
             //merge cluster j into i
-            clusters[i]->points.insert(clusters[i]->points.end(), clusters[j]->points.begin(), clusters[j]->points.end());
+            clusters[i]->points.insert(clusters[i]->points.end(), clusters[j]->points.begin(),
+                                       clusters[j]->points.end());
             //delete fits for cluster j so we ignore it from now on
             raw_fit_results.at(j).clear();
             //fits for cluster j now point at fit for cluster i
@@ -147,42 +163,31 @@ namespace tabletop_object_detector
         }
       }
 
-      //make sure raw clusters point at the right index in fit_models
-      for (size_t i = 0; i < raw_fit_results.size(); i++)
+      // Merge clusters together
+      for (size_t i = 0; i < cluster_model_indices.size(); i++)
       {
-        if (cluster_model_indices[i] != (int) i)
-        {
-          int ind = cluster_model_indices[i];
-          cluster_model_indices[i] = cluster_model_indices[ind];
-          //ROS_INFO("  - has been merged with fit for cluster %d", ind);
-        }
-      }
+        if ((cluster_model_indices[i] != int(i)) || (raw_fit_results[i].empty()))
+          continue;
 
-      /*tf::Transform table_trans;
-       tf::poseMsgToTF(table.pose.pose, table_trans);
-       for (size_t i = 0; i < raw_fit_results.size(); i++)
-       {
-       household_objects_database_msgs::DatabaseModelPoseList model_potential_fit_list;
-       //prepare the actual result for good fits, only these are returned
-       for (size_t j = 0; j < raw_fit_results[i].size(); j++)
-       {
-       //get the model pose in the cloud frame by multiplying with table transform
-       tf::Transform model_trans;
-       tf::poseMsgToTF(raw_fit_results[i][j].getPose(), model_trans);
-       model_trans = table_trans * model_trans;
-       geometry_msgs::Pose model_pose;
-       tf::poseTFToMsg(model_trans, model_pose);
-       //create the model fit result
-       household_objects_database_msgs::DatabaseModelPose pose_msg;
-       pose_msg.model_id = raw_fit_results[i][j].getModelId();
-       pose_msg.pose.header = table.pose.header;
-       pose_msg.pose.pose = model_pose;
-       pose_msg.confidence = raw_fit_results[i][j].getScore();
-       //and push it in the list for this cluster
-       model_potential_fit_list.model_list.push_back(pose_msg);
-       }
-       response.models.push_back(model_potential_fit_list);
-       }*/
+        TabletopResult<PointType> result;
+        result.object_id_ = raw_fit_results[i][0].getModelId();
+        result.pose_ = raw_fit_results[i][0].getPose();
+        result.confidence_ = raw_fit_results[i][0].getScore();
+        result.cloud_ = typename pcl::PointCloud<PointType>::Ptr(new typename pcl::PointCloud<PointType>());
+
+        for (size_t j = i; j < cluster_model_indices.size(); j++)
+        {
+          if (raw_fit_results[j][0].getScore() > result.confidence_)
+          {
+            result.pose_ = raw_fit_results[j][0].getPose();
+            result.confidence_ = raw_fit_results[j][0].getScore();
+          }
+          // Merge the points in the same point cloud
+          *(result.cloud_) += (*clusters[j]);
+        }
+
+        results.push_back(result);
+      }
     }
 
     //-------------------- Misc -------------------

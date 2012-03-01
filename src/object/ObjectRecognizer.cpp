@@ -124,6 +124,7 @@ namespace tabletop
       object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
+      confidence_cutoff_ = 0.01;
     }
 
     /** Compute the pose of the table plane
@@ -134,29 +135,27 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      std::vector<ModelFitInfos> raw_fit_results;
-      std::vector<size_t> cluster_model_indices;
-
-      object_recognizer_.objectDetection<pcl::PointCloud<pcl::PointXYZ> >(*clusters_, num_models_, perform_fit_merge_,
-                                                                          raw_fit_results, cluster_model_indices);
+      std::vector<tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> > results;
+      object_recognizer_.objectDetection<pcl::PointXYZ>(*clusters_, confidence_cutoff_, perform_fit_merge_, results);
       pose_results_->clear();
 
-      BOOST_FOREACH(const ModelFitInfos & model_fit_infos, raw_fit_results)
+      BOOST_FOREACH(const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> & result, results)
           {
-            BOOST_FOREACH(const tabletop_object_detector::ModelFitInfo & model_fit_info, model_fit_infos)
-                {
-                  PoseResult pose_result;
-                  geometry_msgs::Pose pose = model_fit_info.getPose();
-                  std::stringstream ss;
-                  ss << model_fit_info.getModelId();
-                  pose_result.set_object_id(*db_, ss.str());
-                  pose_result.set_T(Eigen::Vector3f(pose.position.x, pose.position.y, pose.position.z));
-                  pose_result.set_R(
-                      Eigen::Quaternionf(pose.orientation.w, pose.orientation.x, pose.orientation.y,
-                                         pose.orientation.z));
-                  pose_results_->push_back(pose_result);
-                }
+            PoseResult pose_result;
+            const geometry_msgs::Pose &pose = result.pose_;
+            std::stringstream ss;
+            ss << result.object_id_;
+            pose_result.set_object_id(*db_, ss.str());
+            pose_result.set_T(Eigen::Vector3f(pose.position.x, pose.position.y, pose.position.z));
+            pose_result.set_R(
+                Eigen::Quaternionf(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z));
+            Eigen::Matrix3f R = pose_result.R<Eigen::Matrix3f>();
+            R.transposeInPlace();
+            pose_result.set_R(R);
+            std::cout << R << std::endl;
+            pose_results_->push_back(pose_result);
           }
+      std::cout << pose_results_->size() << std::endl;
 
       return ecto::OK;
     }
@@ -168,7 +167,8 @@ namespace tabletop
     ecto::spore<std::vector<PoseResult> > pose_results_;
 
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
-    int num_models_;
+    /** The number of models to fit to each cluster */
+    int confidence_cutoff_;
     bool perform_fit_merge_;
     ecto::spore<std::string> object_ids_;
     ecto::spore<object_recognition_core::db::ObjectDb> db_;

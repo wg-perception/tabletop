@@ -57,19 +57,10 @@ namespace tabletop_object_detector
 {
   TabletopObjectRecognizer::TabletopObjectRecognizer()
   {
-    num_markers_published_ = 1;
-    current_marker_id_ = 1;
-
-    const std::string database_host;
-    const std::string database_port;
-    const std::string database_user;
-    const std::string database_pass;
-    const std::string database_name;
     detector_ = ExhaustiveFitDetector<IterativeTranslationFitter>();
 
     //initialize operational flags
     fit_merge_threshold_ = 0.05;
-    min_marker_quality_ = 0.003;
   }
 
   void
