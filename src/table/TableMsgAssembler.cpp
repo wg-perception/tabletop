@@ -60,6 +60,10 @@
 #include "tabletop_object_detector/marker_generator.h"
 #include <object_recognition_core/common/pose_result.h>
 
+#ifndef PCL_VERSION_GE_140
+#include <LinearMath/btTransform.h>
+#endif
+
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
@@ -256,9 +260,15 @@ namespace tabletop
       Eigen::Matrix3f rotation = pose_result.R<Eigen::Matrix3f>();
 
       tf::Vector3 position_tf(translation[0], translation[1], translation[2]);
+#ifdef PCL_VERSION_GE_140
       tf::Matrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
                                 rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
                                 rotation.coeff(2, 2));
+#else
+      btMatrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
+                                rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
+                                rotation.coeff(2, 2));
+#endif
 
       tf::Quaternion orientation;
       rotation_tf.getRotation(orientation);
