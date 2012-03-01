@@ -94,10 +94,10 @@ namespace tabletop
       outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
       outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
                       "The markers of the clusters");
-      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_hull", "The marker for the table hull");
-      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_origin",
+      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_hull", "The marker for the table hull");
+      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_origin",
                                                                "The marker for the origin of the table");
-      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_table", "The marker for the table");
+      outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_table", "The marker for the table");
     }
 
     void
@@ -221,12 +221,12 @@ namespace tabletop
       // Publish each clusters
       addClusterMarkers(*clusters_, message_header);
 
-      outputs["marker_hull"]
-          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_hull_));
-      outputs["marker_origin"]
-          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
-      outputs["marker_table"]
-          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
+      outputs["marker_array_hull"]
+      << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_hull_));
+      outputs["marker_array_origin"]
+      << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
+      outputs["marker_array_table"]
+      << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
 
       return ecto::OK;
     }
@@ -262,12 +262,12 @@ namespace tabletop
       tf::Vector3 position_tf(translation[0], translation[1], translation[2]);
 #ifdef PCL_VERSION_GE_140
       tf::Matrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
-                                rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
-                                rotation.coeff(2, 2));
+          rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
+          rotation.coeff(2, 2));
 #else
       btMatrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
-                                rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
-                                rotation.coeff(2, 2));
+                              rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
+                              rotation.coeff(2, 2));
 #endif
 
       tf::Quaternion orientation;

@@ -44,9 +44,9 @@ class TablePublisher(ecto.BlackBox):
         self._marker_array_clusters = TablePublisher._marker_array_clusters(topic_name=p.marker_array_clusters)
 
     def connections(self):
-        return [self._table_msg_assembler['marker_hull'] >> self._marker_array_hull_[:],
-                self._table_msg_assembler['marker_origin'] >> self._marker_array_origin_[:],
-                self._table_msg_assembler['marker_table'] >> self._marker_array_table_[:],
+        return [self._table_msg_assembler['marker_array_hull'] >> self._marker_array_hull_[:],
+                self._table_msg_assembler['marker_array_origin'] >> self._marker_array_origin_[:],
+                self._table_msg_assembler['marker_array_table'] >> self._marker_array_table_[:],
                 self._table_msg_assembler['marker_array_delete'] >> self._marker_array_delete[:],
                 self._table_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:] ]
 
