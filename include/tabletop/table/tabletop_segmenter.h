@@ -43,7 +43,12 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
+#ifdef PCL_VERSION_GE_140
 #include <pcl/search/kdtree.h>
+#else
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#endif
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -168,7 +173,11 @@ namespace tabletop
     {
       pcl::NormalEstimation<Point, pcl::Normal> normalsEstimator;
       normalsEstimator.setInputCloud(cloud);
+#ifdef PCL_VERSION_GE_140
       typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>());
+#else
+      typename pcl::KdTreeFLANN<Point>::Ptr tree(new pcl::KdTreeFLANN<Point>());
+#endif
       normalsEstimator.setSearchMethod(tree);
       normalsEstimator.setKSearch(normal_k_search);
       normalsEstimator.compute(*normals);
@@ -243,7 +252,11 @@ namespace tabletop
     typename pcl::PointCloud<Point>::Ptr
     getBestHull(const typename pcl::PointCloud<Point>::ConstPtr & projected_inliers)
     {
-      typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>);
+#ifdef PCL_VERSION_GE_140
+      typename pcl::search::KdTree<Point>::Ptr tree(new pcl::search::KdTree<Point>());
+#else
+      typename pcl::KdTreeFLANN<Point>::Ptr tree(new pcl::KdTreeFLANN<Point>());
+#endif
       tree->setInputCloud(projected_inliers);
 
       std::vector<pcl::PointIndices> clusterIndices;
@@ -403,7 +416,11 @@ namespace tabletop
       //pcl_cluster_.setInputCloud (cloud_objects_ptr);
       pcl::EuclideanClusterExtraction<Point> pcl_cluster_;
       // Clustering parameters
+#ifdef PCL_VERSION_GE_140
       typename pcl::search::KdTree<Point>::Ptr clusters_tree = boost::make_shared<pcl::search::KdTree<Point> >();
+#else
+      typename pcl::KdTreeFLANN<Point>::Ptr clusters_tree = boost::make_shared<pcl::KdTreeFLANN<Point> >();
+#endif
 
       pcl_cluster_.setClusterTolerance(cluster_distance_);
       pcl_cluster_.setMinClusterSize(min_cluster_size_);

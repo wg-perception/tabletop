@@ -13,20 +13,20 @@ find_package(object_recognition_core REQUIRED)
 find_package(genmsg REQUIRED)
 
 if (genmsg_FOUND)
-if (ROS_ELECTRIC_FOUND)
-  find_ros_package(geometry_msgs)
-  find_ros_package(sensor_msgs)
-  find_ros_package(visualization_msgs)
-  include_directories(${ecto_ros_INCLUDE_DIRS})
-else()
-find_package(ROS REQUIRED geometry_msgs rosbag roscpp sensor_msgs visualization_msgs)
-endif()
+    if (ROS_ELECTRIC_FOUND)
+        find_ros_package(geometry_msgs)
+        find_ros_package(sensor_msgs)
+        find_ros_package(visualization_msgs)
+        include_directories(${ecto_ros_INCLUDE_DIRS})
+    else()
+        find_package(ROS REQUIRED geometry_msgs rosbag roscpp sensor_msgs visualization_msgs)
+    endif()
     add_message_files(DIRECTORY msg FILES TabletopDetectionResult.msg Shape.msg Table.msg TableArray.msg)
+
     generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
     # generate ecto cells to wrap the different messages
     pubsub_gen_wrap(tabletop)
 endif()
-
 
 #set the default path for built libraries to the "ecto_opencv" directory
 if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
@@ -38,24 +38,29 @@ set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PYTHON_PACKAGES_PATH}/
 # temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
 include_directories(SYSTEM
-    ${Eigen_INCLUDE_DIRS}
-    ${ecto_pcl_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
+                    ${Eigen_INCLUDE_DIRS}
+                    ${ecto_pcl_INCLUDE_DIRS}
+                    ${PCL_INCLUDE_DIRS}
 )
 
-find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
-find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)
-find_library(roscpp_LIBRARIES roscpp /opt/ros/fuerte/lib/)
-find_library(roscpp_serialization_LIBRARIES roscpp_serialization /opt/ros/fuerte/lib/)
-find_library(rostime_LIBRARIES rostime /opt/ros/fuerte/lib/)
-find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
-find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
+if (ROS_ELECTRIC_FOUND)
+    find_ros_package(tf)
+    find_ros_package(distance_field)
+else()
+    find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
+    find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)
+    find_library(roscpp_LIBRARIES roscpp /opt/ros/fuerte/lib/)
+    find_library(roscpp_serialization_LIBRARIES roscpp_serialization /opt/ros/fuerte/lib/)
+    find_library(rostime_LIBRARIES rostime /opt/ros/fuerte/lib/)
+    find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
+    find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 
-include_directories(/opt/ros/fuerte/stacks/geometry/tf/include)
-include_directories(/opt/ros/fuerte/stacks/bullet/include/)
-include_directories(/opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/)
-include_directories(/opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/)
-include_directories(/opt/ros/fuerte/stacks/perception_pcl/pcl_ros/include/)
+    include_directories(/opt/ros/fuerte/stacks/geometry/tf/include)
+    include_directories(/opt/ros/fuerte/stacks/bullet/include/)
+    include_directories(/opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/)
+    include_directories(/opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/)
+    include_directories(/opt/ros/fuerte/stacks/perception_pcl/pcl_ros/include/)
+endif()
 #find_package(ROS REQUIRED geometry)
 #include_directories(${geometry_INCLUDE_DIRS})
 
