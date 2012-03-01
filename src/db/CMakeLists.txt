@@ -8,8 +8,17 @@ find_package(object_recognition_core REQUIRED)
 
 include_directories(SYSTEM
                     ${object_recognition_core_INCLUDE_DIRS}
+)
+
+if (ROS_ELECTRIC_FOUND)
+    include_directories(SYSTEM
+                        ${arm_navigation_msgs_INCLUDE_DIRS}
+    )
+else()
+    include_directories(SYSTEM
                     /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
 )
+endif()
 
 target_link_libraries(tabletop_db
                       object_recognition_core_db

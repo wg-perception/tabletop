@@ -46,6 +46,7 @@ include_directories(SYSTEM
 if (ROS_ELECTRIC_FOUND)
     find_ros_package(tf)
     find_ros_package(distance_field)
+    find_ros_package(household_objects_database)
 else()
     find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
     find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)
