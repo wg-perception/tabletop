@@ -69,16 +69,14 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      Eigen::Vector3f default_up(0, 0, 1);
-      params.declare(&TablePose::up_direction_, "vertical_direction", "The vertical direction", default_up);
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePose::table_coefficients_, "coefficients", "The coefficients of the table.").required(true);
-      inputs.declare(&TablePose::flatten_plane_, "flatten_plane", "If true, the plane's normal is vertical_driection.",
-                     false);
+      inputs.declare(&TablePose::table_rotations_, "rotations", "The pose rotations of the tables.").required(true);
+      inputs.declare(&TablePose::table_translations_, "translations", "The pose translations of the tables").required(
+          true);
 
       outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
     }
@@ -96,29 +94,22 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      Eigen::Vector3f translation;
-      Eigen::Matrix3f rotation;
-
       pose_results_->clear();
-      BOOST_FOREACH(const Eigen::Vector4f & coefficients, *table_coefficients_)
-          {
-            getPlaneTransform(coefficients, *up_direction_, *flatten_plane_, translation, rotation);
-
-            PoseResult pose_result;
-            pose_result.set_R(rotation);
-            pose_result.set_T(translation);
-            pose_results_->push_back(pose_result);
-          }
+      for (size_t i = 0; i < table_rotations_->size(); ++i)
+      {
+        PoseResult pose_result;
+        pose_result.set_R((*table_rotations_)[i]);
+        pose_result.set_T((*table_translations_)[i]);
+        pose_results_->push_back(pose_result);
+      }
 
       return ecto::OK;
     }
   private:
-    /** The coefficients of the table plane */
-    ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
-    /** The vertical direction */
-    ecto::spore<Eigen::Vector3f> up_direction_;
-    /** if true, the plane coefficients are modified so that up_direction_in is the normal */
-    ecto::spore<bool> flatten_plane_;
+    /** The rotations of the tables */
+    ecto::spore<std::vector<Eigen::Matrix3f> > table_rotations_;
+    /** The translations of the tables */
+    ecto::spore<std::vector<Eigen::Vector3f> > table_translations_;
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
   };

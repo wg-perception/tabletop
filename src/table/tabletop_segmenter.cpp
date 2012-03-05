@@ -51,11 +51,10 @@ namespace tabletop
     translation = Eigen::Vector3f(-a * d, -b * d, -c * d);
     Eigen::Vector3f z(a, b, c);
 
-    //if we are flattening the plane, make z just be (0,0,up_direction)
+    //if we are flattening the plane, make z just be up_direction
     if (flatten_plane)
     {
-      z[0] = z[1] = 0;
-      z[2] = up_direction[2];
+      z = up_direction;
     }
     else
     {
@@ -64,6 +63,7 @@ namespace tabletop
       {
         z = -1.0 * z;
       }
+      z = -1.0 * z;
     }
 
     //try to align the x axis with the x axis of the original frame

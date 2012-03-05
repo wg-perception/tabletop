@@ -92,15 +92,14 @@ namespace tabletop_object_detector
     {
       //do the model fitting part
       std::vector<size_t> cluster_model_indices;
-      std::vector<std::vector<ModelFitInfo> > raw_fit_results;
+      std::vector<std::vector<ModelFitInfo> > raw_fit_results(clusters.size());
       cluster_model_indices.resize(clusters.size(), -1);
       int num_models = 10;
       for (size_t i = 0; i < clusters.size(); i++)
       {
         std::vector<ModelFitInfo> fit_results = detector_.fitBestModels<typename pcl::PointCloud<PointType> >(
             *(clusters[i]), std::max(1, num_models));
-        raw_fit_results.push_back(std::vector<ModelFitInfo>());
-        std::vector<ModelFitInfo> &final_fit_results = raw_fit_results.back();
+        std::vector<ModelFitInfo> &final_fit_results = raw_fit_results[i];
 
         final_fit_results.reserve(fit_results.size());
         BOOST_FOREACH(const ModelFitInfo & fit_info, fit_results)

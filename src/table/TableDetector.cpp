@@ -75,14 +75,20 @@ namespace tabletop
                      "The distance used as a threshold when finding a plane", 0.1);
       params.declare(&TableDetector::cluster_tolerance_, "cluster_tolerance",
                      "The distance used as a threshold when finding a plane", 0.2);
+      Eigen::Vector3f default_up(0, 0, 1);
+      params.declare(&TableDetector::up_direction_, "vertical_direction", "The vertical direction", default_up);
     }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
       inputs.declare(&TableDetector::cloud_in_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&TableDetector::flatten_plane_, "flatten_plane",
+                     "If true, the plane's normal is vertical_direction.", false);
 
       outputs.declare(&TableDetector::table_coefficients_, "coefficients", "The coefficients of planar surfaces.");
+      outputs.declare(&TableDetector::table_rotations_, "rotations", "The pose rotations of the tables.");
+      outputs.declare(&TableDetector::table_translations_, "translations", "The pose translations of the tables");
       outputs.declare(&TableDetector::clouds_out_, "clouds", "Samples that belong to the table.");
       outputs.declare(&TableDetector::clouds_hull_, "clouds_hull", "Hulls of the samples.");
     }
@@ -120,6 +126,13 @@ namespace tabletop
                             table_coefficients->values[3]));
       }
 
+      // Compute the corresponding poses
+      table_rotations_->resize(table_coefficients_->size());
+      table_translations_->resize(table_coefficients_->size());
+      for (size_t i = 0; i < table_coefficients_->size(); ++i)
+        getPlaneTransform((*table_coefficients_)[i], *up_direction_, *flatten_plane_, (*table_translations_)[i],
+                          (*table_rotations_)[i]);
+
       return ecto::OK;
     }
   private:
@@ -134,14 +147,23 @@ namespace tabletop
     /** The distance used as a threshold when finding a plane */
     ecto::spore<float> plane_threshold_;
 
+    /** if true, the plane coefficients are modified so that up_direction_in is the normal */
+    ecto::spore<bool> flatten_plane_;
     /** The input cloud */
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
     /** The input cloud */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_out_;
     /** The output cloud */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
+    /** The rotations of the tables */
+    ecto::spore<std::vector<Eigen::Matrix3f> > table_rotations_;
+    /** The translations of the tables */
+    ecto::spore<std::vector<Eigen::Vector3f> > table_translations_;
     /** The minimum number of inliers in order to do pose matching */
     ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
+    /** The vertical direction */
+    ecto::spore<Eigen::Vector3f> up_direction_;
+
     ecto::spore<float> cluster_tolerance_;
   };
 }

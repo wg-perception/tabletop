@@ -43,6 +43,7 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/common/transforms.h>
 
 #include <tabletop/table/tabletop_segmenter.h>
 
@@ -75,7 +76,7 @@ namespace tabletop
       inputs.declare(&Clusterer::cloud_, "cloud", "The point cloud in which to find the clusters.");
       inputs.declare(&Clusterer::clouds_hull_, "clouds_hull", "The hull in which to find the clusters.");
 
-      outputs.declare(&Clusterer::clusters_, "clusters", "The point cloud in which to find a table.");
+      outputs.declare(&Clusterer::clusters_, "clusters", "For each table, a vector of clusters.");
     }
 
     void
@@ -95,11 +96,12 @@ namespace tabletop
                                    *table_z_filter_min_, *table_z_filter_max_);
 
       clusters_->clear();
-      for (size_t i = 0; i < clouds_hull_->size(); ++i)
+      for (size_t table_index = 0; table_index < clouds_hull_->size(); ++table_index)
       {
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters;
-        blob_segmenter.process<pcl::PointXYZ>(*cloud_, (*clouds_hull_)[i], clusters);
-        clusters_->insert(clusters_->end(), clusters.begin(), clusters.end());
+        blob_segmenter.process<pcl::PointXYZ>(*cloud_, (*clouds_hull_)[table_index], clusters);
+
+        clusters_->push_back(clusters);
       }
 
       return ecto::OK;
@@ -119,9 +121,10 @@ namespace tabletop
     ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_;
     /** The hull of the input cloud */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
-    /** The resulting clusters */
-    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clusters_;
+    /** The resulting clusters: for each table, return a vector of clusters */
+    ecto::spore<std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > > clusters_;
   };
 }
 
-ECTO_CELL(tabletop_table, tabletop::Clusterer, "Clusterer", "Given a point cloud, find  a potential table.");
+ECTO_CELL(tabletop_table, tabletop::Clusterer, "Clusterer",
+          "Given a point cloud and the hull of the table, find clusters.");

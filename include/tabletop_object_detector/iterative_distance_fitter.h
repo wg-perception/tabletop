@@ -146,6 +146,7 @@ double IterativeTranslationFitter::getFitScoreAndGradient(const PointCloudType& 
     else
     {
     }    
+
     max_dist = std::max(max_dist,val);
     //score += val*val;
     score += val;
