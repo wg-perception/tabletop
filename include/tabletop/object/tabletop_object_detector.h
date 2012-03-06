@@ -172,18 +172,7 @@ namespace tabletop_object_detector
         result.object_id_ = raw_fit_results[i][0].getModelId();
         result.pose_ = raw_fit_results[i][0].getPose();
         result.confidence_ = raw_fit_results[i][0].getScore();
-        result.cloud_ = typename pcl::PointCloud<PointType>::Ptr(new typename pcl::PointCloud<PointType>());
-
-        for (size_t j = i; j < cluster_model_indices.size(); j++)
-        {
-          if (raw_fit_results[j][0].getScore() > result.confidence_)
-          {
-            result.pose_ = raw_fit_results[j][0].getPose();
-            result.confidence_ = raw_fit_results[j][0].getScore();
-          }
-          // Merge the points in the same point cloud
-          *(result.cloud_) += (*clusters[j]);
-        }
+        result.cloud_ = clusters[i];
 
         results.push_back(result);
       }

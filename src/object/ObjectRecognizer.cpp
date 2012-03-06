@@ -154,9 +154,12 @@ namespace tabletop
 
         for (size_t cluster_index = 0; cluster_index < n_clusters; ++cluster_index)
         {
+          Eigen::Matrix4f t;
+          t.block(0, 0, 3, 3) = (*table_rotations_)[table_index].transpose();
+          t.block(0, 3, 3, 1) = -(*table_rotations_)[table_index].transpose() * (*table_translations_)[table_index];
+
           clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
-          pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]),
-                                   (*table_translations_)[table_index], quat);
+          pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]), t);
         }
         object_recognizer_.objectDetection<pcl::PointXYZ>(clusters, confidence_cutoff_, perform_fit_merge_, results);
 
@@ -173,13 +176,14 @@ namespace tabletop
           Eigen::Vector3f T(pose.position.x, pose.position.y, pose.position.z);
           Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
 
-          Eigen::Vector3f new_T = (*table_rotations_)[table_index].transpose() * T
-                                  - (*table_translations_)[table_index];
+          Eigen::Vector3f new_T = (*table_rotations_)[table_index] * T + (*table_translations_)[table_index];
           pose_result.set_T(new_T);
 
           pose_result.set_R(quat);
-          Eigen::Matrix3f R = (*table_rotations_)[table_index].transpose() * pose_result.R<Eigen::Matrix3f>();
+          Eigen::Matrix3f R = (*table_rotations_)[table_index] * pose_result.R<Eigen::Matrix3f>();
           pose_result.set_R(R);
+          pose_result.set_confidence(result.confidence_);
+
           pose_results_->push_back(pose_result);
         }
       }
