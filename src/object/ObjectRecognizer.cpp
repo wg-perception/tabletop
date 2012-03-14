@@ -43,7 +43,11 @@
 
 #include <ecto/ecto.hpp>
 #include <Eigen/Geometry>
+#ifdef PCL_VERSION_GE_140
 #include <pcl/common/transforms.h>
+#else
+#include <pcl/registration/transforms.h>
+#endif
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
