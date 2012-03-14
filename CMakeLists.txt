@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(tabletop)
+find_package(catkin REQUIRED)
+catkin_stack()
 
 find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
@@ -21,11 +23,12 @@ if (genmsg_FOUND)
     else()
         find_package(ROS REQUIRED geometry_msgs rosbag roscpp sensor_msgs visualization_msgs)
     endif()
+    find_package(ecto_ros REQUIRED)
     add_message_files(DIRECTORY msg FILES Shape.msg Table.msg TableArray.msg)
 
     generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
     # generate ecto cells to wrap the different messages
-    pubsub_gen_wrap(tabletop)
+#    pubsub_gen_wrap(tabletop)
 endif()
 
 #set the default path for built libraries to the "ecto_opencv" directory
@@ -79,7 +82,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/
   COMPONENT main
 )
 
-catkin_add_env_hooks(10tabletop SHELLS all)
+catkin_add_env_hooks(10.tabletop SHELLS all)
 
 # add the tests
 add_subdirectory(test)

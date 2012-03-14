@@ -2,20 +2,22 @@ add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
 if (ROS_ELECTRIC_FOUND)
-    include_directories(/opt/ros/electric/stacks/arm_navigation_experimental/distance_field/include/)
-    include_directories(/opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
-    include_directories(/opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/)
-    include_directories(/opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/)
-    include_directories(/opt/ros/electric/stacks/object_manipulation/household_objects_database/include/)
-    include_directories(/opt/ros/electric/stacks/sql_database/database_interface/include/)
+    include_directories(SYSTEM
+                        /opt/ros/electric/stacks/arm_navigation_experimental/distance_field/include/
+                        /opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/electric/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/electric/stacks/sql_database/database_interface/include/)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/electric/stacks/object_manipulation/household_objects_database/lib)
 else()
-    include_directories(/opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/)
-    include_directories(/opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
-    include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/)
-    include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/)
-    include_directories(/opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/)
-    include_directories(/opt/ros/fuerte/stacks/sql_database/database_interface/include/)
+    include_directories(SYSTEM
+                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
+                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 endif()
 
