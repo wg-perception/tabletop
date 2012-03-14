@@ -107,7 +107,31 @@ void
 ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int limit_rows, int start_offset,
                             int& total_rows, int& offset, std::vector<ViewElement> & view_elements)
 {
-  //throw std::runtime_error("Function not implemented in the SQL household DB.");
+  switch (view.type())
+  {
+    case object_recognition_core::db::View::VIEW_MODEL_WHERE_OBJECT_ID_AND_MODEL_TYPE:
+    {
+      throw std::runtime_error("Function not implemented in the SQL household DB.");
+      break;
+    }
+    case object_recognition_core::db::View::VIEW_OBJECT_INFO_WHERE_OBJECT_ID:
+    {
+      object_recognition_core::db::View::Key key;
+      std::string options;
+      if (view.key(key))
+      {
+        // Get the information from the different tables
+        BOOST_FOREACH(ViewElement & view_element, view_elements)
+        {
+
+        }
+      }
+      else
+        throw std::runtime_error("Function not implemented in the SQL household DB.");
+      break;
+    }
+  }
+
 }
 
 void
