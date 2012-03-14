@@ -43,7 +43,6 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/common/transforms.h>
 
 #include <tabletop/table/tabletop_segmenter.h>
 
