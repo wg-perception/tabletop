@@ -11,13 +11,23 @@ include_directories(SYSTEM
 )
 
 if (ROS_ELECTRIC_FOUND)
+    find_ros_package(arm_navigation_msgs)
+    find_ros_package(household_objects_database_msgs)
+    find_ros_package(object_manipulation)
+    find_ros_package(sql_database)
     include_directories(SYSTEM
                         ${arm_navigation_msgs_INCLUDE_DIRS}
+                        ${household_objects_database_msgs_INCLUDE_DIRS}
+                        ${object_manipulation_INCLUDE_DIRS}
+                        ${sql_database_INCLUDE_DIRS}
     )
 else()
     include_directories(SYSTEM
-                    /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-)
+                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
+    )
 endif()
 
 target_link_libraries(tabletop_db
