@@ -39,6 +39,7 @@
 #include <object_recognition_core/db/db.h>
 #include <object_recognition_core/db/db_base.h>
 #include <object_recognition_core/common/types.h>
+#include <household_objects_database/objects_database.h>
 
 using object_recognition_core::db::AttachmentName;
 using object_recognition_core::db::CollectionName;
@@ -166,6 +167,8 @@ private:
   void
   QueryView(const CollectionName & collection_name, int limit_rows, int start_offset, const std::string &options,
             int& total_rows, int& offset, std::vector<ViewElement> & view_elements, bool do_throw);
+
+  boost::shared_ptr<household_objects_database::ObjectsDatabase> db_;
 };
 
 #endif /* DB_COUCH_H_ */

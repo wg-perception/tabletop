@@ -35,7 +35,6 @@
 
 #include <sstream>
 #include "db_sql_household.h"
-#include <household_objects_database/objects_database.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -132,7 +131,6 @@ ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int 
       break;
     }
   }
-
 }
 
 void
