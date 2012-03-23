@@ -19,4 +19,4 @@ float32 y_max
 
 
 # Newer table definition as triangle mesh of convex hull (relative to pose)
-tabletop/Shape convex_hull
+arm_navigation_msgs/Shape convex_hull
