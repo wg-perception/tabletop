@@ -48,6 +48,25 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(const object_recognition_core::db::Ob
     :
       ObjectDbBase("", "")
 {
+  // Read the parameters
+  std::string field_names[] =
+  { "host", "port", "user", "password", "name" };
+  std::vector<std::string> fields(5);
+  for (size_t i = 0; i < 5; ++i)
+  {
+    if (parameters.raw_.find(field_names[i]) == parameters.raw_.end())
+    {
+      throw std::runtime_error("The db parameters do not contain the field " + field_names[i]);
+    }
+    else
+    {
+      fields[i] = parameters.raw_.find(field_names[i])->second.get_str();
+    }
+  }
+
+  // Create the DB object
+  db_ = boost::shared_ptr<household_objects_database::ObjectsDatabase>(
+      new household_objects_database::ObjectsDatabase(fields[0], fields[1], fields[2], fields[3], fields[4]));
 }
 
 void
