@@ -9,7 +9,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.plain.in
                @ONLY
 )
 
-install(FILES ${CMAKE_BINARY_DIR}/gen/py/tabletop/ecto_cells/__init__.py
+install(FILES ${python_LIBRARY_OUTPUT_DIRECTORY}/ecto_cells/__init__.py
         DESTINATION ${PYTHON_PACKAGES_PATH}/tabletop/ecto_cells
 )
 
