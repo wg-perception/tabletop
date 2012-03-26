@@ -9,8 +9,8 @@ from object_recognition_core.db.object_db import ObjectDb
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
 import ecto
-import tabletop_object
-import tabletop_table
+from tabletop.ecto_cells.tabletop_object import TableDetector
+from ecto_cells.tabletop_table import TablePose, Clusterer
 
 try:
     import ecto_ros.ecto_ros as ecto_ros
@@ -19,11 +19,11 @@ except ImportError:
     ECTO_ROS_FOUND = False
 
 class TabletopTableDetector(ecto.BlackBox):
-    table_detector = tabletop_table.TableDetector
-    table_pose = tabletop_table.TablePose
+    table_detector = TableDetector
+    table_pose = TablePose
     to_cloud_conversion = MatToPointCloudXYZOrganized
     passthrough = ecto.PassthroughN
-    _clusterer = tabletop_table.Clusterer
+    _clusterer = Clusterer
     if ECTO_ROS_FOUND:
         message_cvt = ecto_ros.Mat2Image
 

@@ -4,7 +4,7 @@ Module defining the Table Publisher
 
 from object_recognition_core.ecto_cells.io_ros import Publisher_Marker, Publisher_MarkerArray
 from object_recognition_core.io.sink import Sink
-from tabletop_table import TableMsgAssembler
+from ecto_cells.tabletop_table import TableMsgAssembler
 import ecto
 
 MarkerPub = Publisher_Marker

@@ -3,6 +3,9 @@ project(tabletop)
 find_package(catkin REQUIRED)
 catkin_stack()
 
+catkin_python_setup()
+add_subdirectory(python)
+
 find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
 find_pcl_package()
@@ -12,6 +15,20 @@ set_ecto_install_package_name(tabletop)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 find_package(object_recognition_core REQUIRED)
 
+
+
+#set the default path for built executables to the "bin" directory
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+#set the default path for built libraries to the "lib" directory
+#set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+#set the default path for built libraries to the lib directory
+if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gen/py)
+endif()
+
+add_subdirectory(src)
+
+# deal with the messages
 find_package(genmsg REQUIRED)
 
 if (genmsg_FOUND)
@@ -73,29 +90,12 @@ endif()
 #find_package(ROS REQUIRED geometry)
 #include_directories(${geometry_INCLUDE_DIRS})
 
-
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-add_subdirectory(src)
-
-#install targets for all things python
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/
-  DESTINATION ${PYTHON_PACKAGES_PATH}
-  COMPONENT main
-)
-
 catkin_add_env_hooks(10.tabletop SHELLS all)
 
 # add the tests
 add_subdirectory(test)
 
 # deal with some ROS stuff
-install(FILES manifest.xml stack.yaml
-    DESTINATION share/tabletop
-)
 install(DIRECTORY msg
     DESTINATION share/tabletop
     PATTERN ".svn" EXCLUDE

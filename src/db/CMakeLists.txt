@@ -15,6 +15,7 @@ if (ROS_ELECTRIC_FOUND)
     find_ros_package(household_objects_database_msgs)
     find_ros_package(object_manipulation)
     find_ros_package(sql_database)
+    find_ros_package(household_objects_database)
     include_directories(SYSTEM
                         ${arm_navigation_msgs_INCLUDE_DIRS}
                         ${household_objects_database_msgs_INCLUDE_DIRS}
@@ -28,10 +29,12 @@ else()
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/sql_database/database_interface/include/
     )
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 endif()
 
 target_link_libraries(tabletop_db
                       object_recognition_core_db
+                      ${household_objects_database_LIBRARIES}
 )
 
 install(TARGETS tabletop_db
@@ -50,7 +53,6 @@ target_link_libraries(tabletop_db_interface
 )
 
 set_target_properties(tabletop_db_interface PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${python_LIBRARY_OUTPUT_DIRECTORY}/
                       OUTPUT_NAME db_interface
                       PREFIX ""
 )

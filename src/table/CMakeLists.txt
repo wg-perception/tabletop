@@ -6,8 +6,39 @@ if (genmsg_FOUND)
 endif()
 
 find_package(object_recognition_core REQUIRED)
+
+
+find_pcl_package()
+if (ROS_ELECTRIC_FOUND)
+    include_directories(SYSTEM
+                        /opt/ros/electric/stacks/arm_navigation_experimental/distance_field/include/
+                        /opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/electric/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/electric/stacks/sql_database/database_interface/include/)
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/electric/stacks/object_manipulation/household_objects_database/lib)
+else()
+    include_directories(SYSTEM
+                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
+                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/bullet/include/
+                        /opt/ros/fuerte/stacks/geometry/tf/include/
+                        /opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
+    )
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
+endif()
+
+
+
 include_directories(SYSTEM
-    ${object_recognition_core_INCLUDE_DIRS}
+                    ${object_recognition_core_INCLUDE_DIRS}
+                    ${PCL_INCLUDE_DIRS}
 )
 
 # deal with the detection TOD module
@@ -31,6 +62,10 @@ link_ecto(tabletop_table
     ${rosconsole_LIBRARIES}
     ${tf_LIBRARIES}
     marker_generator
+)
+
+set_target_properties(tabletop_table_ectomodule PROPERTIES
+                      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gen/py/tabletop/ecto_cells
 )
 
 install_ecto_module(tabletop_table)
