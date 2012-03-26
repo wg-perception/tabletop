@@ -2,8 +2,8 @@
 Next lines inspired from object_recognition_core/db/__init__.py
 """
 
-#from ecto.load_pybindings import load_pybindings
-#load_pybindings(__name__)
+from ecto.load_pybindings import load_pybindings
+load_pybindings(__name__)
 
 #import os
 
@@ -17,7 +17,9 @@ Next lines inspired from object_recognition_core/db/__init__.py
 
 
 
-
+import tabletop.ecto_cells.tabletop_object
+import tabletop.ecto_cells.tabletop_table
+from tabletop.ecto_cells.tabletop_object import TableDetector
 from tabletop.detector import TabletopObjectDetectionPipeline, TabletopTableDetectionPipeline
 from tabletop.table_publisher import TablePublisherSink
 from tabletop.db import SqlHouseHoldDb

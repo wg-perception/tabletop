@@ -65,7 +65,7 @@ link_ecto(tabletop_table
 )
 
 set_target_properties(tabletop_table_ectomodule PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gen/py/tabletop/ecto_cells
+                      LIBRARY_OUTPUT_DIRECTORY ${python_LIBRARY_OUTPUT_DIRECTORY}/ecto_cells
 )
 
 install_ecto_module(tabletop_table)

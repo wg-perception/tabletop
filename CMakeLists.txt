@@ -3,8 +3,7 @@ project(tabletop)
 find_package(catkin REQUIRED)
 catkin_stack()
 
-catkin_python_setup()
-add_subdirectory(python)
+#catkin_python_setup()
 
 find_package(ecto REQUIRED)
 find_package(ecto_pcl REQUIRED)
@@ -23,10 +22,9 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #set the default path for built libraries to the lib directory
 if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gen/py)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
-add_subdirectory(src)
 
 # deal with the messages
 find_package(genmsg REQUIRED)
@@ -59,6 +57,9 @@ if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 endif()
 
 set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PYTHON_PACKAGES_PATH}/tabletop)
+
+add_subdirectory(src)
+add_subdirectory(python)
 
 # temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
