@@ -53,6 +53,7 @@ target_link_libraries(tabletop_db_interface
 )
 
 set_target_properties(tabletop_db_interface PROPERTIES
+                      LIBRARY_OUTPUT_DIRECTORY ${ecto_module_PYTHON_OUTPUT}/../
                       OUTPUT_NAME db_interface
                       PREFIX ""
 )

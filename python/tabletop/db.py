@@ -14,4 +14,6 @@ class SqlHouseHoldDb(ObjectDbBase):
 
     @classmethod
     def object_db(cls, db_params):
-        return ObjectDbCpp(ObjectDbParameters(db_params))
+        db_params_copy = db_params
+        db_params_copy['port'] = str(db_params['port'])
+        return ObjectDbCpp(ObjectDbParameters(db_params_copy))

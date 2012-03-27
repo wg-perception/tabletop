@@ -85,8 +85,4 @@ link_ecto(tabletop_object
     tabletop_db
 )
 
-set_target_properties(tabletop_object_ectomodule PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${python_LIBRARY_OUTPUT_DIRECTORY}/ecto_cells
-)
-
 install_ecto_module(tabletop_object)

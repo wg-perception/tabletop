@@ -3,14 +3,13 @@
 Module defining the transparent objects detector to find objects in a scene
 """
 
-from tabletop.ecto_cells.tabletop_object import TableDetector
+import ecto
+from tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
 from ecto_image_pipeline.conversion import MatToPointCloudXYZOrganized
 from object_recognition_core.boost.interface import DbModels, ObjectDbParameters
 from object_recognition_core.db.object_db import ObjectDb
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
-import ecto
-from ecto_cells.tabletop_table import TablePose, Clusterer
 
 try:
     import ecto_ros.ecto_ros as ecto_ros
@@ -57,11 +56,11 @@ class TabletopTableDetector(ecto.BlackBox):
         if vertical_direction is not None:
             self.table_pose = tabletop_table.TablePose(vertical_direction=vertical_direction)
         else:
-            self.table_pose = tabletop_table.TablePose()
+            self.table_pose = TablePose()
         if self._parameters:
-            self.table_detector = tabletop_table.TableDetector(**self._parameters)
+            self.table_detector = TableDetector(**self._parameters)
         else:
-            self.table_detector = tabletop_table.TableDetector()
+            self.table_detector = TableDetector()
 
     def connections(self):
         # First find the table, then the pose

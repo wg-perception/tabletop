@@ -3,13 +3,18 @@ project(tabletop)
 find_package(catkin REQUIRED)
 catkin_stack()
 
-#catkin_python_setup()
+# deal with Python
+catkin_python_setup()
 
 find_package(ecto REQUIRED)
+
+set_ecto_install_package_name(tabletop/ecto_cells)
+
+add_subdirectory(python)
+
+
 find_package(ecto_pcl REQUIRED)
 find_pcl_package()
-
-set_ecto_install_package_name(tabletop)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 find_package(object_recognition_core REQUIRED)
@@ -56,10 +61,7 @@ if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
-set(python_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PYTHON_PACKAGES_PATH}/tabletop)
-
 add_subdirectory(src)
-add_subdirectory(python)
 
 # temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
@@ -90,8 +92,6 @@ else()
 endif()
 #find_package(ROS REQUIRED geometry)
 #include_directories(${geometry_INCLUDE_DIRS})
-
-catkin_add_env_hooks(10.tabletop SHELLS all)
 
 # add the tests
 add_subdirectory(test)

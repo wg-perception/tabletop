@@ -64,8 +64,4 @@ link_ecto(tabletop_table
     marker_generator
 )
 
-set_target_properties(tabletop_table_ectomodule PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${python_LIBRARY_OUTPUT_DIRECTORY}/ecto_cells
-)
-
 install_ecto_module(tabletop_table)
