@@ -46,7 +46,25 @@
 
 #include <tabletop/table/tabletop_segmenter.h>
 
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/integral_image_normal.h>
+#include <pcl/segmentation/organized_multi_plane_segmentation.h>
+#include <pcl/segmentation/planar_polygon_fusion.h>
+#include <pcl/common/transforms.h>
+#include <pcl/segmentation/plane_coefficient_comparator.h>
+#include <pcl/segmentation/euclidean_plane_coefficient_comparator.h>
+#include <pcl/segmentation/rgb_plane_coefficient_comparator.h>
+#include <pcl/segmentation/edge_aware_plane_comparator.h>
+#include <pcl/segmentation/euclidean_cluster_comparator.h>
+#include <pcl/segmentation/organized_connected_component_segmentation.h>
+
 using ecto::tendrils;
+
+typedef pcl::PointXYZ PointT;
+typedef pcl::PointCloud<PointT> Cloud;
+typedef Cloud::Ptr CloudPtr;
+typedef Cloud::ConstPtr CloudConstPtr;
+typedef std::vector<pcl::PointCloud<PointT>, Eigen::aligned_allocator<pcl::PointCloud<PointT> > > CloudVectorType;
 
 namespace tabletop
 {
@@ -114,6 +132,37 @@ namespace tabletop
       clouds_out_->clear();
       clouds_hull_->clear();
       table_coefficients_->clear();
+
+#if PCL_VERSION_GE_160
+      pcl::PointCloud<PointT>::Ptr init_cloud_ptr(new pcl::PointCloud<PointT>);
+      pcl::PointCloud<PointT>::Ptr prev_cloud(new pcl::PointCloud<PointT>);
+      *prev_cloud = *(*cloud_in_);
+
+      pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
+      ne.setNormalEstimationMethod(ne.COVARIANCE_MATRIX);
+      ne.setMaxDepthChangeFactor(0.03f);
+      ne.setNormalSmoothingSize(20.0f);
+
+      pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
+      mps.setMinInliers(10000);
+      mps.setAngularThreshold(0.017453 * 2.0); //3 degrees
+      mps.setDistanceThreshold(0.02); //2cm
+
+      std::vector<pcl::PlanarRegion<PointT> > regions;
+      pcl::PointCloud<PointT>::Ptr contour(new pcl::PointCloud<PointT>);
+      size_t prev_models_size = 0;
+
+      regions.clear();
+      pcl::PointCloud<pcl::Normal>::Ptr normal_cloud(new pcl::PointCloud<pcl::Normal>);
+      ne.setInputCloud(prev_cloud);
+      ne.compute(*normal_cloud);
+
+      mps.setInputNormals(normal_cloud);
+      mps.setInputCloud(prev_cloud);
+      mps.segmentAndRefine(regions);
+      BOOST_FOREACH(const pcl::PlanarRegion<PointT> & region, regions)
+        table_coefficients_->push_back(region.getCoefficients());
+#else
       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out;
       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull;
       if (table_segmenter.findTable<pcl::PointXYZ>(*cloud_in_, table_coefficients, cloud_out, cloud_hull)
@@ -123,8 +172,9 @@ namespace tabletop
         clouds_hull_->push_back(cloud_hull);
         table_coefficients_->push_back(
             Eigen::Vector4f(table_coefficients->values[0], table_coefficients->values[1], table_coefficients->values[2],
-                            table_coefficients->values[3]));
+                table_coefficients->values[3]));
       }
+#endif
 
       // Compute the corresponding poses
       table_rotations_->resize(table_coefficients_->size());

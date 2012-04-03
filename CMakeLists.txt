@@ -17,6 +17,7 @@ find_package(ecto_pcl REQUIRED)
 find_pcl_package()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(include)
 find_package(object_recognition_core REQUIRED)
 
 

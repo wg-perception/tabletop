@@ -48,6 +48,26 @@
 
 using ecto::tendrils;
 
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/integral_image_normal.h>
+#include <pcl/segmentation/organized_multi_plane_segmentation.h>
+#include <pcl/segmentation/planar_polygon_fusion.h>
+#include <pcl/common/transforms.h>
+#include <pcl/segmentation/plane_coefficient_comparator.h>
+#include <pcl/segmentation/euclidean_plane_coefficient_comparator.h>
+#include <pcl/segmentation/rgb_plane_coefficient_comparator.h>
+#include <pcl/segmentation/edge_aware_plane_comparator.h>
+#include <pcl/segmentation/euclidean_cluster_comparator.h>
+#include <pcl/segmentation/organized_connected_component_segmentation.h>
+
+using ecto::tendrils;
+
+typedef pcl::PointXYZRGBA PointT;
+typedef pcl::PointCloud<PointT> Cloud;
+typedef Cloud::Ptr CloudPtr;
+typedef Cloud::ConstPtr CloudConstPtr;
+typedef std::vector<pcl::PointCloud<PointT>, Eigen::aligned_allocator<pcl::PointCloud<PointT> > > CloudVectorType;
+
 namespace tabletop
 {
   /** Ecto implementation of a module that takes
@@ -95,6 +115,84 @@ namespace tabletop
                                    *table_z_filter_min_, *table_z_filter_max_);
 
       clusters_->clear();
+
+#if PCL_VERSION_GE_160
+//#if 0
+      pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
+      pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
+      pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal>::Ptr edge_aware_comparator_;
+      pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>::Ptr euclidean_cluster_comparator_;
+
+      bool use_planar_refinement_ = true;
+      bool use_clustering_;
+      CloudVectorType prev_clusters_;
+
+      // Estimate Normals
+      pcl::PointCloud<pcl::Normal>::Ptr normal_cloud(new pcl::PointCloud<pcl::Normal>);
+      ne.setInputCloud(*cloud_);
+      ne.compute(*normal_cloud);
+      float* distance_map = ne.getDistanceMap();
+      boost::shared_ptr<pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal> > eapc = boost::dynamic_pointer_cast<
+          pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal> >(edge_aware_comparator_);
+      eapc->setDistanceMap(distance_map);
+
+      // Segment Planes
+      printf("Segmenting planes...\n");
+      std::vector<pcl::PlanarRegion<PointT> > regions;
+      std::vector<pcl::ModelCoefficients> model_coefficients;
+      std::vector<pcl::PointIndices> inlier_indices;
+      pcl::PointCloud<pcl::Label>::Ptr labels(new pcl::PointCloud<pcl::Label>);
+      std::vector<pcl::PointIndices> label_indices;
+      std::vector<pcl::PointIndices> boundary_indices;
+      mps.setInputNormals(normal_cloud);
+      mps.setInputCloud(cloud);
+      if (use_planar_refinement_)
+      {
+        mps.segmentAndRefine(regions, model_coefficients, inlier_indices, labels, label_indices, boundary_indices);
+      }
+      else
+      {
+        mps.segment(regions); //, model_coefficients, inlier_indices, labels, label_indices, boundary_indices);
+      }
+
+      //Segment Objects
+      CloudVectorType clusters;
+
+      if (use_clustering_ && regions.size() > 0)
+      {
+        std::vector<bool> plane_labels;
+        plane_labels.resize(label_indices.size(), false);
+        for (size_t i = 0; i < label_indices.size(); i++)
+        {
+          if (label_indices[i].indices.size() > 10000)
+          {
+            plane_labels[i] = true;
+          }
+        }
+
+        euclidean_cluster_comparator_->setInputCloud(cloud);
+        euclidean_cluster_comparator_->setLabels(labels);
+        euclidean_cluster_comparator_->setExcludeLabels(plane_labels);
+
+        pcl::PointCloud < pcl::Label > euclidean_labels;
+        std::vector<pcl::PointIndices> euclidean_label_indices;
+        pcl::OrganizedConnectedComponentSegmentation<PointT, pcl::Label> euclidean_segmentation(
+            euclidean_cluster_comparator_);
+        euclidean_segmentation.setInputCloud(cloud);
+        euclidean_segmentation.segment(euclidean_labels, euclidean_label_indices);
+
+        clusters_->resize(1);
+        for (size_t i = 0; i < euclidean_label_indices.size(); i++)
+        {
+          if (euclidean_label_indices[i].indices.size() > 1000)
+          {
+            pcl::PointCloud<PointT> cluster;
+            pcl::copyPointCloud(*cloud, euclidean_label_indices[i].indices, cluster);
+            clusters_[0].push_back(cluster);
+          }
+        }
+      }
+#else
       for (size_t table_index = 0; table_index < clouds_hull_->size(); ++table_index)
       {
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters;
@@ -102,6 +200,7 @@ namespace tabletop
 
         clusters_->push_back(clusters);
       }
+#endif
 
       return ecto::OK;
     }
