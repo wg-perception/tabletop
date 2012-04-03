@@ -62,7 +62,8 @@ using ecto::tendrils;
 
 using ecto::tendrils;
 
-typedef pcl::PointXYZRGBA PointT;
+//typedef pcl::PointXYZRGBA PointT;
+typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 typedef Cloud::ConstPtr CloudConstPtr;
@@ -129,7 +130,9 @@ namespace tabletop
 
       // Estimate Normals
       pcl::PointCloud<pcl::Normal>::Ptr normal_cloud(new pcl::PointCloud<pcl::Normal>);
-      ne.setInputCloud(*cloud_);
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+      *cloud = *(*cloud_);
+      ne.setInputCloud(cloud);
       ne.compute(*normal_cloud);
       float* distance_map = ne.getDistanceMap();
       boost::shared_ptr<pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal> > eapc = boost::dynamic_pointer_cast<
@@ -186,9 +189,9 @@ namespace tabletop
         {
           if (euclidean_label_indices[i].indices.size() > 1000)
           {
-            pcl::PointCloud<PointT> cluster;
-            pcl::copyPointCloud(*cloud, euclidean_label_indices[i].indices, cluster);
-            clusters_[0].push_back(cluster);
+            pcl::PointCloud<PointT>::Ptr cluster(new pcl::PointCloud<PointT>);
+            pcl::copyPointCloud(*cloud, euclidean_label_indices[i].indices, *cluster);
+            (*clusters_)[0].push_back(cluster);
           }
         }
       }
