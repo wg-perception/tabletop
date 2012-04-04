@@ -64,6 +64,7 @@ link_ecto(tabletop_table
     ${rosconsole_LIBRARIES}
     ${tf_LIBRARIES}
     marker_generator
+    pcl_latest
 )
 
 install_ecto_module(tabletop_table)

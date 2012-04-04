@@ -117,8 +117,8 @@ namespace tabletop
 
       clusters_->clear();
 
-#if PCL_VERSION_GE_160
-//#if 0
+//#if PCL_VERSION_GE_160
+#if 0
       pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
       pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
       pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal>::Ptr edge_aware_comparator_;

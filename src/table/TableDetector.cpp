@@ -84,7 +84,7 @@ namespace tabletop
                      "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
                      limits);
       params.declare(&TableDetector::min_cluster_size_, "min_cluster_size",
-                     "The minimum number of points deemed necessary to find a table.", 1000);
+                     "The minimum number of points deemed necessary to find a table.", 10000);
       params.declare(&TableDetector::plane_detection_voxel_size_, "plane_detection_voxel_size",
                      "The size of a voxel cell when downsampling ", 0.01);
       params.declare(&TableDetector::normal_k_search_, "normal_k_search",
@@ -133,7 +133,8 @@ namespace tabletop
       clouds_hull_->clear();
       table_coefficients_->clear();
 
-#if PCL_VERSION_GE_160
+//#if PCL_VERSION_GE_160
+#if 0
       pcl::PointCloud<PointT>::Ptr init_cloud_ptr(new pcl::PointCloud<PointT>);
       pcl::PointCloud<PointT>::Ptr prev_cloud(new pcl::PointCloud<PointT>);
       *prev_cloud = *(*cloud_in_);
@@ -146,7 +147,7 @@ namespace tabletop
       pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
       mps.setMinInliers(10000);
       mps.setAngularThreshold(0.017453 * 2.0); //3 degrees
-      mps.setDistanceThreshold(0.02); //2cm
+      mps.setDistanceThreshold(0.02);//2cm
 
       std::vector<pcl::PlanarRegion<PointT> > regions;
       pcl::PointCloud<PointT>::Ptr contour(new pcl::PointCloud<PointT>);
@@ -161,18 +162,42 @@ namespace tabletop
       mps.setInputCloud(prev_cloud);
       mps.segmentAndRefine(regions);
       BOOST_FOREACH(const pcl::PlanarRegion<PointT> & region, regions)
-        table_coefficients_->push_back(region.getCoefficients());
+      table_coefficients_->push_back(region.getCoefficients());
 #else
       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out;
       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull;
-      if (table_segmenter.findTable<pcl::PointXYZ>(*cloud_in_, table_coefficients, cloud_out, cloud_hull)
-          == TabletopSegmenter::SUCCESS)
+      pcl::PointCloud<PointT>::Ptr cloud_copy(new pcl::PointCloud<PointT>);
+      *cloud_copy = *(*cloud_in_);
+
+      while (table_segmenter.findTable<pcl::PointXYZ>(cloud_copy, table_coefficients, cloud_out, cloud_hull)
+             == TabletopSegmenter::SUCCESS)
       {
-        clouds_out_->push_back(cloud_out);
-        clouds_hull_->push_back(cloud_hull);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out_copy(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull_copy(new pcl::PointCloud<pcl::PointXYZ>);
+        *cloud_out_copy = *cloud_out;
+        *cloud_hull_copy = *cloud_hull;
+        clouds_out_->push_back(cloud_out_copy);
+        clouds_hull_->push_back(cloud_hull_copy);
         table_coefficients_->push_back(
             Eigen::Vector4f(table_coefficients->values[0], table_coefficients->values[1], table_coefficients->values[2],
-                table_coefficients->values[3]));
+                            table_coefficients->values[3]));
+
+        // Remove the table from the current point cloud
+        typename pcl::ExtractPolygonalPrismData<pcl::PointXYZ> prism_;
+
+        // ---[ Get the objects on top of the (non-flat) table
+        pcl::PointIndices::Ptr cloud_object_indices(new pcl::PointIndices);
+        //prism_.setInputCloud (cloud_all_minus_table_ptr);
+        prism_.setInputCloud(cloud_copy);
+        prism_.setInputPlanarHull(cloud_hull);
+        prism_.setHeightLimits(-10000, 10000);
+        prism_.segment(*cloud_object_indices);
+
+        pcl::ExtractIndices<pcl::PointXYZ> extractor;
+        extractor.setInputCloud(cloud_copy);
+        extractor.setIndices(cloud_object_indices);
+        extractor.setNegative(true);
+        extractor.filter(*cloud_copy);
       }
 #endif
 
