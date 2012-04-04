@@ -236,7 +236,7 @@ namespace tabletop
     {
       visualization_msgs::MarkerArrayPtr marker_array_delete(new visualization_msgs::MarkerArray);
 
-      for (size_t id = current_marker_id_; id < num_markers_published_; id++)
+      for (size_t id = 0; id < num_markers_published_; id++)
       {
         visualization_msgs::Marker marker_delete;
         marker_delete.header.stamp = ros::Time::now();

@@ -24,10 +24,10 @@ class TablePublisher(ecto.BlackBox):
     _marker_array_clusters = MarkerArrayPub
 
     def declare_params(self, p):
-        p.declare('marker_hull_topic', 'The ROS topic to use for the table message.', 'marker_hull')
-        p.declare('marker_origin_topic', 'The ROS topic to use for the table message.', 'marker_origin')
+        p.declare('marker_hull_topic', 'The ROS topic to use for the table message.', 'marker_table')
+        p.declare('marker_origin_topic', 'The ROS topic to use for the table message.', 'marker_table')
         p.declare('marker_table_topic', 'The ROS topic to use for the table message.', 'marker_table')
-        p.declare('marker_array_delete', 'The ROS topic to use for the markers to remove.', 'marker_array_delete')
+        p.declare('marker_array_delete', 'The ROS topic to use for the markers to remove.', 'marker_table')
         p.declare('marker_array_clusters', 'The ROS topic to use for the markers of the clusters.', 'marker_array_clusters')
         p.declare('latched', 'Determines if the topics will be latched.', True)
 
