@@ -95,6 +95,7 @@ namespace tabletop
                      "The distance used as a threshold when finding a plane", 0.2);
       Eigen::Vector3f default_up(0, 0, 1);
       params.declare(&TableDetector::up_direction_, "vertical_direction", "The vertical direction", default_up);
+      params.declare(&TableDetector::up_frame_id_, "vertical_frame_id", "The vertical frame id", "/map");
     }
 
     static void
@@ -172,6 +173,10 @@ namespace tabletop
       while (table_segmenter.findTable<pcl::PointXYZ>(cloud_copy, table_coefficients, cloud_out, cloud_hull)
              == TabletopSegmenter::SUCCESS)
       {
+        // First of all, check that the table has a normal close to what is wanted
+        //(*cloud_in_)->header;
+
+        //
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out_copy(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull_copy(new pcl::PointCloud<pcl::PointXYZ>);
         *cloud_out_copy = *cloud_out;
@@ -238,6 +243,8 @@ namespace tabletop
     ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
     /** The vertical direction */
     ecto::spore<Eigen::Vector3f> up_direction_;
+    /** The frame id of the vertical direction */
+    ecto::spore<std::string> up_frame_id_;
 
     ecto::spore<float> cluster_tolerance_;
   };
