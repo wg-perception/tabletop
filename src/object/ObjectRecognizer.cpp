@@ -48,6 +48,8 @@
 #else
 #include <pcl/registration/transforms.h>
 #endif
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -162,7 +164,7 @@ namespace tabletop
           t.block(0, 0, 3, 3) = (*table_rotations_)[table_index].transpose();
           t.block(0, 3, 3, 1) = -(*table_rotations_)[table_index].transpose() * (*table_translations_)[table_index];
 
-          clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+          clusters[cluster_index] = pcl::PointCloud < pcl::PointXYZ > ::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
           pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]), t);
         }
         object_recognizer_.objectDetection<pcl::PointXYZ>(clusters, confidence_cutoff_, perform_fit_merge_, results);
@@ -172,11 +174,14 @@ namespace tabletop
           const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> & result = results[i];
 
           PoseResult pose_result;
-          const geometry_msgs::Pose &pose = result.pose_;
+
+          // Add the object id
           std::stringstream ss;
           ss << result.object_id_;
           pose_result.set_object_id(*db_, ss.str());
 
+          // Add the pose
+          const geometry_msgs::Pose &pose = result.pose_;
           Eigen::Vector3f T(pose.position.x, pose.position.y, pose.position.z);
           Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
 
@@ -187,6 +192,15 @@ namespace tabletop
           Eigen::Matrix3f R = (*table_rotations_)[table_index] * pose_result.R<Eigen::Matrix3f>();
           pose_result.set_R(R);
           pose_result.set_confidence(result.confidence_);
+
+          // Add the cluster of points
+          std::vector<pcl::PointCloud<pcl::PointXYZ> > point_clouds(1);
+          point_clouds[0] = *(result.cloud_);
+          std::vector<pcl::PointCloud<pcl::PointXYZ> > *point_clouds_ptr =
+              (std::vector<pcl::PointCloud<pcl::PointXYZ> > *) malloc(
+                  sizeof(std::vector<pcl::PointCloud<pcl::PointXYZ> >));
+          *point_clouds_ptr = point_clouds;
+          pose_result.set_point_clouds(reinterpret_cast<char*>(point_clouds_ptr));
 
           pose_results_->push_back(pose_result);
         }
@@ -214,4 +228,4 @@ namespace tabletop
 }
 
 ECTO_CELL(tabletop_object, tabletop::ObjectRecognizer, "ObjectRecognizer",
-          "Given clusters on a table, identify them as objects.");
+    "Given clusters on a table, identify them as objects.");
