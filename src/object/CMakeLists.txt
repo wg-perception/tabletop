@@ -1,6 +1,10 @@
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
+install(TARGETS marker_generator
+        DESTINATION lib
+)
+
 find_pcl_package()
 if (ROS_ELECTRIC_FOUND)
     include_directories(SYSTEM
@@ -53,6 +57,10 @@ target_link_libraries(tabletop_model_fitter
 
 set_target_properties(tabletop_model_fitter PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+)
+
+install(TARGETS tabletop_model_fitter
+        DESTINATION lib
 )
 
 # old stuff, useless now
