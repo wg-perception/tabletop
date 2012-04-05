@@ -48,6 +48,7 @@
 
 using ecto::tendrils;
 
+#if 0
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
@@ -59,6 +60,7 @@ using ecto::tendrils;
 #include <pcl/segmentation/edge_aware_plane_comparator.h>
 #include <pcl/segmentation/euclidean_cluster_comparator.h>
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
+#endif
 
 using ecto::tendrils;
 

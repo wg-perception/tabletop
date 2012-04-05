@@ -46,6 +46,7 @@
 
 #include <tabletop/table/tabletop_segmenter.h>
 
+#if 0
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
@@ -57,6 +58,9 @@
 #include <pcl/segmentation/edge_aware_plane_comparator.h>
 #include <pcl/segmentation/euclidean_cluster_comparator.h>
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
+#endif
+
+#include <tf/transform_listener.h>
 
 using ecto::tendrils;
 
@@ -175,6 +179,15 @@ namespace tabletop
       {
         // First of all, check that the table has a normal close to what is wanted
         //(*cloud_in_)->header;
+        if (!up_frame_id_->empty())
+        {
+          Eigen::Vector4f up_direction(table_coefficients->values[0], table_coefficients->values[1],
+                                       table_coefficients->values[2], table_coefficients->values[3]);
+          /*tf::TransformListener listener;
+          geometry_msgs::Vector3Stamped stamped_in;
+          geometry_msgs::Vector3Stamped stamped_out;
+          listener.tranformVector(*up_frame_id_, stamped_in, stamped_out);*/
+        }
 
         //
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out_copy(new pcl::PointCloud<pcl::PointXYZ>);
