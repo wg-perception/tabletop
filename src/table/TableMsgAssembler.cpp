@@ -95,7 +95,7 @@ namespace tabletop
       outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
       outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
                       "The markers of the clusters");
-      outputs.declare(&TableMsgAssembler::table_array_msg_, "table_array_msg", "The message for the found tables");
+      outputs.declare<tabletop::TableArrayConstPtr>("table_array_msg", "The message for the found tables");
       outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_hull", "The marker for the table hull");
       outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_origin",
                                                                "The marker for the origin of the table");
@@ -132,8 +132,7 @@ namespace tabletop
       marker_array_origin_.markers.reserve(pose_results_->size());
       marker_array_hull_.markers.clear();
       marker_array_hull_.markers.reserve(pose_results_->size());
-      *table_array_msg_ = tabletop::TableArrayPtr(new tabletop::TableArray);
-      (*table_array_msg_)->tables.clear();
+      tabletop::TableArray table_array_msg;
 
       std_msgs::Header message_header;
       message_header.frame_id = frame_id;
@@ -220,7 +219,7 @@ namespace tabletop
 
         // ---[ Add the convex hull as a triangle mesh to the Table message
         addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
-        (*table_array_msg_)->tables.push_back(table);
+        table_array_msg.tables.push_back(table);
 
         // Publish each clusters
         addClusterMarkers((*clusters_)[table_index], table.pose.header/*message_header*/);
@@ -232,6 +231,7 @@ namespace tabletop
       << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
       outputs["marker_array_table"]
       << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
+      outputs["table_array_msg"] << tabletop::TableArrayConstPtr(new tabletop::TableArray(table_array_msg));
 
       return ecto::OK;
     }
@@ -451,7 +451,7 @@ namespace tabletop
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
 
-    ecto::spore<tabletop::TableArrayPtr> table_array_msg_;
+    ecto::spore<tabletop::TableArrayConstPtr> table_array_msg_;
 
     visualization_msgs::MarkerArray marker_array_table_;
     visualization_msgs::MarkerArray marker_array_origin_;
