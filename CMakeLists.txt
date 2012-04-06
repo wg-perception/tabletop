@@ -57,7 +57,8 @@ if (genmsg_FOUND)
 
     generate_messages(DEPENDENCIES actionlib_msgs arm_navigation_msgs geometry_msgs sensor_msgs std_msgs)
     # generate ecto cells to wrap the different messages
-#    pubsub_gen_wrap(tabletop)
+    find_package(ecto_ros REQUIRED)
+    #pubsub_gen_wrap(tabletop)
 endif()
 
 #set the default path for built libraries to the "ecto_opencv" directory

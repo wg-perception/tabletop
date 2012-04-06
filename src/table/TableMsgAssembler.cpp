@@ -55,6 +55,7 @@
 #include <tf/transform_broadcaster.h>
 
 #include <tabletop/Table.h>
+#include <tabletop/TableArray.h>
 #include <tabletop/table/tabletop_segmenter.h>
 
 #include "tabletop_object_detector/marker_generator.h"
@@ -94,6 +95,7 @@ namespace tabletop
       outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
       outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
                       "The markers of the clusters");
+      outputs.declare(&TableMsgAssembler::table_array_msg_, "table_array_msg", "The message for the found tables");
       outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_hull", "The marker for the table hull");
       outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_origin",
                                                                "The marker for the origin of the table");
@@ -222,11 +224,11 @@ namespace tabletop
       }
 
       outputs["marker_array_hull"]
-          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_hull_));
+      << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_hull_));
       outputs["marker_array_origin"]
-          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
+      << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
       outputs["marker_array_table"]
-          << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
+      << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
 
       return ecto::OK;
     }
@@ -262,12 +264,12 @@ namespace tabletop
       tf::Vector3 position_tf(translation[0], translation[1], translation[2]);
 #ifdef PCL_VERSION_GE_140
       tf::Matrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
-                                rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
-                                rotation.coeff(2, 2));
-#else
-      btMatrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
           rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
           rotation.coeff(2, 2));
+#else
+      btMatrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1), rotation.coeff(0, 2), rotation.coeff(1, 0),
+                              rotation.coeff(1, 1), rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
+                              rotation.coeff(2, 2));
 #endif
 
       tf::Quaternion orientation;
@@ -446,6 +448,8 @@ namespace tabletop
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
 
+    ecto::spore<tabletop::TableArray> table_array_msg_;
+
     visualization_msgs::MarkerArray marker_array_table_;
     visualization_msgs::MarkerArray marker_array_origin_;
     visualization_msgs::MarkerArray marker_array_hull_;
@@ -458,7 +462,6 @@ namespace tabletop
     /** For each table, a vector of clusters */
     ecto::spore<std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > > clusters_;
   };
-
 }
 
 ECTO_CELL(tabletop_table, tabletop::TableMsgAssembler, "TableMsgAssembler",

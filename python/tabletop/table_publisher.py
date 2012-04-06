@@ -5,6 +5,7 @@ Module defining the Table Publisher
 from object_recognition_core.ecto_cells.io_ros import Publisher_Marker, Publisher_MarkerArray
 from object_recognition_core.io.sink import Sink
 from ecto_cells.tabletop_table import TableMsgAssembler
+from ecto_cells.ecto_tabletop import Publisher_TableArray
 import ecto
 
 MarkerPub = Publisher_Marker
@@ -22,6 +23,7 @@ class TablePublisher(ecto.BlackBox):
     _marker_array_table_ = MarkerArrayPub
     _marker_array_delete = MarkerArrayPub
     _marker_array_clusters = MarkerArrayPub
+    _table_array = Publisher_TableArray
 
     def declare_params(self, p):
         p.declare('marker_hull_topic', 'The ROS topic to use for the table message.', 'marker_table')
@@ -29,6 +31,7 @@ class TablePublisher(ecto.BlackBox):
         p.declare('marker_table_topic', 'The ROS topic to use for the table message.', 'marker_table')
         p.declare('marker_array_delete', 'The ROS topic to use for the markers to remove.', 'marker_table')
         p.declare('marker_array_clusters', 'The ROS topic to use for the markers of the clusters.', 'marker_array_clusters')
+        p.declare('table_array', 'The array of found tables.', 'table_array')
         p.declare('latched', 'Determines if the topics will be latched.', True)
 
     def declare_io(self, _p, i, _o):
@@ -41,13 +44,15 @@ class TablePublisher(ecto.BlackBox):
         self._marker_array_table_ = TablePublisher._marker_array_table_(topic_name=p.marker_table_topic, latched=p.latched)
         self._marker_array_delete = TablePublisher._marker_array_delete(topic_name=p.marker_array_delete)
         self._marker_array_clusters = TablePublisher._marker_array_clusters(topic_name=p.marker_array_clusters)
+        self._table_array = TablePublisher._table_array(topic_name=p.table_array)
 
     def connections(self):
         return [self._table_msg_assembler['marker_array_hull'] >> self._marker_array_hull_[:],
                 self._table_msg_assembler['marker_array_origin'] >> self._marker_array_origin_[:],
                 self._table_msg_assembler['marker_array_table'] >> self._marker_array_table_[:],
                 self._table_msg_assembler['marker_array_delete'] >> self._marker_array_delete[:],
-                self._table_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:] ]
+                self._table_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:],
+                self._table_msg_assembler['table_array_msg'] >> self._table_array[:] ]
 
 ########################################################################################################################
 
