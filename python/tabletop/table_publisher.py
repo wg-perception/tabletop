@@ -4,7 +4,7 @@ Module defining the Table Publisher
 
 from object_recognition_core.ecto_cells.io_ros import Publisher_Marker, Publisher_MarkerArray
 from object_recognition_core.io.sink import Sink
-from ecto_cells.tabletop_table import TableMsgAssembler
+from ecto_cells.tabletop_table import TableMsgAssembler, TableVisualizationMsgAssembler
 from object_recognition_msgs.ecto_cells.ecto_tabletop import Publisher_TableArray
 import ecto
 
@@ -18,6 +18,7 @@ class TablePublisher(ecto.BlackBox):
     Class publishing the different results of tabletop
     """
     _table_msg_assembler = TableMsgAssembler
+    _table_visualization_msg_assembler = TableVisualizationMsgAssembler
     _marker_array_hull_ = MarkerArrayPub
     _marker_array_origin_ = MarkerArrayPub
     _marker_array_table_ = MarkerArrayPub
@@ -36,9 +37,11 @@ class TablePublisher(ecto.BlackBox):
 
     def declare_io(self, _p, i, _o):
         i.forward_all('_table_msg_assembler')
+        i.forward_all('_table_visualization_msg_assembler')
 
     def configure(self, p, _i, _o):
         self._table_msg_assembler = TablePublisher._table_msg_assembler()
+        self._table_visualization_msg_assembler = TablePublisher._table_visualization_msg_assembler()
         self._marker_array_hull_ = TablePublisher._marker_array_hull_(topic_name=p.marker_hull_topic, latched=p.latched)
         self._marker_array_origin_ = TablePublisher._marker_array_origin_(topic_name=p.marker_origin_topic, latched=p.latched)
         self._marker_array_table_ = TablePublisher._marker_array_table_(topic_name=p.marker_table_topic, latched=p.latched)
@@ -47,12 +50,14 @@ class TablePublisher(ecto.BlackBox):
         self._table_array = TablePublisher._table_array(topic_name=p.table_array)
 
     def connections(self):
-        return [self._table_msg_assembler['marker_array_hull'] >> self._marker_array_hull_[:],
-                self._table_msg_assembler['marker_array_origin'] >> self._marker_array_origin_[:],
-                self._table_msg_assembler['marker_array_table'] >> self._marker_array_table_[:],
-                self._table_msg_assembler['marker_array_delete'] >> self._marker_array_delete[:],
-                self._table_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:],
-                self._table_msg_assembler['table_array_msg'] >> self._table_array[:] ]
+        connections = [ self._table_msg_assembler['table_array_msg'] >> self._table_array[:],
+                        self._table_msg_assembler['table_array_msg'] >> self._table_visualization_msg_assembler['table_array_msg'] ]
+        connections += [self._table_visualization_msg_assembler['marker_array_hull'] >> self._marker_array_hull_[:],
+                self._table_visualization_msg_assembler['marker_array_origin'] >> self._marker_array_origin_[:],
+                self._table_visualization_msg_assembler['marker_array_table'] >> self._marker_array_table_[:],
+                self._table_visualization_msg_assembler['marker_array_delete'] >> self._marker_array_delete[:],
+                self._table_visualization_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:] ]
+        return connections
 
 ########################################################################################################################
 

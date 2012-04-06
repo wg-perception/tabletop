@@ -2,7 +2,7 @@
 
 find_package(genmsg)
 if (genmsg_FOUND)
-  SET(TABLETOP_ROS_CELLS TableMsgAssembler)
+  SET(TABLETOP_ROS_CELLS TableMsgAssembler.cpp TableVisualizationMsgAssembler.cpp)
 endif()
 
 find_package(object_recognition_core REQUIRED)
