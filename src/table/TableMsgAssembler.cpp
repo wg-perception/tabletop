@@ -54,8 +54,8 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
-#include <tabletop/Table.h>
-#include <tabletop/TableArray.h>
+#include <object_recognition_msgs/Table.h>
+#include <object_recognition_msgs/TableArray.h>
 #include <tabletop/table/tabletop_segmenter.h>
 
 #include "tabletop_object_detector/marker_generator.h"
@@ -95,7 +95,7 @@ namespace tabletop
       outputs.declare(&TableMsgAssembler::marker_array_delete_, "marker_array_delete", "The markers to delete");
       outputs.declare(&TableMsgAssembler::marker_array_clusters_, "marker_array_clusters",
                       "The markers of the clusters");
-      outputs.declare<tabletop::TableArrayConstPtr>("table_array_msg", "The message for the found tables");
+      outputs.declare<object_recognition_msgs::TableArrayConstPtr>("table_array_msg", "The message for the found tables");
       outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_hull", "The marker for the table hull");
       outputs.declare<visualization_msgs::MarkerArrayConstPtr>("marker_array_origin",
                                                                "The marker for the origin of the table");
@@ -132,7 +132,7 @@ namespace tabletop
       marker_array_origin_.markers.reserve(pose_results_->size());
       marker_array_hull_.markers.clear();
       marker_array_hull_.markers.reserve(pose_results_->size());
-      tabletop::TableArray table_array_msg;
+      object_recognition_msgs::TableArray table_array_msg;
 
       std_msgs::Header message_header;
       message_header.frame_id = frame_id;
@@ -147,7 +147,7 @@ namespace tabletop
         sensor_msgs::PointCloud table_hull_points;
         tf::Transform table_plane_trans = getPlaneTransform(pose_result);
 
-        Table table;
+        object_recognition_msgs::Table table;
 
         table_points.header.frame_id = frame_id;
         table_hull_points.header.frame_id = frame_id;
@@ -231,7 +231,7 @@ namespace tabletop
       << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_origin_));
       outputs["marker_array_table"]
       << visualization_msgs::MarkerArrayConstPtr(new visualization_msgs::MarkerArray(marker_array_table_));
-      outputs["table_array_msg"] << tabletop::TableArrayConstPtr(new tabletop::TableArray(table_array_msg));
+      outputs["table_array_msg"] << object_recognition_msgs::TableArrayConstPtr(new object_recognition_msgs::TableArray(table_array_msg));
 
       return ecto::OK;
     }
@@ -320,7 +320,7 @@ namespace tabletop
 
     template<class PointCloudType>
     void
-    addConvexHullTable(Table &table, const PointCloudType &convex_hull, bool flatten_table)
+    addConvexHullTable(object_recognition_msgs::Table &table, const PointCloudType &convex_hull, bool flatten_table)
     {
       //create a triangle mesh out of the convex hull points and add it to the table message
       table.convex_hull.type = table.convex_hull.MESH;
@@ -373,11 +373,11 @@ namespace tabletop
     }
 
     template<class PointCloudType>
-    Table
+    object_recognition_msgs::Table
     getTable(const std_msgs::Header &cloud_header, const tf::Transform &table_plane_trans,
              const PointCloudType &table_points)
     {
-      Table table;
+      object_recognition_msgs::Table table;
 
       //get the extents of the table
       if (!table_points.points.empty())
@@ -451,7 +451,7 @@ namespace tabletop
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
 
-    ecto::spore<tabletop::TableArrayConstPtr> table_array_msg_;
+    ecto::spore<object_recognition_msgs::TableArrayConstPtr> table_array_msg_;
 
     visualization_msgs::MarkerArray marker_array_table_;
     visualization_msgs::MarkerArray marker_array_origin_;

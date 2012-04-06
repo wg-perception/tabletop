@@ -6,6 +6,7 @@ if (genmsg_FOUND)
 endif()
 
 find_package(object_recognition_core REQUIRED)
+find_package(object_recognition_msgs REQUIRED)
 
 find_pcl_package()
 if (ROS_ELECTRIC_FOUND)
@@ -38,6 +39,7 @@ include_directories(${CMAKE_SOURCE_DIR}/tabletop/include)
 
 include_directories(SYSTEM
                     ${object_recognition_core_INCLUDE_DIRS}
+                    ${object_recognition_msgs_INCLUDE_DIRS}
                     ${PCL_INCLUDE_DIRS}
 )
 
