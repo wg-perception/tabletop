@@ -132,6 +132,8 @@ namespace tabletop
       marker_array_origin_.markers.reserve(pose_results_->size());
       marker_array_hull_.markers.clear();
       marker_array_hull_.markers.reserve(pose_results_->size());
+      *table_array_msg_ = tabletop::TableArrayPtr(new tabletop::TableArray);
+      (*table_array_msg_)->tables.clear();
 
       std_msgs::Header message_header;
       message_header.frame_id = frame_id;
@@ -218,6 +220,7 @@ namespace tabletop
 
         // ---[ Add the convex hull as a triangle mesh to the Table message
         addConvexHullTable<sensor_msgs::PointCloud>(table, table_hull_points, flatten_table_);
+        (*table_array_msg_)->tables.push_back(table);
 
         // Publish each clusters
         addClusterMarkers((*clusters_)[table_index], table.pose.header/*message_header*/);
@@ -448,7 +451,7 @@ namespace tabletop
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
 
-    ecto::spore<tabletop::TableArray> table_array_msg_;
+    ecto::spore<tabletop::TableArrayPtr> table_array_msg_;
 
     visualization_msgs::MarkerArray marker_array_table_;
     visualization_msgs::MarkerArray marker_array_origin_;
