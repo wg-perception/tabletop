@@ -53,11 +53,11 @@ if (genmsg_FOUND)
         add_action_files(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/action FILES TabletopTable.action)
     endif()
     find_package(ecto_ros REQUIRED)
-    add_message_files(DIRECTORY msg FILES Table.msg TableArray.msg)
+    #add_message_files(DIRECTORY msg FILES Table.msg TableArray.msg)
 
-    generate_messages(DEPENDENCIES actionlib_msgs arm_navigation_msgs geometry_msgs sensor_msgs std_msgs)
+    #generate_messages(DEPENDENCIES actionlib_msgs arm_navigation_msgs geometry_msgs sensor_msgs std_msgs)
     # generate ecto cells to wrap the different messages
-    find_package(ecto_ros REQUIRED)
+    #find_package(ecto_ros REQUIRED)
     #pubsub_gen_wrap(tabletop)
 endif()
 
