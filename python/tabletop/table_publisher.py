@@ -36,8 +36,14 @@ class TablePublisher(ecto.BlackBox):
         p.declare('latched', 'Determines if the topics will be latched.', True)
 
     def declare_io(self, _p, i, _o):
-        i.forward_all('_table_msg_assembler')
-        i.forward_all('_table_visualization_msg_assembler')
+        self.passthrough = ecto.PassthroughN(items=dict(image_message='The original imagemessage',
+                                                        pose_results='The final results'))
+
+        i.forward(['clouds', 'clouds_hull'], cell_name='_table_msg_assembler',
+                  cell_key=['clouds', 'clouds_hull'])
+        i.forward(['clusters', 'table_array_msg'], cell_name='_table_visualization_msg_assembler',
+                  cell_key=['clusters', 'table_array_msg'])
+        i.forward('image_message', cell_name='passthrough', cell_key='image_message')
 
     def configure(self, p, _i, _o):
         self._table_msg_assembler = TablePublisher._table_msg_assembler()
@@ -50,7 +56,12 @@ class TablePublisher(ecto.BlackBox):
         self._table_array = TablePublisher._table_array(topic_name=p.table_array)
 
     def connections(self):
-        connections = [ self._table_msg_assembler['table_array_msg'] >> self._table_array[:],
+        connections = [self.passthrough['image_message'] >> self._table_msg_assembler['image_message'],
+                       self.passthrough['image_message'] >> self._table_visualization_msg_assembler['image_message'], 
+                       self.passthrough['pose_results'] >> self._table_msg_assembler['pose_results'],
+                       self.passthrough['pose_results'] >> self._table_visualization_msg_assembler['pose_results'] ]
+
+        connections += [ self._table_msg_assembler['table_array_msg'] >> self._table_array[:],
                         self._table_msg_assembler['table_array_msg'] >> self._table_visualization_msg_assembler['table_array_msg'] ]
         connections += [self._table_visualization_msg_assembler['marker_array_hull'] >> self._marker_array_hull_[:],
                 self._table_visualization_msg_assembler['marker_array_origin'] >> self._marker_array_origin_[:],
