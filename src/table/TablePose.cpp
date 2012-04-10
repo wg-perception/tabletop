@@ -50,7 +50,6 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
-#include <tabletop/Table.h>
 #include <tabletop/table/tabletop_segmenter.h>
 
 #include <object_recognition_core/common/pose_result.h>

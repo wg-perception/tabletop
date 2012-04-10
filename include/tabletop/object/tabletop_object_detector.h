@@ -45,7 +45,6 @@
 #include "tabletop_object_detector/exhaustive_fit_detector.h"
 #include "tabletop_object_detector/marker_generator.h"
 #include "tabletop_object_detector/iterative_distance_fitter.h"
-#include "tabletop/Table.h"
 
 namespace tabletop_object_detector
 {

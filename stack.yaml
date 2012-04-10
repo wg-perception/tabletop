@@ -6,8 +6,7 @@ Author: Marius Muja, Matei, Vincent Rabaud <vrabaud@willowgarage.com>
 Maintainer:  Vincent Rabaud <vrabaud@willowgarage.com>
 Homepage:  http://ecto.willowgarage.com
 
-Depends: arm-navigation-experimental, catkin, ecto, ecto-pcl, geometry, object_recognition_core
+Depends: arm-navigation-experimental, catkin, ecto, ecto-pcl, geometry, object_recognition_core, object_recognition_msgs
 
 Catkin-CopyrightType:  willowgarage
 Catkin-DebRulesType: cmake
-

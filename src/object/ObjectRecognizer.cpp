@@ -55,7 +55,6 @@
 #include <tf/transform_broadcaster.h>
 
 #include <household_objects_database/objects_database.h>
-#include <tabletop/Table.h>
 #include <tabletop/table/tabletop_segmenter.h>
 #include <tabletop/object/tabletop_object_detector.h>
 
