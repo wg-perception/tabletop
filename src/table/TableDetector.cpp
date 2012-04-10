@@ -201,7 +201,7 @@ namespace tabletop
                             table_coefficients->values[3]));
 
         // Remove the table from the current point cloud
-        typename pcl::ExtractPolygonalPrismData<pcl::PointXYZ> prism_;
+        pcl::ExtractPolygonalPrismData<pcl::PointXYZ> prism_;
 
         // ---[ Get the objects on top of the (non-flat) table
         pcl::PointIndices::Ptr cloud_object_indices(new pcl::PointIndices);
