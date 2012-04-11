@@ -18,7 +18,7 @@ if (ROS_ELECTRIC_FOUND)
                         /opt/ros/electric/stacks/object_manipulation/household_objects_database/include/
                         /opt/ros/electric/stacks/sql_database/database_interface/include/)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/electric/stacks/object_manipulation/household_objects_database/lib)
-    find_library(tf_LIBRARIES household_objects_database tf /opt/ros/electric/stacks/geometry/tf/lib/)
+    find_library(tf_LIBRARIES tf /opt/ros/electric/stacks/geometry/tf/lib/)
 else()
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
@@ -33,7 +33,7 @@ else()
                         /opt/ros/fuerte/stacks/sql_database/database_interface/include/
     )
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-    find_library(tf_LIBRARIES household_objects_database tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
+    find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
 endif()
 
 
