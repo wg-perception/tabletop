@@ -1,13 +1,13 @@
-# Create a library for tabletop db interfaces
-add_library(tabletop_db SHARED
-            db_sql_household.cpp
-            db_mesh.cpp
-)
-
 find_package(object_recognition_core REQUIRED)
 
 include_directories(SYSTEM
                     ${object_recognition_core_INCLUDE_DIRS}
+)
+
+# Create a library for tabletop db interfaces
+add_library(tabletop_db SHARED
+            db_sql_household.cpp
+            db_mesh.cpp
 )
 
 if (ROS_ELECTRIC_FOUND)
@@ -33,7 +33,7 @@ else()
 endif()
 
 target_link_libraries(tabletop_db
-                      object_recognition_core_db
+                      ${object_recognition_core_LIBRARIES}
                       ${household_objects_database_LIBRARIES}
 )
 
