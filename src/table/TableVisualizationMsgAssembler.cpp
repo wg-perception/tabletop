@@ -49,11 +49,13 @@
 #include <pcl/point_types.h>
 #include <pcl/PointIndices.h>
 
+#include <arm_navigation_msgs/Shape.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
+#include <object_recognition_msgs/shape_conversion.h>
 #include <object_recognition_msgs/Table.h>
 #include <object_recognition_msgs/TableArray.h>
 #include <tabletop/table/tabletop_segmenter.h>
@@ -212,7 +214,9 @@ namespace tabletop
     {
       //create a triangle mesh out of the convex hull points and add it to the table message
       visualization_msgs::MarkerPtr marker_hull(new visualization_msgs::Marker);
-      *marker_hull = tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(table.convex_hull);
+      arm_navigation_msgs::Shape arm_nav_convex_hull = or_to_an_shape(table.convex_hull);
+
+      *marker_hull = tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(arm_nav_convex_hull);
       marker_hull->header = table.pose.header;
       marker_hull->pose = table.pose.pose;
       marker_hull->ns = "tabletop_node";
