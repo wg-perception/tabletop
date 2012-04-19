@@ -12,7 +12,7 @@ from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
 
 try:
-    import ecto_ros.ecto_ros as ecto_ros
+    import ecto_ros
     ECTO_ROS_FOUND = True
 except ImportError:
     ECTO_ROS_FOUND = False
