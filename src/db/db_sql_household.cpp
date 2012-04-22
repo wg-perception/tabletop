@@ -39,14 +39,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ObjectDbSqlHousehold::ObjectDbSqlHousehold()
-    :
-      ObjectDbBase("", "")
 {
 }
 
 ObjectDbSqlHousehold::ObjectDbSqlHousehold(const object_recognition_core::db::ObjectDbParameters & parameters)
-    :
-      ObjectDbBase("", "")
 {
   // Read the parameters
   std::string field_names[] =
@@ -54,13 +50,13 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(const object_recognition_core::db::Ob
   std::vector<std::string> fields(5);
   for (size_t i = 0; i < 5; ++i)
   {
-    if (parameters.raw_.find(field_names[i]) == parameters.raw_.end())
+    if (parameters.raw().find(field_names[i]) == parameters.raw().end())
     {
       throw std::runtime_error("The db parameters do not contain the field " + field_names[i]);
     }
     else
     {
-      fields[i] = parameters.raw_.find(field_names[i])->second.get_str();
+      fields[i] = parameters.raw().find(field_names[i])->second.get_str();
     }
   }
 
@@ -177,13 +173,13 @@ ObjectDbSqlHousehold::CreateCollection(const CollectionName &collection)
 }
 
 std::string
-ObjectDbSqlHousehold::Status()
+ObjectDbSqlHousehold::Status() const
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
 
 std::string
-ObjectDbSqlHousehold::Status(const CollectionName& collection)
+ObjectDbSqlHousehold::Status(const CollectionName& collection) const
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }

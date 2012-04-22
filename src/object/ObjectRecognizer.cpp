@@ -82,13 +82,11 @@ namespace tabletop
 
       object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
       std::stringstream port;
-      port << db_->parameters().raw_.find("port")->second.get_int();
+      port << db_->parameters().at("port").get_int();
 
       household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
-          db_->parameters().raw_.find("host")->second.get_str(), port.str(),
-          db_->parameters().raw_.find("user")->second.get_str(),
-          db_->parameters().raw_.find("password")->second.get_str(),
-          db_->parameters().raw_.find("name")->second.get_str());
+          db_->parameters().at("host").get_str(), port.str(), db_->parameters().at("user").get_str(),
+          db_->parameters().at("password").get_str(), db_->parameters().at("name").get_str());
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
       if (!database->getScaledModelsBySet(models, model_set))
@@ -163,7 +161,7 @@ namespace tabletop
           t.block(0, 0, 3, 3) = (*table_rotations_)[table_index].transpose();
           t.block(0, 3, 3, 1) = -(*table_rotations_)[table_index].transpose() * (*table_translations_)[table_index];
 
-          clusters[cluster_index] = pcl::PointCloud < pcl::PointXYZ > ::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+          clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
           pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]), t);
         }
         object_recognizer_.objectDetection<pcl::PointXYZ>(clusters, confidence_cutoff_, perform_fit_merge_, results);
@@ -227,4 +225,4 @@ namespace tabletop
 }
 
 ECTO_CELL(tabletop_object, tabletop::ObjectRecognizer, "ObjectRecognizer",
-    "Given clusters on a table, identify them as objects.");
+          "Given clusters on a table, identify them as objects.")

@@ -91,10 +91,10 @@ public:
         std::vector<ViewElement> & view_elements);
 
   virtual std::string
-  Status();
+  Status() const;
 
   virtual std::string
-  Status(const CollectionName& collection);
+  Status(const CollectionName& collection) const;
 
   virtual void
   CreateCollection(const CollectionName &collection);
@@ -103,7 +103,7 @@ public:
   DeleteCollection(const CollectionName &collection);
 
   virtual DbType
-  type()
+  type() const
   {
     return "CouchDB";
   }
@@ -141,18 +141,6 @@ private:
   {
     or_json::mValue value(object);
     or_json::write(value, writer);
-  }
-
-  inline std::string
-  url_id(const DocumentId & id) const
-  {
-    return root_ + "/" + collection_ + (id.empty() ? "" : "/" + id);
-  }
-
-  inline std::string
-  url_id_rev(const DocumentId & id, const RevisionId & rev) const
-  {
-    return url_id(id) + "?rev=" + rev;
   }
 
   void
