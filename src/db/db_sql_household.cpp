@@ -40,29 +40,49 @@
 
 ObjectDbSqlHousehold::ObjectDbSqlHousehold()
 {
-}
-
-ObjectDbSqlHousehold::ObjectDbSqlHousehold(const object_recognition_core::db::ObjectDbParameters & parameters)
-{
-  // Read the parameters
-  std::string field_names[] =
-  { "host", "port", "user", "password", "name" };
-  std::vector<std::string> fields(5);
-  for (size_t i = 0; i < 5; ++i)
-  {
-    if (parameters.raw().find(field_names[i]) == parameters.raw().end())
-    {
-      throw std::runtime_error("The db parameters do not contain the field " + field_names[i]);
-    }
-    else
-    {
-      fields[i] = parameters.raw().find(field_names[i])->second.get_str();
-    }
-  }
-
+  ObjectDbParametersRaw parameters = default_raw_parameters();
   // Create the DB object
   db_ = boost::shared_ptr<household_objects_database::ObjectsDatabase>(
-      new household_objects_database::ObjectsDatabase(fields[0], fields[1], fields[2], fields[3], fields[4]));
+      new household_objects_database::ObjectsDatabase(parameters["host"].get_str(), parameters["port"].get_str(),
+                                                      parameters["user"].get_str(), parameters["password"].get_str(),
+                                                      parameters["name"].get_str()));
+}
+
+ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters)
+{
+  ObjectDbParametersRaw parameters = default_raw_parameters();
+  // Read the parameters
+  for (ObjectDbParametersRaw::const_iterator iter = parameters.begin(), end = parameters.end(); iter != end; ++iter)
+  {
+    ObjectDbParametersRaw::const_iterator val = in_parameters.find(iter->first);
+    if (val == in_parameters.end())
+      std::cerr << "The db parameters do not contain the field \"" << iter->first << "\". Using the default: \""
+                << iter->second.get_str() << "\"" << std::endl;
+    else
+      parameters[iter->first] = val->second.get_str();
+  }
+  in_parameters = parameters;
+
+// Create the DB object
+  db_ = boost::shared_ptr<household_objects_database::ObjectsDatabase>(
+      new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
+                                                      parameters.at("user").get_str(),
+                                                      parameters.at("password").get_str(),
+                                                      parameters.at("name").get_str()));
+}
+
+ObjectDbParametersRaw
+ObjectDbSqlHousehold::default_raw_parameters() const
+{
+  ObjectDbParametersRaw res;
+  res["host"] = "wgs36";
+  res["port"] = "5432";
+  res["user"] = "willow";
+  res["password"] = "willow";
+  res["name"] = "household_objects";
+  res["type"] = type();
+
+  return res;
 }
 
 void

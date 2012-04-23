@@ -51,7 +51,8 @@ namespace object_recognition_core
     ObjectDbSqlHouseholdConstructor(const ObjectDbParameters & db_params)
     {
       // Create the ObjectDbSqlHousehold
-      boost::shared_ptr<object_recognition_core::db::ObjectDbBase> db_ptr(new ObjectDbSqlHousehold(db_params));
+      ObjectDbParametersRaw db_params_raw = db_params.raw();
+      boost::shared_ptr<object_recognition_core::db::ObjectDbBase> db_ptr(new ObjectDbSqlHousehold(db_params_raw));
       ObjectDb *db = new ObjectDb;
       db->set_db_and_parameters(db_ptr, db_params);
       ObjectDbPtr res(db);

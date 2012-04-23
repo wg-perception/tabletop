@@ -47,6 +47,7 @@ using object_recognition_core::db::DbType;
 using object_recognition_core::db::DocumentId;
 using object_recognition_core::db::ObjectId;
 using object_recognition_core::db::MimeType;
+using object_recognition_core::db::ObjectDbParametersRaw;
 using object_recognition_core::db::RevisionId;
 using object_recognition_core::db::View;
 using object_recognition_core::db::ViewElement;
@@ -58,7 +59,10 @@ class ObjectDbSqlHousehold: public object_recognition_core::db::ObjectDbBase
 public:
   ObjectDbSqlHousehold();
 
-  ObjectDbSqlHousehold(const object_recognition_core::db::ObjectDbParameters & parameters);
+  ObjectDbSqlHousehold(ObjectDbParametersRaw & parameters);
+
+  ObjectDbParametersRaw
+  default_raw_parameters() const;
 
   virtual void
   insert_object(const or_json::mObject &fields, DocumentId & document_id, RevisionId & revision_id);
@@ -105,7 +109,7 @@ public:
   virtual DbType
   type() const
   {
-    return "CouchDB";
+    return "SqlHousehold";
   }
 private:
 
