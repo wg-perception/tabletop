@@ -7,6 +7,7 @@ endif()
 
 find_package(object_recognition_core REQUIRED)
 find_package(object_recognition_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
 
 find_pcl_package()
 if (ROS_ELECTRIC_FOUND)
@@ -42,6 +43,7 @@ include_directories(${CMAKE_SOURCE_DIR}/tabletop/include)
 include_directories(SYSTEM
                     ${object_recognition_core_INCLUDE_DIRS}
                     ${object_recognition_msgs_INCLUDE_DIRS}
+                    ${OpenCV_INCLUDE_DIRS}
                     ${PCL_INCLUDE_DIRS}
 )
 
@@ -51,6 +53,7 @@ add_definitions(-DPCL_VERSION_GE_160=1)
 ectomodule(tabletop_table
   module.cpp
   Clusterer.cpp
+           plane.cpp
   TableDetector.cpp
   TablePose.cpp
   tabletop_segmenter.cpp
