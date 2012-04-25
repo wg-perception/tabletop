@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
-project(tabletop)
+project(object_recognition_tabletop)
 find_package(catkin REQUIRED)
 catkin_stack()
-catkin_project(tabletop
+catkin_project(object_recognition_tabletop
                INCLUDE_DIRS include
                DEPENDS OpenCV object_recognition_core object_recognition_msgs
 )
