@@ -7,6 +7,7 @@ endif()
 
 find_package(object_recognition_core REQUIRED)
 find_package(object_recognition_msgs REQUIRED)
+
 find_package(OpenCV REQUIRED)
 
 find_pcl_package()
@@ -64,6 +65,8 @@ link_ecto(tabletop_table
     ${PCL_LIBRARIES}
     ${Boost_LIBRARIES}
     ${object_recognition_core_LIBRARIES}
+    ${OpenCV_LIBS}
+    ${OpenCV_LIBRARIES}
     ${pcl_ros_tf_LIBRARIES}
     ${roscpp_LIBRARIES}
     ${roscpp_serialization_LIBRARIES}
