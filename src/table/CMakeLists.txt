@@ -54,7 +54,6 @@ add_definitions(-DPCL_VERSION_GE_160=1)
 ectomodule(tabletop_table
   module.cpp
   Clusterer.cpp
-           plane.cpp
   TableDetector.cpp
   TablePose.cpp
   tabletop_segmenter.cpp
