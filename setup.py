@@ -2,9 +2,9 @@
 
 from distutils.core import setup
 
-setup(name='Tabletop',
+setup(name='object_recognition_tabletop',
       version='1.0.0',
       description='Tabletop object recognition',
-      packages=['tabletop'],
+      packages=['object_recognition_tabletop'],
       package_dir={'':'python'}
 )

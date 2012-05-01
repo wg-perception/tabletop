@@ -8,7 +8,7 @@ sink1:
 
 pipeline1:
   method: 'tabletop_table'
-  package: 'tabletop'
+  package: 'object_recognition_tabletop'
   submethod: ''
   sources: [source1]
   sinks: [sink1]
@@ -20,7 +20,7 @@ sink2:
 
 pipeline2:
   method: 'tabletop_object'
-  package: 'tabletop'
+  package: 'object_recognition_tabletop'
   submethod: ''
   sources: [source1, pipeline1]
   sinks: [sink2]
