@@ -43,6 +43,8 @@ install(TARGETS tabletop_db
 
 
 # create a Python module to wrap the DB functionalities
+find_package(PythonLibs)
+include_directories(SYSTEM ${PYTHON_INCLUDE_PATH})
 add_library(tabletop_db_interface SHARED
             module_python.cpp
             wrap_object_db.cpp
