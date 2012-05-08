@@ -6,5 +6,5 @@ if (object_recognition_core_FOUND)
     #object_recognition_training_test(${CMAKE_CURRENT_SOURCE_DIR}/../conf/config_training.transparent_objects)
 
     # publisher tests
-    object_recognition_core_sink_test(table_publisher "{}" "tabletop")
+    object_recognition_core_sink_test(table_publisher "{}" "object_recognition_tabletop")
 endif()

@@ -4,7 +4,7 @@ source1:
 
 sink1:
   type: table_publisher
-  package: 'tabletop'
+  package: 'object_recognition_tabletop'
 
 pipeline1:
   method: 'tabletop_table'
