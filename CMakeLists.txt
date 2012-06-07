@@ -40,31 +40,6 @@ endif()
 # deal with the messages
 find_package(genmsg REQUIRED)
 
-if (genmsg_FOUND)
-    if (ROS_ELECTRIC_FOUND)
-        find_ros_package(arm_navigation_msgs)
-        find_ros_package(geometry_msgs)
-        find_ros_package(sensor_msgs)
-        find_ros_package(visualization_msgs)
-        include_directories(SYSTEM ${ecto_ros_INCLUDE_DIRS})
-    else()
-        find_package(ROS REQUIRED actionlib_msgs geometry_msgs rosbag roscpp sensor_msgs visualization_msgs)
-        set(arm_navigation_msgs_MSG_INCLUDE_DIRS /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg)
-        include_directories(SYSTEM /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
-        set(arm_navigation_msgs_SOURCE_DIR whatever)
-        set(arm_navigation_msgs_FOUND True)
-
-        add_action_files(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/action FILES TabletopTable.action)
-    endif()
-    find_package(ecto_ros REQUIRED)
-    #add_message_files(DIRECTORY msg FILES Table.msg TableArray.msg)
-
-    #generate_messages(DEPENDENCIES actionlib_msgs arm_navigation_msgs geometry_msgs sensor_msgs std_msgs)
-    # generate ecto cells to wrap the different messages
-    #find_package(ecto_ros REQUIRED)
-    #pubsub_gen_wrap(tabletop)
-endif()
-
 #set the default path for built libraries to the "ecto_opencv" directory
 if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
