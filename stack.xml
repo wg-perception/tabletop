@@ -11,14 +11,12 @@
   <url>http://ecto.willowgarage.com</url>
   <build_depends>catkin</build_depends>
   <build_depends>ecto</build_depends>
-  <build_depends>ecto-pcl</build_depends>
-  <build_depends>geometry</build_depends>
+  <build_depends>ecto_pcl</build_depends>
   <build_depends>moveit_msgs</build_depends>
   <build_depends>object_recognition_core</build_depends>
   <build_depends>object_recognition_msgs</build_depends>
   <depends>ecto</depends>
-  <depends>ecto-pcl</depends>
-  <depends>geometry</depends>
+  <depends>ecto_pcl</depends>
   <depends>object_recognition_core</depends>
   <depends>object_recognition_msgs</depends>
 </stack>
