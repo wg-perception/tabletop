@@ -54,6 +54,9 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters
   // Read the parameters
   for (ObjectDbParametersRaw::const_iterator iter = parameters.begin(), end = parameters.end(); iter != end; ++iter)
   {
+    if(iter->first == "type")
+      continue;
+
     ObjectDbParametersRaw::const_iterator val = in_parameters.find(iter->first);
     if (val == in_parameters.end())
       std::cerr << "The db parameters do not contain the field \"" << iter->first << "\". Using the default: \""
@@ -62,6 +65,7 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters
       parameters[iter->first] = val->second.get_str();
   }
   in_parameters = parameters;
+
 
 // Create the DB object
   db_ = boost::shared_ptr<household_objects_database::ObjectsDatabase>(

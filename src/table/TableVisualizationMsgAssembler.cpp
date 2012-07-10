@@ -92,8 +92,8 @@ namespace tabletop
                      "the image message to get the header").required(true);
       inputs.declare(&TableVisualizationMsgAssembler::pose_results_, "pose_results",
                      "The results of object recognition").required(true);
-      inputs.declare<object_recognition_msgs::TableArrayConstPtr>("table_array_msg",
-                                                                  "The message for the found tables");
+      inputs.declare(&TableVisualizationMsgAssembler::table_array_msg_, "table_array_msg",
+                     "The message for the found tables").required(true);
 
       outputs.declare(&TableVisualizationMsgAssembler::marker_array_delete_, "marker_array_delete",
                       "The markers to delete");
@@ -214,7 +214,7 @@ namespace tabletop
     {
       //create a triangle mesh out of the convex hull points and add it to the table message
       visualization_msgs::MarkerPtr marker_hull(new visualization_msgs::Marker);
-      arm_navigation_msgs::Shape arm_nav_convex_hull = or_to_an_shape(table.convex_hull);
+      arm_navigation_msgs::Shape arm_nav_convex_hull = mesh_to_an_shape(table.convex_hull);
 
       *marker_hull = tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(arm_nav_convex_hull);
       marker_hull->header = table.pose.header;

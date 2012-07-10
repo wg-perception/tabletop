@@ -5,6 +5,7 @@ Module defining the transparent objects detector to find objects in a scene
 
 import ecto
 from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
+from object_recognition_tabletop.ecto_cells import tabletop_object
 from ecto_image_pipeline.conversion import MatToPointCloudXYZOrganized
 from object_recognition_core.db import ObjectDb, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectionPipeline

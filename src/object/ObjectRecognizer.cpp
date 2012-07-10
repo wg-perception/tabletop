@@ -42,6 +42,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <ecto/ecto.hpp>
+#include <Eigen/StdVector>
 #include <Eigen/Geometry>
 #ifdef PCL_VERSION_GE_140
 #include <pcl/common/transforms.h>
@@ -81,11 +82,9 @@ namespace tabletop
       //std::copy(begin, end, std::back_inserter(object_ids));
 
       object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
-      std::stringstream port;
-      port << db_->parameters().at("port").get_int();
 
       household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
-          db_->parameters().at("host").get_str(), port.str(), db_->parameters().at("user").get_str(),
+          db_->parameters().at("host").get_str(), db_->parameters().at("port").get_str(), db_->parameters().at("user").get_str(),
           db_->parameters().at("password").get_str(), db_->parameters().at("name").get_str());
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
@@ -191,13 +190,14 @@ namespace tabletop
           pose_result.set_confidence(result.confidence_);
 
           // Add the cluster of points
-          std::vector<pcl::PointCloud<pcl::PointXYZ> > point_clouds(1);
+          /*
+          typedef std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZ> > > CloudVec;          
+          CloudVec point_clouds(1);
           point_clouds[0] = *(result.cloud_);
-          std::vector<pcl::PointCloud<pcl::PointXYZ> > *point_clouds_ptr =
-              (std::vector<pcl::PointCloud<pcl::PointXYZ> > *) malloc(
-                  sizeof(std::vector<pcl::PointCloud<pcl::PointXYZ> >));
+          CloudVec *point_clouds_ptr = (CloudVec *) malloc(sizeof(CloudVec));
           *point_clouds_ptr = point_clouds;
           pose_result.set_point_clouds(reinterpret_cast<char*>(point_clouds_ptr));
+          */
 
           pose_results_->push_back(pose_result);
         }

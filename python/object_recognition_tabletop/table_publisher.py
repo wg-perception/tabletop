@@ -44,6 +44,8 @@ class TablePublisher(ecto.BlackBox):
         i.forward(['clusters', 'table_array_msg'], cell_name='_table_visualization_msg_assembler',
                   cell_key=['clusters', 'table_array_msg'])
         i.forward('image_message', cell_name='passthrough', cell_key='image_message')
+        i.forward('pose_results', cell_name='passthrough', cell_key='pose_results')
+        
 
     def configure(self, p, _i, _o):
         self._table_msg_assembler = TablePublisher._table_msg_assembler()

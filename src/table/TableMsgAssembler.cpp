@@ -275,7 +275,7 @@ namespace tabletop
     addConvexHullTable(object_recognition_msgs::Table &table, const PointCloudType &convex_hull, bool flatten_table)
     {
       //create a triangle mesh out of the convex hull points and add it to the table message
-      table.convex_hull.type = table.convex_hull.MESH;
+      //table.convex_hull.type = table.convex_hull.MESH;
       for (size_t i = 0; i < convex_hull.points.size(); i++)
       {
         geometry_msgs::Point vertex;
@@ -289,9 +289,12 @@ namespace tabletop
 
         if (i == 0 || i == convex_hull.points.size() - 1)
           continue;
-        table.convex_hull.triangles.push_back(0);
-        table.convex_hull.triangles.push_back(i);
-        table.convex_hull.triangles.push_back(i + 1);
+
+        shape_msgs::MeshTriangle tri;
+        tri.vertex_indices[0] = 0;
+        tri.vertex_indices[1] = i;
+        tri.vertex_indices[2] = i + 1;
+        table.convex_hull.triangles.push_back(tri);
       }
     }
 

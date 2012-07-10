@@ -9,13 +9,13 @@
 #include <ecto_ros/wrap_bag.hpp>
 
 
-#include <tabletop/TableArray.h>
+#include <object_recognition_msgs/TableArray.h>
 
 namespace ecto_tabletop
 {
-    struct Subscriber_TableArray : ecto_ros::Subscriber<tabletop::TableArray> {};
-    struct Publisher_TableArray : ecto_ros::Publisher<tabletop::TableArray> {};
-    struct Bagger_TableArray : ecto_ros::Bagger<tabletop::TableArray> {};
+    struct Subscriber_TableArray : ecto_ros::Subscriber<object_recognition_msgs::TableArray> {};
+    struct Publisher_TableArray : ecto_ros::Publisher<object_recognition_msgs::TableArray> {};
+    struct Bagger_TableArray : ecto_ros::Bagger<object_recognition_msgs::TableArray> {};
 }
 
 ECTO_CELL(ecto_tabletop, ecto_tabletop::Subscriber_TableArray,"Subscriber_TableArray", "Subscribes to a std_msgs::Duration.");
