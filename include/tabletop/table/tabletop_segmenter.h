@@ -243,9 +243,10 @@ namespace tabletop
     reconstructConvexHull(const typename pcl::PointCloud<Point> &projectedInliers,
                           typename pcl::PointCloud<Point> &tableHull)
     {
-      typename pcl::ConvexHull<Point> hullReconstruntor;
-      hullReconstruntor.setInputCloud(projectedInliers.makeShared());
-      hullReconstruntor.reconstruct(tableHull);
+      typename pcl::ConvexHull<Point> hullReconstructor;
+      hullReconstructor.setDimension(2);
+      hullReconstructor.setInputCloud(projectedInliers.makeShared());
+      hullReconstructor.reconstruct(tableHull);
     }
 
     template<typename Point>
