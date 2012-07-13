@@ -46,7 +46,7 @@ class TabletopTableDetector(ecto.BlackBox):
                                                    ))
         i.forward(['image', 'K'], cell_name='passthrough', cell_key=['image', 'K'])
         #i.forward('mask', cell_name='to_cloud_conversion', cell_key='mask')
-        i.forward('points3d', cell_name='_depth_map', cell_key='depth')
+        i.forward('depth', cell_name='_depth_map', cell_key='depth')
 
         o.forward('clouds', cell_name='table_detector', cell_key='clouds')
         o.forward('clouds_hull', cell_name='table_detector', cell_key='clouds_hull')
@@ -67,13 +67,14 @@ class TabletopTableDetector(ecto.BlackBox):
             self.table_detector = TableDetector()
         self._depth_map = RescaledRegisteredDepth()
         self._points3d = DepthTo3d()
+        self.to_cloud_conversion = MatToPointCloudXYZOrganized()
 
     def connections(self):
         # Rescale the depth image and convert to 3d
-        connection = [ self.passthrough['image'] >> self._depth_map['image'],
+        connections = [ self.passthrough['image'] >> self._depth_map['image'],
                        self._depth_map['depth'] >>  self._points3d['depth'],
                        self.passthrough['K'] >> self._points3d['K'],
-                       self._points3d['points3d'] >> self.guess_generator['points3d'] ]
+                       self._points3d['points3d'] >> self.to_cloud_conversion['points'] ]
         # First find the table, then the pose
         connections += [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
                        self.table_detector['rotations'] >> self.table_pose['rotations'],
