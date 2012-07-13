@@ -6,7 +6,9 @@ Module defining the transparent objects detector to find objects in a scene
 import ecto
 from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
 from object_recognition_tabletop.ecto_cells import tabletop_object
+from ecto_image_pipeline.base import RescaledRegisteredDepth
 from ecto_image_pipeline.conversion import MatToPointCloudXYZOrganized
+from ecto_opencv.calib import DepthTo3d
 from object_recognition_core.db import ObjectDb, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
@@ -23,6 +25,8 @@ class TabletopTableDetector(ecto.BlackBox):
     to_cloud_conversion = MatToPointCloudXYZOrganized
     passthrough = ecto.PassthroughN
     _clusterer = Clusterer
+    _depth_map = RescaledRegisteredDepth
+    _points3d = DepthTo3d
     if ECTO_ROS_FOUND:
         message_cvt = ecto_ros.Mat2Image
 
@@ -42,7 +46,7 @@ class TabletopTableDetector(ecto.BlackBox):
                                                    ))
         i.forward(['image', 'K'], cell_name='passthrough', cell_key=['image', 'K'])
         #i.forward('mask', cell_name='to_cloud_conversion', cell_key='mask')
-        i.forward('points3d', cell_name='to_cloud_conversion', cell_key='points')
+        i.forward('points3d', cell_name='_depth_map', cell_key='depth')
 
         o.forward('clouds', cell_name='table_detector', cell_key='clouds')
         o.forward('clouds_hull', cell_name='table_detector', cell_key='clouds_hull')
@@ -61,10 +65,17 @@ class TabletopTableDetector(ecto.BlackBox):
             self.table_detector = TableDetector(**self._parameters)
         else:
             self.table_detector = TableDetector()
+        self._depth_map = RescaledRegisteredDepth()
+        self._points3d = DepthTo3d()
 
     def connections(self):
+        # Rescale the depth image and convert to 3d
+        connection = [ self.passthrough['image'] >> self._depth_map['image'],
+                       self._depth_map['depth'] >>  self._points3d['depth'],
+                       self.passthrough['K'] >> self._points3d['K'],
+                       self._points3d['points3d'] >> self.guess_generator['points3d'] ]
         # First find the table, then the pose
-        connections = [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
+        connections += [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
                        self.table_detector['rotations'] >> self.table_pose['rotations'],
                        self.table_detector['translations'] >> self.table_pose['translations'] ]
         # also find the clusters of points
