@@ -13,14 +13,14 @@ add_library(tabletop_db SHARED
 if (ROS_ELECTRIC_FOUND)
     find_ros_package(arm_navigation_msgs)
     find_ros_package(household_objects_database_msgs)
-    find_ros_package(object_manipulation)
-    find_ros_package(sql_database)
+    find_ros_package(household_objects_database)
+    find_ros_package(database_interface)
     find_ros_package(household_objects_database)
     include_directories(SYSTEM
                         ${arm_navigation_msgs_INCLUDE_DIRS}
                         ${household_objects_database_msgs_INCLUDE_DIRS}
-                        ${object_manipulation_INCLUDE_DIRS}
-                        ${sql_database_INCLUDE_DIRS}
+                        ${household_objects_database_INCLUDE_DIRS}
+                        ${database_interface_INCLUDE_DIRS}
     )
 else()
     include_directories(SYSTEM
