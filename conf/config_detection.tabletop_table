@@ -12,4 +12,6 @@ pipeline1:
   submethod: ''
   sources: [source1]
   sinks: [sink1]
-  parameters: {}
+  parameters:
+        min_cluster_size: 4000
+        plane_threshold: 0.01

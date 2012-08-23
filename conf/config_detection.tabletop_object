@@ -1,6 +1,5 @@
 source1:
   type: ros_kinect
-  rgb_frame_id: '/camera_rgb_optical_frame'
 
 sink1:
   type: table_publisher
@@ -12,7 +11,9 @@ pipeline1:
   submethod: ''
   sources: [source1]
   sinks: [sink1]
-  parameters: {}
+  parameters:
+        min_cluster_size: 4000
+        plane_threshold: 0.01
 
 sink2:
   type: publisher
@@ -33,4 +34,4 @@ pipeline2:
       user: 'willow'
       password: 'willow'
       name: 'household_objects'
-      module: 'tabletop'
+      module: 'object_recognition_tabletop'
