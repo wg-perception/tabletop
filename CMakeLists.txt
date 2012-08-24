@@ -79,3 +79,6 @@ endif()
 
 # add the tests
 add_subdirectory(test)
+
+
+catkin_doxygen(object_recognition_tabletop-doxygen ${CMAKE_CURRENT_SOURCE_DIR}/include)
