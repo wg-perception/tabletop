@@ -51,7 +51,8 @@ include_directories(SYSTEM
 add_definitions(-DPCL_VERSION_GE_160=1)
 
 # deal with the detection TOD module
-ectomodule(tabletop_table
+ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
+                          INSTALL
   module.cpp
   Clusterer.cpp
   TableDetector.cpp
@@ -74,5 +75,3 @@ link_ecto(tabletop_table
     ${tf_LIBRARIES}
     marker_generator
 )
-
-install_ecto_module(tabletop_table)

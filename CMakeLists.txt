@@ -12,8 +12,6 @@ catkin_python_setup()
 
 find_package(ecto REQUIRED)
 
-set_ecto_install_package_name(${PROJECT_NAME}/ecto_cells)
-
 add_subdirectory(python)
 
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE 1)

@@ -55,11 +55,11 @@ target_link_libraries(tabletop_db_interface
 )
 
 set_target_properties(tabletop_db_interface PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${ecto_module_PYTHON_OUTPUT}/../
+                      LIBRARY_OUTPUT_DIRECTORY ${ECTO_PYTHON_BUILD_PATH}/${PROJECT_NAME}
                       OUTPUT_NAME db_interface
                       PREFIX ""
 )
 
 install(TARGETS tabletop_db_interface
-        DESTINATION ${PYTHON_PACKAGES_PATH}/tabletop/
+        DESTINATION ${ECTO_PYTHON_INSTALL_PATH}/${PROJECT_NAME}
 )

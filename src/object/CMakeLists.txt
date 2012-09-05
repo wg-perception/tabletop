@@ -72,7 +72,8 @@ include_directories(SYSTEM
     ${object_recognition_core_INCLUDE_DIRS}
 )
 
-ectomodule(tabletop_object
+ectomodule(tabletop_object DESTINATION ${PROJECT_NAME}/ecto_cells
+                           INSTALL
     module.cpp
     ObjectRecognizer.cpp
 )
@@ -92,5 +93,3 @@ link_ecto(tabletop_object
     tabletop_model_fitter
     tabletop_db
 )
-
-install_ecto_module(tabletop_object)
