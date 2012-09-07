@@ -15,7 +15,8 @@ if (ROS_ELECTRIC_FOUND)
                         /opt/ros/electric/stacks/object_manipulation/household_objects_database/include/
                         /opt/ros/electric/stacks/sql_database/database_interface/include/)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/electric/stacks/object_manipulation/household_objects_database/lib)
-else()
+endif()
+if (ROS_FUERTE_FOUND)
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
@@ -30,6 +31,22 @@ else()
     )
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 endif()
+if (ROS_GROOVY_FOUND)
+    include_directories(SYSTEM
+                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
+                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/bullet/include/
+                        /opt/ros/fuerte/stacks/geometry/tf/include/
+                        /opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
+    )
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
+endif()
+
 include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
 
 add_library(tabletop_model_fitter SHARED
@@ -53,10 +70,6 @@ target_link_libraries(tabletop_model_fitter
     ${tf_LIBRARIES}
     marker_generator
     ${distance_field_LIBRARIES}
-)
-
-set_target_properties(tabletop_model_fitter PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
 
 install(TARGETS tabletop_model_fitter
