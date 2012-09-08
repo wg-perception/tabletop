@@ -62,6 +62,9 @@ class TabletopTableDetector(ecto.BlackBox):
         else:
             self.table_pose = TablePose()
         if self._parameters:
+            param = self._parameters
+            if 'object_ids' in param:
+                param.pop('object_ids')
             self.table_detector = TableDetector(**self._parameters)
         else:
             self.table_detector = TableDetector()
