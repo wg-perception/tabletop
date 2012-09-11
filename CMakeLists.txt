@@ -36,8 +36,6 @@ endif()
 # deal with the messages
 find_package(genmsg REQUIRED)
 
-add_subdirectory(src)
-
 # temporary building of the ancient table finder
 find_package(Eigen REQUIRED)
 include_directories(SYSTEM
@@ -84,6 +82,8 @@ include_directories(SYSTEM ${rosconsole_INCLUDE_DIRS}
                            ${roscpp_INCLUDE_DIRS}
 )
 endif()
+
+add_subdirectory(src)
 
 #find_package(ROS REQUIRED geometry)
 #include_directories(${geometry_INCLUDE_DIRS})
