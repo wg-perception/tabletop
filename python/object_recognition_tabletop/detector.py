@@ -91,13 +91,21 @@ class TabletopTableDetector(ecto.BlackBox):
 ########################################################################################################################
 
 class TabletopTableDetectionPipeline(DetectionPipeline):
+
+    @classmethod
+    def config_doc(cls):
+        return  """
+        # No parameters are required
+        parameters: ''
+        """
+
     @classmethod
     def type_name(cls):
         return 'tabletop_table'
 
     @classmethod
     def detector(self, *args, **kwargs):
-        submethod = kwargs.pop('submethod')
+        submethod = kwargs.pop('subtype')
         parameters = kwargs.pop('parameters')
 
         return TabletopTableDetector(submethod, parameters, **kwargs)
@@ -105,6 +113,12 @@ class TabletopTableDetectionPipeline(DetectionPipeline):
 ########################################################################################################################
 
 class TabletopObjectDetectionPipeline(DetectionPipeline):
+
+    @classmethod
+    def config_doc(cls):
+        return  """
+        """
+
     @classmethod
     def type_name(cls):
         return 'tabletop_object'
@@ -112,7 +126,7 @@ class TabletopObjectDetectionPipeline(DetectionPipeline):
     @classmethod
     def detector(self, *args, **kwargs):
         visualize = kwargs.pop('visualize', False)
-        submethod = kwargs.pop('submethod')
+        submethod = kwargs.pop('subtype')
         parameters = kwargs.pop('parameters')
         object_db = ObjectDb(parameters['db'])
 

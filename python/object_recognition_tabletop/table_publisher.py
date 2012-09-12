@@ -76,6 +76,13 @@ class TablePublisher(ecto.BlackBox):
 
 class TablePublisherSink(Sink):
 
+
+    @classmethod
+    def config_doc(cls):
+        return  """
+                    # No parameters necessary
+                """
+
     @classmethod
     def type_name(cls):
         return 'table_publisher'
