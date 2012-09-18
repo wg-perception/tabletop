@@ -97,7 +97,18 @@ void DistanceFieldFitter::initializeFromBtVectors(const std::vector<tf::Vector3>
 								      min[2] - table_padding,
 								      2 * truncate_value_ );
   distance_voxel_grid_->reset();
+#if ROS_GROOVY_OR_ABOVE
+  EigenSTL::vector_Vector3d eigen_points(points.size());
+  for(size_t i = 0; i < points.size(); ++i)
+  {
+    eigen_points[i][0] = points[i][0];
+    eigen_points[i][1] = points[i][1];
+    eigen_points[i][2] = points[i][2];
+  }
+  distance_voxel_grid_->addPointsToField(eigen_points);
+#else
   distance_voxel_grid_->addPointsToField(points);
+#endif
 }
 
 double dist(const tf::Vector3 &v0, const tf::Vector3 &v1)

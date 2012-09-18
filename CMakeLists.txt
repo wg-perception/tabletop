@@ -24,7 +24,7 @@ include_directories(include)
 find_package(object_recognition_core REQUIRED)
 
 
-if (NOT ROS_GROOVY_FOUND)
+if (ROS_FUERTE_FOUND)
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the lib directory
@@ -58,15 +58,6 @@ if (ROS_FUERTE_FOUND)
     include_directories(/opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/)
     include_directories(/opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/)
     include_directories(/opt/ros/fuerte/stacks/perception_pcl/pcl_ros/include/)
-endif()
-if (ROS_GROOVY_FOUND)
-find_package(catkin REQUIRED pcl_ros rosconsole roscpp rostime tf)
-    find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
-
-include_directories(SYSTEM ${pcl_ros_INCLUDE_DIRS}
-                           ${rosconsole_INCLUDE_DIRS}
-                           ${roscpp_INCLUDE_DIRS}
-)
 endif()
 
 add_subdirectory(src)

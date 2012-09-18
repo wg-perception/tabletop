@@ -5,13 +5,12 @@ if (genmsg_FOUND)
   SET(TABLETOP_ROS_CELLS TableMsgAssembler.cpp TableVisualizationMsgAssembler.cpp)
 endif()
 
-find_package(object_recognition_core REQUIRED)
-find_package(object_recognition_msgs REQUIRED)
-
 find_package(OpenCV REQUIRED)
 
 find_pcl_package()
 if (ROS_FUERTE_FOUND)
+find_package(object_recognition_core REQUIRED)
+find_package(object_recognition_msgs REQUIRED)
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
@@ -27,7 +26,7 @@ if (ROS_FUERTE_FOUND)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
     find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
 else()
-find_package(catkin REQUIRED tf)
+find_package(catkin REQUIRED object_recognition_core object_recognition_msgs tf)
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
@@ -55,8 +54,8 @@ add_definitions(-DPCL_VERSION_GE_160=1)
 # deal with the detection TOD module
 ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
                           INSTALL
-  module.cpp
   Clusterer.cpp
+  module.cpp
   TableDetector.cpp
   TablePose.cpp
   tabletop_segmenter.cpp

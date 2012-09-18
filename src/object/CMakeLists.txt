@@ -22,14 +22,10 @@ if (ROS_FUERTE_FOUND)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 endif()
 if (ROS_GROOVY_FOUND)
-find_package(catkin REQUIRED tf)
-    include_directories(SYSTEM
-                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
+find_package(catkin REQUIRED distance_field pcl_ros rosconsole roscpp tf)
+add_definitions(-DROS_GROOVY_OR_ABOVE=1)
+include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/bullet/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
@@ -51,7 +47,6 @@ target_link_libraries(tabletop_model_fitter
     marker_generator
     ${Boost_LIBRARIES}
     ${PCL_LIBRARIES}
-    ${Boost_LIBRARIES}
     ${object_recognition_core_LIBRARIES}
     ${pcl_ros_tf_LIBRARIES}
     ${roscpp_LIBRARIES}
