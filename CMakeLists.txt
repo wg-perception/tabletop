@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 2.8)
 project(object_recognition_tabletop)
 find_package(catkin REQUIRED)
+if (${catkin_VERSION} VERSION_GREATER "0.5.26")
+catkin_package()
+catkin_package_export(INCLUDE_DIRS include)
+else()
 catkin_stack()
 catkin_project(object_recognition_tabletop
                INCLUDE_DIRS include
-               DEPENDS OpenCV object_recognition_core object_recognition_msgs
 )
+endif()
 
 # deal with Python
 catkin_python_setup()
