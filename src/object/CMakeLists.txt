@@ -5,7 +5,7 @@ install(TARGETS marker_generator
         DESTINATION lib
 )
 
-find_pcl_package()
+find_package(PCL REQUIRED)
 if (ROS_FUERTE_FOUND)
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/

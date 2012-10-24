@@ -20,7 +20,7 @@ add_subdirectory(python)
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE 1)
 
 find_package(ecto_pcl REQUIRED)
-find_pcl_package()
+find_package(PCL REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(include)
