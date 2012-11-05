@@ -61,7 +61,7 @@
 #include "tabletop_object_detector/marker_generator.h"
 #include <object_recognition_core/common/pose_result.h>
 
-#include <LinearMath/btTransform.h>
+#include <tf/LinearMath/Transform.h>
 
 using object_recognition_core::common::PoseResult;
 

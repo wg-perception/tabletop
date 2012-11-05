@@ -1,3 +1,5 @@
+include_directories(SYSTEM /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
+
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
@@ -5,6 +7,7 @@ install(TARGETS marker_generator
         DESTINATION lib
 )
 
+find_package(ecto REQUIRED)
 find_package(PCL REQUIRED)
 if (ROS_FUERTE_FOUND)
     include_directories(SYSTEM
@@ -23,7 +26,6 @@ if (ROS_FUERTE_FOUND)
 endif()
 if (ROS_GROOVY_FOUND)
 find_package(catkin REQUIRED moveit_core pcl_ros rosconsole roscpp tf)
-add_definitions(-DROS_GROOVY_OR_ABOVE=1)
 include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/

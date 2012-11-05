@@ -1,8 +1,4 @@
-find_package(object_recognition_core REQUIRED)
-
-include_directories(SYSTEM
-                    ${object_recognition_core_INCLUDE_DIRS}
-)
+find_package(ecto REQUIRED)
 
 # Create a library for tabletop db interfaces
 add_library(tabletop_db SHARED
@@ -50,6 +46,8 @@ target_link_libraries(tabletop_db_interface
                       tabletop_db
 )
 
+if (ROS_FUERTE_FOUND)
+set(ECTO_PYTHON_BUILD_PATH ${CMAKE_BINARY_DIR}/gen/py/)
 set_target_properties(tabletop_db_interface PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${ECTO_PYTHON_BUILD_PATH}/${PROJECT_NAME}
                       OUTPUT_NAME db_interface
@@ -59,3 +57,14 @@ set_target_properties(tabletop_db_interface PROPERTIES
 install(TARGETS tabletop_db_interface
         DESTINATION ${ECTO_PYTHON_INSTALL_PATH}/${PROJECT_NAME}
 )
+else()
+set_target_properties(tabletop_db_interface PROPERTIES
+                      LIBRARY_OUTPUT_DIRECTORY ${CATKIN_BUILD_PREFIX}/${CATKIN_PROJECT_LIB_DESTINATION}
+                      OUTPUT_NAME db_interface
+                      PREFIX ""
+)
+ 
+install(TARGETS tabletop_db_interface
+        DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION}
+)
+endif()

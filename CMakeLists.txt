@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(object_recognition_tabletop)
-find_package(catkin REQUIRED)
+
+find_package(catkin REQUIRED ecto ecto_pcl moveit_msgs object_recognition_core tf)
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
 catkin_package(INCLUDE_DIRS include)
 else()
@@ -13,18 +14,16 @@ endif()
 # deal with Python
 catkin_python_setup()
 
-find_package(ecto REQUIRED)
-
 add_subdirectory(python)
 
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE 1)
 
-find_package(ecto_pcl REQUIRED)
 find_package(PCL REQUIRED)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
+                           ${object_recognition_core_INCLUDE_DIRS}
+)
 include_directories(include)
-find_package(object_recognition_core REQUIRED)
 
 
 if (ROS_FUERTE_FOUND)
@@ -57,7 +56,6 @@ if (ROS_FUERTE_FOUND)
     find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 
     include_directories(/opt/ros/fuerte/stacks/geometry/tf/include)
-    include_directories(/opt/ros/fuerte/stacks/bullet/include/)
     include_directories(/opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/)
     include_directories(/opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/)
     include_directories(/opt/ros/fuerte/stacks/perception_pcl/pcl_ros/include/)
