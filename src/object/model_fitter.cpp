@@ -36,7 +36,11 @@
 
 #include "tabletop_object_detector/model_fitter.h"
 
-#include "distance_field/propagation_distance_field.h"
+#if ROS_GROOVY_OR_ABOVE_FOUND
+#include <moveit/distance_field/propagation_distance_field.h>
+#else
+#include <distance_field/propagation_distance_field.h>
+#endif
 #include "tabletop_object_detector/iterative_distance_fitter.h"
 
 namespace tabletop_object_detector {

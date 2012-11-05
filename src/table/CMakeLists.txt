@@ -6,8 +6,8 @@ if (genmsg_FOUND)
 endif()
 
 find_package(OpenCV REQUIRED)
+find_package(PCL REQUIRED)
 
-find_pcl_package()
 if (ROS_FUERTE_FOUND)
 find_package(object_recognition_core REQUIRED)
 find_package(object_recognition_msgs REQUIRED)
@@ -48,8 +48,6 @@ include_directories(SYSTEM
                     ${OpenCV_INCLUDE_DIRS}
                     ${PCL_INCLUDE_DIRS}
 )
-
-add_definitions(-DPCL_VERSION_GE_160=1)
 
 # deal with the detection TOD module
 ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells

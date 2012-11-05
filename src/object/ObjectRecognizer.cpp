@@ -44,11 +44,7 @@
 #include <ecto/ecto.hpp>
 #include <Eigen/StdVector>
 #include <Eigen/Geometry>
-#ifdef PCL_VERSION_GE_140
 #include <pcl/common/transforms.h>
-#else
-#include <pcl/registration/transforms.h>
-#endif
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 

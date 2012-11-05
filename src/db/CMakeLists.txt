@@ -10,18 +10,14 @@ add_library(tabletop_db SHARED
             db_mesh.cpp
 )
 
-if (ROS_ELECTRIC_FOUND)
-    find_ros_package(arm_navigation_msgs)
-    find_ros_package(household_objects_database_msgs)
-    find_ros_package(household_objects_database)
-    find_ros_package(database_interface)
-    find_ros_package(household_objects_database)
+if (ROS_FUERTE_FOUND)
     include_directories(SYSTEM
-                        ${arm_navigation_msgs_INCLUDE_DIRS}
-                        ${household_objects_database_msgs_INCLUDE_DIRS}
-                        ${household_objects_database_INCLUDE_DIRS}
-                        ${database_interface_INCLUDE_DIRS}
+                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
     )
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 else()
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/

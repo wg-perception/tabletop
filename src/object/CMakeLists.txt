@@ -22,7 +22,7 @@ if (ROS_FUERTE_FOUND)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 endif()
 if (ROS_GROOVY_FOUND)
-find_package(catkin REQUIRED distance_field pcl_ros rosconsole roscpp tf)
+find_package(catkin REQUIRED moveit_core pcl_ros rosconsole roscpp tf)
 add_definitions(-DROS_GROOVY_OR_ABOVE=1)
 include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/

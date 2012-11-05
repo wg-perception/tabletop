@@ -62,6 +62,10 @@ if (ROS_FUERTE_FOUND)
     include_directories(/opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/)
     include_directories(/opt/ros/fuerte/stacks/perception_pcl/pcl_ros/include/)
 endif()
+if (ROS_GROOVY_FOUND)
+add_definitions(-DPCL_VERSION_GE_160=1)
+add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
+endif()
 
 add_subdirectory(src)
 
