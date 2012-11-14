@@ -29,9 +29,15 @@ target_link_libraries(tabletop_db
                       ${household_objects_database_LIBRARIES}
 )
 
+if (ROS_FUERTE_FOUND)
 install(TARGETS tabletop_db
         DESTINATION lib
 )
+else()
+install(TARGETS tabletop_db
+        DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+endif()
 
 
 # create a Python module to wrap the DB functionalities
@@ -59,7 +65,7 @@ install(TARGETS tabletop_db_interface
 )
 else()
 set_target_properties(tabletop_db_interface PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${CATKIN_BUILD_PREFIX}/${CATKIN_PROJECT_LIB_DESTINATION}
+                      LIBRARY_OUTPUT_DIRECTORY ${CATKIN_BUILD_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
                       OUTPUT_NAME db_interface
                       PREFIX ""
 )
