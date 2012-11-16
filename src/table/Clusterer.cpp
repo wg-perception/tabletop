@@ -48,6 +48,7 @@
 
 using ecto::tendrils;
 
+//#if PCL_VERSION_COMPARE(>=,1,6,0)
 #if 0
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/integral_image_normal.h>
@@ -119,12 +120,12 @@ namespace tabletop
 
       clusters_->clear();
 
-//#if PCL_VERSION_GE_160
+//#if PCL_VERSION_COMPARE(>=,1,6,0)
 #if 0
       pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
       pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
-      pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal>::Ptr edge_aware_comparator_;
-      pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>::Ptr euclidean_cluster_comparator_;
+      pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal>::Ptr edge_aware_comparator_ (new pcl::EdgeAwarePlaneComparator<PointT, pcl::Normal>);
+      pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>::Ptr euclidean_cluster_comparator_ (new pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>);
 
       bool use_planar_refinement_ = true;
       bool use_clustering_;
@@ -143,7 +144,7 @@ namespace tabletop
 
       // Segment Planes
       printf("Segmenting planes...\n");
-      std::vector<pcl::PlanarRegion<PointT> > regions;
+      std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions;
       std::vector<pcl::ModelCoefficients> model_coefficients;
       std::vector<pcl::PointIndices> inlier_indices;
       pcl::PointCloud<pcl::Label>::Ptr labels(new pcl::PointCloud<pcl::Label>);

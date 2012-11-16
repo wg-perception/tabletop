@@ -27,6 +27,7 @@ endif()
 if (ROS_GROOVY_FOUND)
 find_package(catkin REQUIRED moveit_core pcl_ros rosconsole roscpp tf)
 include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
+                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/

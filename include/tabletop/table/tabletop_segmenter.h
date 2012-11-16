@@ -184,7 +184,7 @@ namespace tabletop
       pcl::SACSegmentationFromNormals<Point, pcl::Normal> tableSegmentator;
       // Table model fitting parameters
       tableSegmentator.setDistanceThreshold(distanceThreshold);
-      tableSegmentator.setMaxIterations(10000);
+      tableSegmentator.setMaxIterations(1000);
       tableSegmentator.setNormalDistanceWeight(0.1);
       tableSegmentator.setOptimizeCoefficients(true);
       tableSegmentator.setModelType(pcl::SACMODEL_NORMAL_PLANE);

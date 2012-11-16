@@ -40,7 +40,7 @@
 #include "tabletop_object_detector/model_fitter.h"
 
 #include <math.h>
-#if ROS_GROOVY_OR_ABOVE_FOUND
+#if 0 //ROS_GROOVY_OR_ABOVE_FOUND
 #include <moveit/distance_field/propagation_distance_field.h>
 #else
 #include <distance_field/propagation_distance_field.h>

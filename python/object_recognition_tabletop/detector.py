@@ -130,5 +130,5 @@ class TabletopObjectDetectionPipeline(DetectionPipeline):
         parameters = kwargs.pop('parameters')
         object_db = ObjectDb(parameters['db'])
 
-        return tabletop_object.ObjectRecognizer(object_ids=parameters['object_ids'],
+        return tabletop_object.ObjectRecognizer(object_ids=parameters['tabletop_object_ids'],
                                                 db=object_db)

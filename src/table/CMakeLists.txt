@@ -29,6 +29,7 @@ find_package(object_recognition_msgs REQUIRED)
 else()
 find_package(catkin REQUIRED object_recognition_core object_recognition_msgs tf)
     include_directories(SYSTEM
+                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/

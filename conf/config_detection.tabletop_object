@@ -20,7 +20,7 @@ pipeline1:
 sink2:
   type: publisher
   module: 'object_recognition_ros.io'
-  object_ids: 'all'
+  visualize: True
 
 pipeline2:
   type: 'tabletop_object'
@@ -29,7 +29,8 @@ pipeline2:
   sources: [source1, pipeline1]
   sinks: [sink2]
   parameters:
-    object_ids: 'REDUCED_MODEL_SET'
+    object_ids: 'all'
+    tabletop_object_ids: 'REDUCED_MODEL_SET'
     db:
       type: 'SqlHousehold'
       host: 'wgs36'

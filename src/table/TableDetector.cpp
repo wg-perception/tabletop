@@ -46,6 +46,7 @@
 
 #include <tabletop/table/tabletop_segmenter.h>
 
+//#if PCL_VERSION_COMPARE(>=,1,6,0)
 #if 0
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/features/integral_image_normal.h>
@@ -138,7 +139,7 @@ namespace tabletop
       clouds_hull_->clear();
       table_coefficients_->clear();
 
-//#if PCL_VERSION_GE_160
+//#if PCL_VERSION_COMPARE(>=,1,6,0)
 #if 0
       pcl::PointCloud<PointT>::Ptr init_cloud_ptr(new pcl::PointCloud<PointT>);
       pcl::PointCloud<PointT>::Ptr prev_cloud(new pcl::PointCloud<PointT>);
@@ -150,11 +151,11 @@ namespace tabletop
       ne.setNormalSmoothingSize(20.0f);
 
       pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
-      mps.setMinInliers(10000);
+      mps.setMinInliers(*min_cluster_size_);
       mps.setAngularThreshold(0.017453 * 2.0); //3 degrees
-      mps.setDistanceThreshold(0.02);//2cm
+      mps.setDistanceThreshold(*plane_threshold_);// from params
 
-      std::vector<pcl::PlanarRegion<PointT> > regions;
+      std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions;
       pcl::PointCloud<PointT>::Ptr contour(new pcl::PointCloud<PointT>);
       size_t prev_models_size = 0;
 
