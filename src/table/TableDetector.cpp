@@ -88,7 +88,7 @@ namespace tabletop
       params.declare(&TableDetector::filter_limits_, "filter_limits",
                      "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
                      limits);
-      params.declare(&TableDetector::min_cluster_size_, "min_cluster_size",
+      params.declare(&TableDetector::min_table_size_, "min_table_size",
                      "The minimum number of points deemed necessary to find a table.", 10000);
       params.declare(&TableDetector::plane_detection_voxel_size_, "plane_detection_voxel_size",
                      "The size of a voxel cell when downsampling ", 0.01);
@@ -96,8 +96,8 @@ namespace tabletop
                      "The number of nearest neighbors to use when computing normals", 10);
       params.declare(&TableDetector::plane_threshold_, "plane_threshold",
                      "The distance used as a threshold when finding a plane", 0.1);
-      params.declare(&TableDetector::cluster_tolerance_, "cluster_tolerance",
-                     "The distance used as a threshold when finding a plane", 0.2);
+      params.declare(&TableDetector::table_cluster_tolerance_, "table_cluster_tolerance",
+                     "The distance used when clustering a plane", 0.2);
       Eigen::Vector3f default_up(0, 0, 1);
       params.declare(&TableDetector::up_direction_, "vertical_direction", "The vertical direction", default_up);
       params.declare(&TableDetector::up_frame_id_, "vertical_frame_id", "The vertical frame id", "/map");
@@ -130,8 +130,8 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      TabletopSegmenter table_segmenter(*filter_limits_, *min_cluster_size_, *plane_detection_voxel_size_,
-                                        *normal_k_search_, *plane_threshold_, *cluster_tolerance_);
+      TabletopSegmenter table_segmenter(*filter_limits_, *min_table_size_, *plane_detection_voxel_size_,
+                                        *normal_k_search_, *plane_threshold_, *table_cluster_tolerance_);
       pcl::ModelCoefficients::Ptr table_coefficients;
 
       // Find the table, it assumes only one plane for now TODO
@@ -151,7 +151,7 @@ namespace tabletop
       ne.setNormalSmoothingSize(20.0f);
 
       pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
-      mps.setMinInliers(*min_cluster_size_);
+      mps.setMinInliers(*min_table_size_);
       mps.setAngularThreshold(0.017453 * 2.0); //3 degrees
       mps.setDistanceThreshold(*plane_threshold_);// from params
 
@@ -233,7 +233,7 @@ namespace tabletop
     /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
     ecto::spore<std::vector<float> > filter_limits_;
     /** The minimum number of points deemed necessary to find a table */
-    ecto::spore<size_t> min_cluster_size_;
+    ecto::spore<size_t> min_table_size_;
     /** The size of a voxel cell when downsampling */
     ecto::spore<float> plane_detection_voxel_size_;
     /** The number of nearest neighbors to use when computing normals */
@@ -260,7 +260,7 @@ namespace tabletop
     /** The frame id of the vertical direction */
     ecto::spore<std::string> up_frame_id_;
 
-    ecto::spore<float> cluster_tolerance_;
+    ecto::spore<float> table_cluster_tolerance_;
   };
 }
 

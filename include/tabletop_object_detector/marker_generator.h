@@ -84,7 +84,7 @@ visualization_msgs::Marker MarkerGenerator::getCloudMarker(const PointCloudType&
   //create the marker
   visualization_msgs::Marker marker;
   marker.action = visualization_msgs::Marker::ADD;
-  marker.lifetime = ros::Duration();
+  marker.lifetime = ros::Duration(5);
 
   marker.type = visualization_msgs::Marker::POINTS;
   marker.scale.x = 0.002;

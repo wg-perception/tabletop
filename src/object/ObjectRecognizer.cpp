@@ -127,7 +127,7 @@ namespace tabletop
       object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
-      confidence_cutoff_ = 0.01;
+      confidence_cutoff_ = 0.005f;
     }
 
     /** Compute the pose of the table plane
@@ -213,7 +213,7 @@ namespace tabletop
     /** The translations of the tables */
     ecto::spore<std::vector<Eigen::Vector3f> > table_translations_;
     /** The number of models to fit to each cluster */
-    int confidence_cutoff_;
+    float confidence_cutoff_;
     bool perform_fit_merge_;
     ecto::spore<std::string> object_ids_;
     ecto::spore<object_recognition_core::db::ObjectDb> db_;

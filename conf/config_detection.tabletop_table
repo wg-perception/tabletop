@@ -14,5 +14,5 @@ pipeline1:
   sources: [source1]
   sinks: [sink1]
   parameters:
-        min_cluster_size: 4000
+        min_table_size: 4000
         plane_threshold: 0.01

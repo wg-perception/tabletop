@@ -83,8 +83,8 @@ namespace tabletop
     declare_params(ecto::tendrils& params)
     {
       params.declare(&Clusterer::clustering_voxel_size_, "clustering_voxel_size",
-                     "The minimum number of points deemed necessary to find a table.", 0.003);
-      params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The size of a voxel cell when downsampling ",
+                     "The size of a voxel cell when downsampling.", 0.003);
+      params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The maximum distance between a point and the cluster it belongs to.",
                      0.01);
       params.declare(&Clusterer::min_cluster_size_, "min_cluster_size", "Min number of points for a cluster", 300);
       params.declare(&Clusterer::table_z_filter_min_, "table_z_filter_min",
