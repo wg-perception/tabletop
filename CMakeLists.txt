@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(object_recognition_tabletop)
 
-find_package(catkin REQUIRED ecto ecto_pcl moveit_msgs object_recognition_core tf)
+find_package(catkin REQUIRED ecto ecto_pcl moveit_msgs object_recognition_core object_recognition_msgs tf)
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
 catkin_package(INCLUDE_DIRS include)
 else()
