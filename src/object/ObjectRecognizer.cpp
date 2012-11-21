@@ -119,7 +119,6 @@ namespace tabletop
           true);
 
       outputs.declare(&ObjectRecognizer::pose_results_, "pose_results", "The results of object recognition");
-      outputs.declare(&ObjectRecognizer::object_clusters_, "point3d_clusters", "A vector containing a PointCloud for each recognized object");
     }
 
     void
@@ -144,7 +143,11 @@ namespace tabletop
 
       // Process each table
       pose_results_->clear();
-      object_clusters_->clear();
+
+      std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters_merged;
+      // Map to store the transformation for each cluster (table_index)
+      std::map<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t> cluster_table;
+
       for (size_t table_index = 0; table_index < clusters_->size(); ++table_index)
       {
         Eigen::Quaternionf quat((*table_rotations_)[table_index]);
@@ -153,20 +156,25 @@ namespace tabletop
         size_t n_clusters = (*clusters_)[table_index].size();
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters(n_clusters);
 
-        for (size_t cluster_index = 0; cluster_index < n_clusters; ++cluster_index)
-        {
-          Eigen::Matrix4f t;
-          t.block(0, 0, 3, 3) = (*table_rotations_)[table_index].transpose();
-          t.block(0, 3, 3, 1) = -(*table_rotations_)[table_index].transpose() * (*table_translations_)[table_index];
+		Eigen::Matrix4f t;
+		t.block(0, 0, 3, 3) = (*table_rotations_)[table_index].transpose();
+		t.block(0, 3, 3, 1) = -(*table_rotations_)[table_index].transpose() * (*table_translations_)[table_index];
 
-          clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
-          pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]), t);
-        }
-        object_recognizer_.objectDetection<pcl::PointXYZ>(clusters, confidence_cutoff_, perform_fit_merge_, results);
+		for (size_t cluster_index = 0; cluster_index < n_clusters; ++cluster_index)
+		{
+		  clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+		  pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]), t);
+		  cluster_table.insert(std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t>(clusters[cluster_index], table_index));
+		}
+
+		clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
+      }
+        object_recognizer_.objectDetection<pcl::PointXYZ>(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
 
         for (size_t i = 0; i < results.size(); ++i)
         {
           const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> & result = results[i];
+          const size_t table_index = cluster_table[result.cloud_];
 
           PoseResult pose_result;
 
@@ -189,6 +197,12 @@ namespace tabletop
           pose_result.set_confidence(result.confidence_);
 
           // Add the cluster of points
+          std::vector<sensor_msgs::PointCloud2ConstPtr> ros_clouds (1);
+          sensor_msgs::PointCloud2Ptr cluster_cloud (new sensor_msgs::PointCloud2());
+	      pcl::toROSMsg(*result.cloud_, *cluster_cloud);
+	      ros_clouds[0] = cluster_cloud;
+	      pose_result.set_clouds(ros_clouds);
+
           /*
           typedef std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZ> > > CloudVec;          
           CloudVec point_clouds(1);
@@ -198,12 +212,8 @@ namespace tabletop
           pose_result.set_point_clouds(reinterpret_cast<char*>(point_clouds_ptr));
           */
 
-          std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZ> > > object_cluster (1);
-          			object_cluster[0] = *result.cloud_;
-
           pose_results_->push_back(pose_result);
-          object_clusters_->push_back(object_cluster);
-        }
+//        }
       }
 
       return ecto::OK;
@@ -216,8 +226,6 @@ namespace tabletop
     ecto::spore<std::vector<PoseResult> > pose_results_;
     /** The input clusters */
     ecto::spore<std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > > clusters_;
-    /** The output clusters for the recognized objects */
-    ecto::spore<std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZ> > > > > object_clusters_;
     /** The rotations of the tables */
     ecto::spore<std::vector<Eigen::Matrix3f> > table_rotations_;
     /** The translations of the tables */
