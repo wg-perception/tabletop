@@ -199,10 +199,13 @@ namespace tabletop
         }
       }
 #else
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_copy (new pcl::PointCloud<pcl::PointXYZ>(**cloud_));
+      clusters_->reserve(clouds_hull_->size());
+
       for (size_t table_index = 0; table_index < clouds_hull_->size(); ++table_index)
       {
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters;
-        blob_segmenter.process<pcl::PointXYZ>(*cloud_, (*clouds_hull_)[table_index], clusters);
+        blob_segmenter.processAndRemoveClusters<pcl::PointXYZ>(cloud_copy, (*clouds_hull_)[table_index], clusters);
 
         clusters_->push_back(clusters);
       }

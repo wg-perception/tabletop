@@ -282,45 +282,31 @@ namespace tabletop
     {
       table_coefficients_ptr = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
 
-      // First, filter by an interest box (which also remove NaN's)
-      typename pcl::PointCloud<Point>::Ptr cloud_filtered_ptr = typename pcl::PointCloud<Point>::Ptr(
-          new pcl::PointCloud<Point>);
-      filterLimits<Point>(cloud_in, filter_limits_, cloud_filtered_ptr);
-
-      if (cloud_filtered_ptr->points.size() < min_cluster_size_)
+      if (cloud_in->points.size() < min_cluster_size_)
       {
-        // TODO
-        //ROS_INFO("Filtered cloud only has %d points", (int)cloud_filtered_ptr->points.size());
-        return NO_TABLE;
-      }
-
-      // Then, downsample
-      typename pcl::PointCloud<Point>::Ptr cloud_downsampled_ptr(new typename pcl::PointCloud<Point>);
-      downsample<Point>(plane_detection_voxel_size_, cloud_filtered_ptr, cloud_downsampled_ptr);
-      if (cloud_downsampled_ptr->points.size() < min_cluster_size_)
-      {
-        //ROS_INFO("Downsampled cloud only has %d points", (int)cloud_downsampled_ptr->points.size());
+        //ROS_INFO("Input cloud only has %d points", (int)cloud_downsampled_ptr->points.size());
         return NO_TABLE;
       }
 
       // Estimate the normals
       pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_ptr(new pcl::PointCloud<pcl::Normal>);
-      estimateNormals<Point>(normal_k_search_, cloud_downsampled_ptr, cloud_normals_ptr);
+      estimateNormals<Point>(normal_k_search_, cloud_in, cloud_normals_ptr);
 
       // Perform planar segmentation
       pcl::PointIndices::Ptr table_inliers_ptr(new pcl::PointIndices);
-      if (!segmentPlane<Point>(plane_threshold_, cloud_downsampled_ptr, cloud_normals_ptr, table_inliers_ptr,
+      if (!segmentPlane<Point>(plane_threshold_, cloud_in, cloud_normals_ptr, table_inliers_ptr,
                                table_coefficients_ptr))
         return NO_TABLE;
 
-      if (table_coefficients_ptr->values.size() <= 3)
+
+      if (table_coefficients_ptr->values.size() <= 3 || table_inliers_ptr->indices.size() <= 3)
       {
         //ROS_INFO("Failed to detect table in scan");
         return NO_TABLE;
       }
 
       // Project the inliers on the table
-      projectInliersOnTable<Point>(cloud_downsampled_ptr, table_inliers_ptr, table_coefficients_ptr,
+      projectInliersOnTable<Point>(cloud_in, table_inliers_ptr, table_coefficients_ptr,
                                    table_projected_ptr);
 
       // Get the final hull
@@ -361,7 +347,7 @@ namespace tabletop
 
     template<typename Point>
     void
-    process(typename pcl::PointCloud<Point>::ConstPtr cloud, typename pcl::PointCloud<Point>::ConstPtr table_hull_ptr,
+    process(const typename pcl::PointCloud<Point>::ConstPtr& cloud, const typename pcl::PointCloud<Point>::ConstPtr& table_hull_ptr,
             std::vector<typename pcl::PointCloud<Point>::Ptr> & clusters)
     {
       typename pcl::ExtractPolygonalPrismData<Point> prism_;
@@ -416,6 +402,72 @@ namespace tabletop
       // ---[ Convert clusters into the PointCloud message
       getClustersFromPointCloud2<Point>(*cloud_objects_downsampled_ptr, clusters2, clusters);
     }
+
+    template<typename Point>
+        void
+        processAndRemoveClusters(typename pcl::PointCloud<Point>::Ptr& cloud, const typename pcl::PointCloud<Point>::ConstPtr& table_hull_ptr,
+                std::vector<typename pcl::PointCloud<Point>::Ptr> & clusters)
+        {
+          typename pcl::ExtractPolygonalPrismData<Point> prism_;
+
+          // ---[ Get the objects on top of the (non-flat) table
+          pcl::PointIndices cloud_object_indices;
+          //prism_.setInputCloud (cloud_all_minus_table_ptr);
+          prism_.setInputCloud(cloud);
+          prism_.setInputPlanarHull(table_hull_ptr);
+          prism_.setHeightLimits(table_z_filter_min_, table_z_filter_max_);
+          prism_.segment(cloud_object_indices);
+
+          typename pcl::PointCloud<Point>::Ptr cloud_objects_ptr(new pcl::PointCloud<Point>);
+          pcl::ExtractIndices<Point> extract_object_indices;
+          extract_object_indices.setInputCloud(cloud);
+          extract_object_indices.setIndices(boost::make_shared<const pcl::PointIndices>(cloud_object_indices));
+          extract_object_indices.filter(*cloud_objects_ptr);
+
+          // ---[ Remove the Polygonal prism from the input cloud
+          typename pcl::PointCloud<Point>::Ptr cloud_no_prism(new pcl::PointCloud<Point>);
+          extract_object_indices.setNegative(true);
+          extract_object_indices.filter(*cloud_no_prism);
+
+          if (cloud_objects_ptr->points.empty())
+          {
+            return;
+          }
+
+          // ---[ Downsample the points
+          pcl::VoxelGrid<Point> grid_objects_;
+          grid_objects_.setLeafSize(clustering_voxel_size_, clustering_voxel_size_, clustering_voxel_size_);
+          grid_objects_.setDownsampleAllData(false);
+
+          typename pcl::PointCloud<Point>::Ptr cloud_objects_downsampled_ptr(new pcl::PointCloud<Point>);
+          grid_objects_.setInputCloud(cloud_objects_ptr);
+          grid_objects_.filter(*cloud_objects_downsampled_ptr);
+
+          // ---[ If flattening the table, adjust the points on the table to be straight also
+          //TODOif(flatten_table_) straightenPoints<pcl::PointCloud<Point> >(*cloud_objects_downsampled_ptr,
+          //table_plane_trans, table_plane_trans_flat);
+
+          // ---[ Split the objects into Euclidean clusters
+          std::vector<pcl::PointIndices> clusters2;
+
+          //pcl_cluster_.setInputCloud (cloud_objects_ptr);
+          pcl::EuclideanClusterExtraction<Point> pcl_cluster_;
+          // Clustering parameters
+          typename pcl::search::KdTree<Point>::Ptr clusters_tree = boost::make_shared<pcl::search::KdTree<Point> >();
+
+          pcl_cluster_.setClusterTolerance(cluster_distance_);
+          pcl_cluster_.setMinClusterSize(min_cluster_size_);
+          pcl_cluster_.setSearchMethod(clusters_tree);
+
+          pcl_cluster_.setInputCloud(cloud_objects_downsampled_ptr);
+          pcl_cluster_.extract(clusters2);
+
+          // ---[ Convert clusters into the PointCloud message
+          getClustersFromPointCloud2<Point>(*cloud_objects_downsampled_ptr, clusters2, clusters);
+
+          // ---[ Replace the input cloud
+          cloud = cloud_no_prism;
+        }
   private:
 
     template<typename Point> void
