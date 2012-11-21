@@ -37,6 +37,7 @@ class TabletopTableDetector(ecto.BlackBox):
         ecto.BlackBox.__init__(self, **kwargs)
 
     def declare_params(self, p):
+        p.forward_all('_clusterer')
         if ECTO_ROS_FOUND:
             p.forward('rgb_frame_id', cell_name='message_cvt', cell_key='frame_id')
 
@@ -65,6 +66,17 @@ class TabletopTableDetector(ecto.BlackBox):
             param = self._parameters
             if 'object_ids' in param:
                 param.pop('object_ids')
+            if 'clustering_voxel_size' in param:
+                param.pop('clustering_voxel_size')
+            if 'cluster_distance' in param:
+                param.pop('cluster_distance')
+            if 'min_cluster_size' in param:
+                param.pop('min_cluster_size')
+            if 'table_z_filter_min' in param:
+                param.pop('table_z_filter_min')
+            if 'table_z_filter_max' in param:
+                param.pop('table_z_filter_max')                                                
+            
             self.table_detector = TableDetector(**self._parameters)
         else:
             self.table_detector = TableDetector()
