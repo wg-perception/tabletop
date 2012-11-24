@@ -38,7 +38,7 @@
 
 #include <object_recognition_core/db/db.h>
 
-#include <arm_navigation_msgs/Shape.h>
+#include <shape_msgs/Mesh.h>
 
 namespace object_recognition_core
 {
@@ -47,18 +47,18 @@ namespace object_recognition_core
     // Specializations for cv::FileNode
     template<>
     void
-    object_recognition_core::db::Document::get_attachment<arm_navigation_msgs::Shape>(
-        const AttachmentName &attachment_name, arm_navigation_msgs::Shape &value) const;
+    object_recognition_core::db::Document::get_attachment<shape_msgs::Mesh>(
+        const AttachmentName &attachment_name, shape_msgs::Mesh &value) const;
 
     template<>
     void
-    object_recognition_core::db::Document::get_attachment_and_cache<arm_navigation_msgs::Shape>(
-        const AttachmentName &attachment_name, arm_navigation_msgs::Shape &value);
+    object_recognition_core::db::Document::get_attachment_and_cache<shape_msgs::Mesh>(
+        const AttachmentName &attachment_name, shape_msgs::Mesh &value);
 
     template<>
     void
-    object_recognition_core::db::Document::set_attachment<arm_navigation_msgs::Shape>(
-        const AttachmentName &attachment_name, const arm_navigation_msgs::Shape &value);
+    object_recognition_core::db::Document::set_attachment<shape_msgs::Mesh>(
+        const AttachmentName &attachment_name, const shape_msgs::Mesh &value);
   }
 }
 

@@ -70,7 +70,7 @@ namespace tabletop_object_detector
     clearObjects();
 
     void
-    addObject(int model_id, arm_navigation_msgs::Shape mesh);
+    addObject(int model_id, const shape_msgs::Mesh & mesh);
 
     /** Structure used a return type for objectDetection */
     template<class PointType>

@@ -69,7 +69,7 @@ namespace tabletop_object_detector
   }
 
   void
-  TabletopObjectRecognizer::addObject(int model_id, arm_navigation_msgs::Shape mesh)
+  TabletopObjectRecognizer::addObject(int model_id, const shape_msgs::Mesh & mesh)
   {
     detector_.addObject(model_id, mesh);
   }

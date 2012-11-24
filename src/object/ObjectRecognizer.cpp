@@ -57,6 +57,7 @@
 
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
+#include <object_recognition_msgs/shape_conversion.h>
 
 using object_recognition_core::common::PoseResult;
 
@@ -96,7 +97,7 @@ namespace tabletop
         if (!database->getScaledModelMesh(model_id, mesh))
           continue;
 
-        object_recognizer_.addObject(model_id, mesh);
+        object_recognizer_.addObject(model_id, an_shape_to_mesh(mesh));
       }
     }
 

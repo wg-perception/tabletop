@@ -107,7 +107,7 @@ class ExhaustiveFitDetector
     }
 
     void
-    addObject(int model_id, arm_navigation_msgs::Shape mesh)
+    addObject(int model_id, const shape_msgs::Mesh & mesh)
     {
       Fitter* fitter = new Fitter();
       fitter->initializeFromMesh(mesh);
