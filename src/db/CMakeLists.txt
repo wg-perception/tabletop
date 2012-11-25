@@ -22,6 +22,9 @@ else()
                         /opt/ros/fuerte/stacks/sql_database/database_interface/include/
     )
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
+if (NOT household_objects_database_LIBRARIES)
+return()
+endif()
 endif()
 
 target_link_libraries(tabletop_db
