@@ -38,7 +38,10 @@ include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
     find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 endif()
 
-include_directories(SYSTEM ${PCL_INCLUDE_DIRS})
+include_directories(SYSTEM ${catkin_INLUDE_DIRS}
+                           ${object_recognition_msgs_INCLUDE_DIRS}
+                           ${PCL_INCLUDE_DIRS}
+)
 
 add_library(tabletop_model_fitter SHARED
     model_fitter.cpp
