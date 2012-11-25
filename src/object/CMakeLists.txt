@@ -25,9 +25,7 @@ if (ROS_FUERTE_FOUND)
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
 endif()
 if (ROS_GROOVY_FOUND)
-find_package(catkin REQUIRED moveit_core pcl_ros rosconsole roscpp tf)
-include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
-                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
@@ -35,7 +33,6 @@ include_directories(SYSTEM ${distance_field_INCLUDE_DIRS}
                         /opt/ros/fuerte/stacks/sql_database/database_interface/include/
     )
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-    find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 endif()
 
 include_directories(SYSTEM ${catkin_INLUDE_DIRS}
