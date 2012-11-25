@@ -27,20 +27,18 @@ find_package(object_recognition_msgs REQUIRED)
     find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
 else()
     include_directories(SYSTEM
-                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
-                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
+                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/goovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/groovy/stacks/sql_database/database_interface/include/
     )
-    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-    find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 endif()
 
 
 include_directories(${CMAKE_SOURCE_DIR}/tabletop/include)
 
-include_directories(SYSTEM
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
                     ${object_recognition_core_INCLUDE_DIRS}
                     ${object_recognition_msgs_INCLUDE_DIRS}
                     ${OpenCV_INCLUDE_DIRS}

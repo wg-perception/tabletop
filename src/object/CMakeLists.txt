@@ -26,16 +26,13 @@ if (ROS_FUERTE_FOUND)
 endif()
 if (ROS_GROOVY_FOUND)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
-                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
-                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
+                        /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
+                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
+                        /opt/ros/groovy/stacks/sql_database/database_interface/include/
     )
-    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-if (NOT household_objects_database_LIBRARIES)
-return()
-endif()
+    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 endif()
 
 include_directories(SYSTEM ${catkin_INLUDE_DIRS}
@@ -53,6 +50,7 @@ find_package(Boost REQUIRED)
 target_link_libraries(tabletop_model_fitter
     marker_generator
     ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
     ${object_recognition_core_LIBRARIES}
     ${pcl_ros_tf_LIBRARIES}
