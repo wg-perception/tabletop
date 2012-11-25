@@ -1,11 +1,5 @@
 find_package(ecto REQUIRED)
 
-# Create a library for tabletop db interfaces
-add_library(tabletop_db SHARED
-            db_sql_household.cpp
-            db_mesh.cpp
-)
-
 if (ROS_FUERTE_FOUND)
     include_directories(SYSTEM
                         /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
@@ -26,6 +20,13 @@ if (NOT household_objects_database_LIBRARIES)
 return()
 endif()
 endif()
+
+# Create a library for tabletop db interfaces
+add_library(tabletop_db SHARED
+            db_sql_household.cpp
+            db_mesh.cpp
+)
+
 
 target_link_libraries(tabletop_db
                       ${object_recognition_core_LIBRARIES}
