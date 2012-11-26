@@ -128,7 +128,7 @@ namespace tabletop
       object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
-      confidence_cutoff_ = 0.005f;
+      confidence_cutoff_ = 0.01f;
     }
 
     /** Compute the pose of the table plane

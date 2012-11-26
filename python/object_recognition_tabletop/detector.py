@@ -9,6 +9,7 @@ from object_recognition_tabletop.ecto_cells import tabletop_object
 from ecto_image_pipeline.base import RescaledRegisteredDepth
 from ecto_image_pipeline.conversion import MatToPointCloudXYZOrganized
 from ecto_opencv.calib import DepthTo3d
+from ecto_pcl import Cropper
 from object_recognition_core.db import ObjectDb, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectionPipeline
 from object_recognition_core.utils import json_helper
@@ -24,9 +25,8 @@ class TabletopTableDetector(ecto.BlackBox):
     table_pose = TablePose
     to_cloud_conversion = MatToPointCloudXYZOrganized
     passthrough = ecto.PassthroughN
-    _clusterer = Clusterer
-    _depth_map = RescaledRegisteredDepth
-    _points3d = DepthTo3d
+    clusterer = Clusterer
+    cropper = Cropper
     if ECTO_ROS_FOUND:
         message_cvt = ecto_ros.Mat2Image
 
@@ -37,21 +37,19 @@ class TabletopTableDetector(ecto.BlackBox):
         ecto.BlackBox.__init__(self, **kwargs)
 
     def declare_params(self, p):
-        p.forward_all('_clusterer')
+        p.forward_all('clusterer')
+        p.forward_all('cropper')
+        p.forward_all('table_detector')
+
         if ECTO_ROS_FOUND:
             p.forward('rgb_frame_id', cell_name='message_cvt', cell_key='frame_id')
 
     def declare_io(self, _p, i, o):
-        self.passthrough = ecto.PassthroughN(items=dict(image='An image',
-                                                   K='The camera matrix'
-                                                   ))
-        i.forward(['image', 'K'], cell_name='passthrough', cell_key=['image', 'K'])
-        #i.forward('mask', cell_name='to_cloud_conversion', cell_key='mask')
-        i.forward('depth', cell_name='_depth_map', cell_key='depth')
+        i.forward('point_cloud', cell_name='cropper', cell_key='input')
 
         o.forward('clouds', cell_name='table_detector', cell_key='clouds')
         o.forward('clouds_hull', cell_name='table_detector', cell_key='clouds_hull')
-        o.forward('clusters', cell_name='_clusterer', cell_key='clusters')
+        o.forward('clusters', cell_name='clusterer', cell_key='clusters')
         o.forward('rotations', cell_name='table_detector', cell_key='rotations')
         o.forward('translations', cell_name='table_detector', cell_key='translations')
         o.forward('pose_results', cell_name='table_pose', cell_key='pose_results')
@@ -62,41 +60,26 @@ class TabletopTableDetector(ecto.BlackBox):
             self.table_pose = tabletop_table.TablePose(vertical_direction=vertical_direction)
         else:
             self.table_pose = TablePose()
-        if self._parameters:
-            param = self._parameters
-            if 'object_ids' in param:
-                param.pop('object_ids')
-            if 'clustering_voxel_size' in param:
-                param.pop('clustering_voxel_size')
-            if 'cluster_distance' in param:
-                param.pop('cluster_distance')
-            if 'min_cluster_size' in param:
-                param.pop('min_cluster_size')
-            if 'table_z_filter_min' in param:
-                param.pop('table_z_filter_min')
-            if 'table_z_filter_max' in param:
-                param.pop('table_z_filter_max')                                                
-            
-            self.table_detector = TableDetector(**self._parameters)
-        else:
-            self.table_detector = TableDetector()
-        self._depth_map = RescaledRegisteredDepth()
-        self._points3d = DepthTo3d()
-        self.to_cloud_conversion = MatToPointCloudXYZOrganized()
+        ## TODO not correctly passed, look into this
+#        if self._parameters:
+#            if self._parameters.has_key('cropper'):
+#                print self._parameters['cropper']
+#                cropper = Cropper(**self._parameters['cropper'])
+#            if self._parameters.has_key('table_detector'):
+#                print 'td'
+#                table_detector = TableDetector(**self._parameters['table_detector'])                                       
+#            if self._parameters.has_key('clusterer'):
+#                print 'cr'
+#                table_detector = Clusterer(**self._parameters['clusterer'])
 
     def connections(self):
-        # Rescale the depth image and convert to 3d
-        connections = [ self.passthrough['image'] >> self._depth_map['image'],
-                       self._depth_map['depth'] >>  self._points3d['depth'],
-                       self.passthrough['K'] >> self._points3d['K'],
-                       self._points3d['points3d'] >> self.to_cloud_conversion['points'] ]
         # First find the table, then the pose
-        connections += [self.to_cloud_conversion['point_cloud'] >> self.table_detector['cloud'],
+        connections = [ self.cropper['output'] >> self.table_detector['cloud'],
                        self.table_detector['rotations'] >> self.table_pose['rotations'],
                        self.table_detector['translations'] >> self.table_pose['translations'] ]
         # also find the clusters of points
-        connections += [self.to_cloud_conversion['point_cloud'] >> self._clusterer['cloud'],
-                       self.table_detector['clouds_hull'] >> self._clusterer['clouds_hull'] ]
+        connections += [ self.cropper['output'] >> self.clusterer['cloud'],
+                       self.table_detector['clouds_hull'] >> self.clusterer['clouds_hull'] ]
 
         return connections
 

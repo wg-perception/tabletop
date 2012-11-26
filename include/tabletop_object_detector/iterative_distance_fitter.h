@@ -200,7 +200,7 @@ ModelFitInfo IterativeTranslationFitter::fitPointCloud(const PointCloudType& clo
   double EPS = 1.0e-6;
   int max_iterations = 100;
   int iter = 0;
-  while (score < old_score - EPS && iter < max_iterations) 
+  while (score < old_score - EPS && iter < max_iterations)
   {
     old_score = score;
     location.x -= vector.x;

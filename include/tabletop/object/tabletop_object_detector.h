@@ -170,7 +170,7 @@ namespace tabletop_object_detector
         TabletopResult<PointType> result;
         result.object_id_ = raw_fit_results[i][0].getModelId();
         result.pose_ = raw_fit_results[i][0].getPose();
-        result.confidence_ = raw_fit_results[i][0].getScore();
+        result.confidence_ = 1.0 - (raw_fit_results[i][0].getScore() / confidence_cutoff);
         result.cloud_ = clusters[i];
 
         results.push_back(result);

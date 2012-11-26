@@ -80,13 +80,6 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      float c_limits[6] =
-      { -std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(),
-        std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
-      std::vector<float> limits(c_limits, c_limits + 6);
-      params.declare(&TableDetector::filter_limits_, "filter_limits",
-                     "The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax]",
-                     limits);
       params.declare(&TableDetector::min_table_size_, "min_table_size",
                      "The minimum number of points deemed necessary to find a table.", 10000);
       params.declare(&TableDetector::plane_detection_voxel_size_, "plane_detection_voxel_size",
@@ -98,7 +91,7 @@ namespace tabletop
       params.declare(&TableDetector::table_cluster_tolerance_, "table_cluster_tolerance",
                      "The distance used when clustering a plane", 0.2);
       Eigen::Vector3f default_up(0, 0, 1);
-      params.declare(&TableDetector::up_direction_, "vertical_direction", "The vertical direction", default_up);
+//      params.declare(&TableDetector::up_direction_, "vertical_direction", "The vertical direction", default_up);
       params.declare(&TableDetector::up_frame_id_, "vertical_frame_id", "The vertical frame id", "/map");
     }
 
@@ -119,6 +112,7 @@ namespace tabletop
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
+    	up_direction_ = Eigen::Vector3f(0,0,1);
     }
 
     /** Get the 2d keypoints and figure out their 3D position from the depth map
@@ -129,8 +123,6 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      TabletopSegmenter table_segmenter(*filter_limits_, *min_table_size_, *plane_detection_voxel_size_,
-                                        *normal_k_search_, *plane_threshold_, *table_cluster_tolerance_);
       pcl::ModelCoefficients::Ptr table_coefficients;
 
       // Find the table, it assumes only one plane for now TODO
@@ -177,7 +169,7 @@ namespace tabletop
 
     	  // TODO improve: cloud & hull are the same in this case
     	  pcl::PointCloud<PointT>::Ptr hull(new pcl::PointCloud<PointT>);
-    	  table_segmenter.reconstructConvexHull<pcl::PointXYZ>(*contour_cloud, *hull);
+    	  TabletopSegmenter::reconstructConvexHull<pcl::PointXYZ>(*contour_cloud, *hull);
     	  clouds_out_->push_back(hull);
     	  clouds_hull_->push_back(hull);
       }
@@ -188,6 +180,8 @@ namespace tabletop
       pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
 //      *cloud_copy = *(*cloud_in_);
 
+      TabletopSegmenter table_segmenter(*filter_limits_, *min_table_size_, *plane_detection_voxel_size_,
+                                        *normal_k_search_, *plane_threshold_, *table_cluster_tolerance_);
       table_segmenter.filterLimits<pcl::PointXYZ>(*cloud_in_, *filter_limits_, cloud_filtered);
       table_segmenter.downsample<pcl::PointXYZ>(*plane_detection_voxel_size_, cloud_filtered, cloud_copy);
 
@@ -240,14 +234,12 @@ namespace tabletop
       table_rotations_->resize(table_coefficients_->size());
       table_translations_->resize(table_coefficients_->size());
       for (size_t i = 0; i < table_coefficients_->size(); ++i)
-        getPlaneTransform((*table_coefficients_)[i], *up_direction_, *flatten_plane_, (*table_translations_)[i],
+        getPlaneTransform((*table_coefficients_)[i], up_direction_, *flatten_plane_, (*table_translations_)[i],
                           (*table_rotations_)[i]);
 
       return ecto::OK;
     }
   private:
-    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
-    ecto::spore<std::vector<float> > filter_limits_;
     /** The minimum number of points deemed necessary to find a table */
     ecto::spore<size_t> min_table_size_;
     /** The size of a voxel cell when downsampling */
@@ -272,7 +264,8 @@ namespace tabletop
     /** The minimum number of inliers in order to do pose matching */
     ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
     /** The vertical direction */
-    ecto::spore<Eigen::Vector3f> up_direction_;
+//    ecto::spore<Eigen::Vector3f> up_direction_;
+    Eigen::Vector3f up_direction_;
     /** The frame id of the vertical direction */
     ecto::spore<std::string> up_frame_id_;
 
