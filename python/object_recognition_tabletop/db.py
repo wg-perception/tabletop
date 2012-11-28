@@ -2,7 +2,7 @@
 Define some interface to the SQL household database
 """
 
-from object_recognition_core.db.object_db import ObjectDbBase, ObjectDbParameters
+from object_recognition_core.db.object_db import ObjectDbFactory, ObjectDbParameters
 from object_recognition_tabletop.db_interface import ObjectDb as ObjectDbCpp
 
 ########################################################################################################################
