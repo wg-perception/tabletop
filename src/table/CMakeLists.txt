@@ -28,7 +28,7 @@ find_package(object_recognition_msgs REQUIRED)
 else()
     include_directories(SYSTEM
                         /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/goovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
+                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
                         /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
                         /opt/ros/groovy/stacks/sql_database/database_interface/include/
     )
