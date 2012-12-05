@@ -7,7 +7,7 @@ from object_recognition_tabletop.db_interface import ObjectDb as ObjectDbCpp
 
 ########################################################################################################################
 
-class SqlHouseHoldDb(ObjectDbBase):
+class SqlHouseHoldDb(ObjectDbFactory):
     @classmethod
     def type_name(cls):
         return 'SqlHousehold'
