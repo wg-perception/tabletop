@@ -7,6 +7,7 @@ from object_recognition_core.io.sink import Sink
 from object_recognition_tabletop.ecto_cells.tabletop_table import TableMsgAssembler, TableVisualizationMsgAssembler
 from object_recognition_msgs.ecto_cells.ecto_object_recognition_msgs import Publisher_TableArray
 import ecto
+from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
 
 MarkerPub = Publisher_Marker
 MarkerArrayPub = Publisher_MarkerArray
@@ -17,59 +18,58 @@ class TablePublisher(ecto.BlackBox):
     """
     Class publishing the different results of tabletop
     """
-    _table_msg_assembler = TableMsgAssembler
-    _table_visualization_msg_assembler = TableVisualizationMsgAssembler
-    _marker_array_hull_ = MarkerArrayPub
-    _marker_array_origin_ = MarkerArrayPub
-    _marker_array_table_ = MarkerArrayPub
-    _marker_array_delete = MarkerArrayPub
-    _marker_array_clusters = MarkerArrayPub
-    _table_array = Publisher_TableArray
+    @classmethod
+    def declare_cells(cls, p):
+        return {'table_msg_assembler': CellInfo(TableMsgAssembler),
+                'table_visualization_msg_assembler': CellInfo(TableVisualizationMsgAssembler),
+                'marker_array_hull': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
+                'marker_array_origin': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
+                'marker_array_table': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
+                'marker_array_delete': CellInfo(MarkerArrayPub),
+                'marker_array_clusters': CellInfo(MarkerArrayPub),
+                'table_array': CellInfo(Publisher_TableArray),
+                'passthrough': ecto.PassthroughN(items=dict(image_message='The original imagemessage',
+                                                        pose_results='The final results'))
+                }
 
-    def declare_params(self, p):
-        p.declare('marker_hull_topic', 'The ROS topic to use for the table message.', 'marker_table')
-        p.declare('marker_origin_topic', 'The ROS topic to use for the table message.', 'marker_table')
-        p.declare('marker_table_topic', 'The ROS topic to use for the table message.', 'marker_table')
-        p.declare('marker_array_delete', 'The ROS topic to use for the markers to remove.', 'marker_table')
-        p.declare('marker_array_clusters', 'The ROS topic to use for the markers of the clusters.', 'marker_array_clusters')
-        p.declare('table_array', 'The array of found tables.', 'table_array')
+    @staticmethod
+    def declare_direct_params(p):
         p.declare('latched', 'Determines if the topics will be latched.', True)
 
-    def declare_io(self, _p, i, _o):
-        self.passthrough = ecto.PassthroughN(items=dict(image_message='The original imagemessage',
-                                                        pose_results='The final results'))
+    def declare_forwards(self, _p):
+        p = {'marker_array_hull': [Forward('topic_name', 'marker_hull_topic',
+                                           'The ROS topic to use for the table message.', 'marker_table')],
+             'marker_array_origin': [Forward('topic_name', 'marker_origin_topic',
+                                             'The ROS topic to use for the table message.', 'marker_table')],
+             'marker_array_table': [Forward('topic_name', 'marker_table_topic',
+                                            'The ROS topic to use for the table message.', 'marker_table')],
+             'marker_array_delete': [Forward('topic_name', 'marker_array_delete',
+                                             'The ROS topic to use for the markers to remove.', 'marker_table')],
+             'marker_array_clusters': [Forward('topic_name', 'marker_array_clusters',
+                                               'The ROS topic to use for the markers of the clusters.',
+                                               'marker_array_clusters')],
+             'table_array': [Forward('topic_name', 'table_array', 'The array of found tables.', 'table_array')]
+             }
 
-        i.forward(['clouds', 'clouds_hull'], cell_name='_table_msg_assembler',
-                  cell_key=['clouds', 'clouds_hull'])
-        i.forward(['clusters', 'table_array_msg'], cell_name='_table_visualization_msg_assembler',
-                  cell_key=['clusters', 'table_array_msg'])
-        i.forward('image_message', cell_name='passthrough', cell_key='image_message')
-        i.forward('pose_results', cell_name='passthrough', cell_key='pose_results')
-        
+        i = {'table_msg_assembler': [Forward('clouds'), Forward('clouds_hull')],
+             'table_visualization_msg_assembler': [Forward('clusters'), Forward('table_array_msg')],
+             'passthrough': [Forward('image_message'), Forward('pose_results')]}
 
-    def configure(self, p, _i, _o):
-        self._table_msg_assembler = TablePublisher._table_msg_assembler()
-        self._table_visualization_msg_assembler = TablePublisher._table_visualization_msg_assembler()
-        self._marker_array_hull_ = TablePublisher._marker_array_hull_(topic_name=p.marker_hull_topic, latched=p.latched)
-        self._marker_array_origin_ = TablePublisher._marker_array_origin_(topic_name=p.marker_origin_topic, latched=p.latched)
-        self._marker_array_table_ = TablePublisher._marker_array_table_(topic_name=p.marker_table_topic, latched=p.latched)
-        self._marker_array_delete = TablePublisher._marker_array_delete(topic_name=p.marker_array_delete)
-        self._marker_array_clusters = TablePublisher._marker_array_clusters(topic_name=p.marker_array_clusters)
-        self._table_array = TablePublisher._table_array(topic_name=p.table_array)
+        return (p,i,{})
 
-    def connections(self):
-        connections = [self.passthrough['image_message'] >> self._table_msg_assembler['image_message'],
-                       self.passthrough['image_message'] >> self._table_visualization_msg_assembler['image_message'], 
-                       self.passthrough['pose_results'] >> self._table_msg_assembler['pose_results'],
-                       self.passthrough['pose_results'] >> self._table_visualization_msg_assembler['pose_results'] ]
+    def connections(self, _p):
+        connections = [self.passthrough['image_message'] >> self.table_msg_assembler['image_message'],
+                       self.passthrough['image_message'] >> self.table_visualization_msg_assembler['image_message'],
+                       self.passthrough['pose_results'] >> self.table_msg_assembler['pose_results'],
+                       self.passthrough['pose_results'] >> self.table_visualization_msg_assembler['pose_results'] ]
 
-        connections += [ self._table_msg_assembler['table_array_msg'] >> self._table_array[:],
-                        self._table_msg_assembler['table_array_msg'] >> self._table_visualization_msg_assembler['table_array_msg'] ]
-        connections += [self._table_visualization_msg_assembler['marker_array_hull'] >> self._marker_array_hull_[:],
-                self._table_visualization_msg_assembler['marker_array_origin'] >> self._marker_array_origin_[:],
-                self._table_visualization_msg_assembler['marker_array_table'] >> self._marker_array_table_[:],
-                self._table_visualization_msg_assembler['marker_array_delete'] >> self._marker_array_delete[:],
-                self._table_visualization_msg_assembler['marker_array_clusters'] >> self._marker_array_clusters[:] ]
+        connections += [ self.table_msg_assembler['table_array_msg'] >> self.table_array[:],
+                        self.table_msg_assembler['table_array_msg'] >> self.table_visualization_msg_assembler['table_array_msg'] ]
+        connections += [self.table_visualization_msg_assembler['marker_array_hull'] >> self.marker_array_hull[:],
+                self.table_visualization_msg_assembler['marker_array_origin'] >> self.marker_array_origin[:],
+                self.table_visualization_msg_assembler['marker_array_table'] >> self.marker_array_table[:],
+                self.table_visualization_msg_assembler['marker_array_delete'] >> self.marker_array_delete[:],
+                self.table_visualization_msg_assembler['marker_array_clusters'] >> self.marker_array_clusters[:] ]
         return connections
 
 ########################################################################################################################
