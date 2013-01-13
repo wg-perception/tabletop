@@ -143,7 +143,7 @@ ObjectDbSqlHousehold::Delete(const ObjectId & id)
 }
 
 void
-ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int limit_rows, int start_offset,
+ObjectDbSqlHousehold::QueryView(const object_recognition_core::db::View & view, int limit_rows, int start_offset,
                             int& total_rows, int& offset, std::vector<ViewElement> & view_elements)
 {
   switch (view.type())
@@ -173,7 +173,7 @@ ObjectDbSqlHousehold::Query(const object_recognition_core::db::View & view, int 
 }
 
 void
-ObjectDbSqlHousehold::Query(const std::vector<std::string> & queries, int limit_rows, int start_offset, int& total_rows,
+ObjectDbSqlHousehold::QueryGeneric(const std::vector<std::string> & queries, int limit_rows, int start_offset, int& total_rows,
                             int& offset, std::vector<ViewElement> & view_elements)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");

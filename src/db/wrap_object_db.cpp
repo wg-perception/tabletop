@@ -43,7 +43,7 @@ namespace object_recognition_core
 {
   namespace db
   {
-    /** Function used to create an ObjectDbSqlHousehold object from Python but appearuing as a ObjectDb
+    /** Function used to create an ObjectDbSqlHousehold object from Python but appearing as a ObjectDb
      * @param db_params
      * @return
      */
@@ -52,19 +52,16 @@ namespace object_recognition_core
     {
       // Create the ObjectDbSqlHousehold
       ObjectDbParametersRaw db_params_raw = db_params.raw();
-      boost::shared_ptr<object_recognition_core::db::ObjectDbBase> db_ptr(new ObjectDbSqlHousehold(db_params_raw));
-      ObjectDb *db = new ObjectDb;
-      db->set_db_and_parameters(db_ptr, db_params);
-      ObjectDbPtr res(db);
+      ObjectDbPtr db_ptr(new ObjectDbSqlHousehold(db_params_raw));
 
-      return res;
+      return db_ptr;
     }
 
     void
     wrap_object_db_local()
     {
       // Use the macro from object_recognition_core
-      wrap_object_db(ObjectDbSqlHouseholdConstructor);
+      wrap_object_db("ObjectDb", ObjectDbSqlHouseholdConstructor);
     }
   }
 }

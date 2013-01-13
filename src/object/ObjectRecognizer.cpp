@@ -80,9 +80,10 @@ namespace tabletop
 
       object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
 
+      object_recognition_core::db::ObjectDbParameters parameters = (*db_)->parameters();
       household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
-          db_->parameters().at("host").get_str(), db_->parameters().at("port").get_str(), db_->parameters().at("user").get_str(),
-          db_->parameters().at("password").get_str(), db_->parameters().at("name").get_str());
+          parameters.at("host").get_str(), parameters.at("port").get_str(), parameters.at("user").get_str(),
+          parameters.at("password").get_str(), parameters.at("name").get_str());
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
       if (!database->getScaledModelsBySet(models, model_set))
@@ -234,7 +235,7 @@ namespace tabletop
     float confidence_cutoff_;
     bool perform_fit_merge_;
     ecto::spore<std::string> object_ids_;
-    ecto::spore<object_recognition_core::db::ObjectDb> db_;
+    ecto::spore<object_recognition_core::db::ObjectDbPtr> db_;
   };
 }
 
