@@ -1,5 +1,5 @@
 source1:
-  type: ros_kinect
+  type: RosKinect
   module: 'object_recognition_ros.io'
   #
   # Example parameters to set (the default settings are using the ros topics starting with /camera/....) 
@@ -20,16 +20,16 @@ source1:
 
 
 sink1:
-  type: table_publisher
+  type: TablePublisher
   module: 'object_recognition_tabletop'
   visualize: True
 
 pipeline1:
-  type: 'tabletop_table'
+  type: TabletopTableDetector
   module: 'object_recognition_tabletop'
   subtype: ''
-  sources: [source1]
-  sinks: [sink1]
+  inputs: [source1]
+  outputs: [sink1]
   parameters:
     table_detector:
       min_table_size: 4000

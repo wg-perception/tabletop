@@ -3,7 +3,7 @@ Module defining the Table Publisher
 """
 
 from object_recognition_ros.ecto_cells.io_ros import Publisher_Marker, Publisher_MarkerArray
-from object_recognition_core.io.sink import Sink
+from object_recognition_core.io.sink import SinkBase
 from object_recognition_tabletop.ecto_cells.tabletop_table import TableMsgAssembler, TableVisualizationMsgAssembler
 from object_recognition_msgs.ecto_cells.ecto_object_recognition_msgs import Publisher_TableArray
 import ecto
@@ -14,10 +14,14 @@ MarkerArrayPub = Publisher_MarkerArray
 
 ########################################################################################################################
 
-class TablePublisher(ecto.BlackBox):
+class TablePublisher(ecto.BlackBox, SinkBase):
     """
     Class publishing the different results of tabletop
     """
+    def __init__(self, *args, **kwargs):
+        ecto.BlackBox.__init__(self, *args, **kwargs)
+        SinkBase.__init__(self)
+
     @classmethod
     def declare_cells(cls, p):
         return {'table_msg_assembler': CellInfo(TableMsgAssembler),
@@ -71,22 +75,3 @@ class TablePublisher(ecto.BlackBox):
                 self.table_visualization_msg_assembler['marker_array_delete'] >> self.marker_array_delete[:],
                 self.table_visualization_msg_assembler['marker_array_clusters'] >> self.marker_array_clusters[:] ]
         return connections
-
-########################################################################################################################
-
-class TablePublisherSink(Sink):
-
-
-    @classmethod
-    def config_doc(cls):
-        return  """
-                    # No parameters necessary
-                """
-
-    @classmethod
-    def type_name(cls):
-        return 'table_publisher'
-
-    @classmethod
-    def sink(self, *args, **kwargs):
-        return TablePublisher()

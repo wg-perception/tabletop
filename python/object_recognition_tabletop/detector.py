@@ -3,17 +3,18 @@
 Module defining the transparent objects detector to find objects in a scene
 """
 
-import ecto
-from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
-from object_recognition_tabletop.ecto_cells import tabletop_object
-from object_recognition_core.db import ObjectDb
-from object_recognition_core.pipelines.detection import DetectionPipeline
 from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
+from object_recognition_core.db import ObjectDb, ObjectDbParameters
+from object_recognition_core.pipelines.detection import DetectorBase
+from object_recognition_tabletop.ecto_cells import tabletop_object
+from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
+import ecto
 
-class TabletopTableDetector(ecto.BlackBox):
-    def __init__(self, **kwargs):
-        ecto.BlackBox.__init__(self, **kwargs)
-    
+class TabletopTableDetector(ecto.BlackBox, DetectorBase):
+    def __init__(self, *args, **kwargs):
+        ecto.BlackBox.__init__(self, *args, **kwargs)
+        DetectorBase.__init__(self)
+
     @classmethod
     def declare_cells(cls, _p):
         return {'passthrough': ecto.Passthrough(),
@@ -48,43 +49,19 @@ class TabletopTableDetector(ecto.BlackBox):
 
 ########################################################################################################################
 
-class TabletopTableDetectionPipeline(DetectionPipeline):
+class TabletopObjectDetector(ecto.BlackBox, DetectorBase):
 
-    @classmethod
-    def config_doc(cls):
-        return  """
-        # No parameters are required
-        parameters: ''
-        """
+    def __init__(self, *args, **kwargs):
+        self._params = kwargs
+        ecto.BlackBox.__init__(self, *args, **kwargs)
+        DetectorBase.__init__(self)
 
-    @classmethod
-    def type_name(cls):
-        return 'tabletop_table'
+    def declare_cells(self, _p):
+        return {'main': tabletop_object.ObjectRecognizer(object_ids=self._params['object_ids'],
+                                                         db=ObjectDb(ObjectDbParameters(self._params['db'])))}
 
-    @classmethod
-    def detector(self, *args, **kwargs):
-        parameters = kwargs.pop('parameters')
-        kwargs.update(parameters)
+    def declare_forwards(self, p):
+        return ({},{'main':'all'},{'main':'all'})
 
-        return TabletopTableDetector(**kwargs)
-
-########################################################################################################################
-
-class TabletopObjectDetectionPipeline(DetectionPipeline):
-
-    @classmethod
-    def config_doc(cls):
-        return  """
-        """
-
-    @classmethod
-    def type_name(cls):
-        return 'tabletop_object'
-
-    @classmethod
-    def detector(self, *args, **kwargs):
-        parameters = kwargs['parameters']
-        object_db = ObjectDb(parameters['db'])
-
-        return tabletop_object.ObjectRecognizer(object_ids=parameters['tabletop_object_ids'],
-                                                db=object_db)
+    def connections(self, _p):
+        return [self.main]
