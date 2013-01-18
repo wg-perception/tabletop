@@ -3,7 +3,7 @@ project(object_recognition_tabletop)
 
 find_package(catkin)
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
-find_package(catkin REQUIRED ecto ecto_pcl moveit_core moveit_msgs object_recognition_core object_recognition_msgs pcl_ros rosconsole roscpp shape_msgs tf)
+find_package(catkin REQUIRED ecto ecto_pcl moveit_core moveit_msgs object_recognition_core object_recognition_msgs pcl_ros rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
 else()

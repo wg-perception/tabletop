@@ -13,7 +13,6 @@ else()
                         /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                         /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
                         /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/groovy/stacks/sql_database/database_interface/include/
     )
     find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 endif()
