@@ -77,72 +77,16 @@ namespace tabletop
       NO_CLOUD_RECEIVED, NO_TABLE, OTHER_ERROR, SUCCESS
     };
 
-    TabletopSegmenter(const std::vector<float> & filter_limits, size_t min_cluster_size,
+    TabletopSegmenter(size_t min_cluster_size,
                       float plane_detection_voxel_size, unsigned int normal_k_search, float plane_threshold,
                       float cluster_tolerance)
         :
-          filter_limits_(filter_limits),
           min_cluster_size_(min_cluster_size),
           plane_detection_voxel_size_(plane_detection_voxel_size),
           normal_k_search_(normal_k_search),
           plane_threshold_(plane_threshold),
           cluster_tolerance_(cluster_tolerance)
     {
-    }
-
-    /** Filter a point cloud by removing points that are not within the bounding box
-     * @param cloud_in
-     * @param filter_limits limits of the box in order [xmin,xmax,ymin,ymax,zmin,zmax]
-     * @param cloud_out
-     */
-    template<typename Point>
-    static
-    void
-    filterLimits(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in, const std::vector<float> & filter_limits,
-                 typename pcl::PointCloud<Point>::Ptr &cloud_out)
-    {
-      if (filter_limits.empty())
-      {
-        filterNaNs<Point>(cloud_in, cloud_out);
-        return;
-      }
-
-      pcl::PassThrough<Point> pass_filter;
-      typename pcl::PointCloud<Point>::Ptr z_cloud_filtered_ptr(new pcl::PointCloud<Point>), y_cloud_filtered_ptr(
-          new pcl::PointCloud<Point>);
-
-      pass_filter.setInputCloud(cloud_in);
-      pass_filter.setFilterFieldName("z");
-      pass_filter.setFilterLimits(filter_limits[4], filter_limits[5]);
-      pass_filter.filter(*z_cloud_filtered_ptr);
-
-      pass_filter.setInputCloud(z_cloud_filtered_ptr);
-      pass_filter.setFilterFieldName("y");
-      pass_filter.setFilterLimits(filter_limits[2], filter_limits[3]);
-      pass_filter.filter(*y_cloud_filtered_ptr);
-
-      pass_filter.setInputCloud(y_cloud_filtered_ptr);
-      pass_filter.setFilterFieldName("x");
-      pass_filter.setFilterLimits(filter_limits[0], filter_limits[1]);
-      pass_filter.filter(*cloud_out);
-    }
-
-    /** Filter a point cloud by removing the NaNs
-     * @param cloud_in
-     * @param cloud_out
-     */
-    template<typename Point>
-    static
-    void
-    filterNaNs(const typename pcl::PointCloud<Point>::ConstPtr & cloud_in,
-               typename pcl::PointCloud<Point>::Ptr &cloud_out)
-    {
-      pcl::PassThrough<Point> pass_filter;
-
-      pass_filter.setInputCloud(cloud_in);
-      pass_filter.setFilterFieldName("z");
-      pass_filter.setFilterLimits(0, std::numeric_limits<float>::max());
-      pass_filter.filter(*cloud_out);
     }
 
     template<typename Point>
@@ -290,12 +234,13 @@ namespace tabletop
 
       // Estimate the normals
       pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_ptr(new pcl::PointCloud<pcl::Normal>);
-      estimateNormals<Point>(normal_k_search_, cloud_in, cloud_normals_ptr);
+      estimateNormals<Point>(normal_k_search_, boost::const_pointer_cast<pcl::PointCloud<Point> >(cloud_in),
+                             cloud_normals_ptr);
 
       // Perform planar segmentation
       pcl::PointIndices::Ptr table_inliers_ptr(new pcl::PointIndices);
-      if (!segmentPlane<Point>(plane_threshold_, cloud_in, cloud_normals_ptr, table_inliers_ptr,
-                               table_coefficients_ptr))
+      if (!segmentPlane<Point>(plane_threshold_, boost::const_pointer_cast<pcl::PointCloud<Point> >(cloud_in),
+                               cloud_normals_ptr, table_inliers_ptr, table_coefficients_ptr))
         return NO_TABLE;
 
 
@@ -315,8 +260,6 @@ namespace tabletop
       return SUCCESS;
     }
   private:
-    /** The limits of the interest box to find a table, in order [xmin,xmax,ymin,ymax,zmin,zmax] */
-    std::vector<float> filter_limits_;
     /** The minimum number of points deemed necessary to find a table */
     size_t min_cluster_size_;
     /** The size of a voxel cell when downsampling */

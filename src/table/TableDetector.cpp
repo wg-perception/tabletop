@@ -180,9 +180,8 @@ namespace tabletop
       pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
 //      *cloud_copy = *(*cloud_in_);
 
-      TabletopSegmenter table_segmenter(*filter_limits_, *min_table_size_, *plane_detection_voxel_size_,
+      TabletopSegmenter table_segmenter(*min_table_size_, *plane_detection_voxel_size_,
                                         *normal_k_search_, *plane_threshold_, *table_cluster_tolerance_);
-      table_segmenter.filterLimits<pcl::PointXYZ>(*cloud_in_, *filter_limits_, cloud_filtered);
       table_segmenter.downsample<pcl::PointXYZ>(*plane_detection_voxel_size_, cloud_filtered, cloud_copy);
 
       while (table_segmenter.findTable<pcl::PointXYZ>(cloud_copy, table_coefficients, cloud_out, cloud_hull)
