@@ -1,44 +1,21 @@
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
+if (ROS_FUERTE_FOUND)
 install(TARGETS marker_generator
         DESTINATION lib
 )
-
+else()
+install(TARGETS marker_generator
+        DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+endif()
 
 if (${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
 return()
 endif()
 
-find_package(ecto REQUIRED)
-find_package(PCL REQUIRED)
-if (ROS_FUERTE_FOUND)
-    include_directories(SYSTEM
-                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
-                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/bullet/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
-                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
-    )
-    endif()
-if (ROS_GROOVY_FOUND)
-include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
-                        /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
-                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
-    )
-endif()
-
-include_directories(SYSTEM ${catkin_INLUDE_DIRS}
-                           ${object_recognition_msgs_INCLUDE_DIRS}
-                           ${PCL_INCLUDE_DIRS}
-)
+include_directories(SYSTEM ${catkin_INLUDE_DIRS})
 
 add_library(tabletop_model_fitter SHARED
     model_fitter.cpp
@@ -52,25 +29,17 @@ target_link_libraries(tabletop_model_fitter
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
-    ${object_recognition_core_LIBRARIES}
-    ${pcl_ros_tf_LIBRARIES}
-    ${roscpp_LIBRARIES}
-    ${roscpp_serialization_LIBRARIES}
-    ${rostime_LIBRARIES}
-    ${rosconsole_LIBRARIES}
-    ${tf_LIBRARIES}
-    ${distance_field_LIBRARIES}
 )
 
+if (ROS_FUERTE_FOUND)
 install(TARGETS tabletop_model_fitter
         DESTINATION lib
 )
-
-# deal with the detection module
-find_package(object_recognition_core REQUIRED)
-include_directories(SYSTEM
-    ${object_recognition_core_INCLUDE_DIRS}
+else()
+install(TARGETS tabletop_model_fitter
+        DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
+endif()
 
 ectomodule(tabletop_object DESTINATION ${PROJECT_NAME}/ecto_cells
                            INSTALL
@@ -78,18 +47,10 @@ ectomodule(tabletop_object DESTINATION ${PROJECT_NAME}/ecto_cells
     ObjectRecognizer.cpp
 )
 
-link_ecto(tabletop_object
-    ${PCL_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${object_recognition_core_LIBRARIES}
-    ${pcl_ros_tf_LIBRARIES}
-    ${roscpp_LIBRARIES}
-    ${roscpp_serialization_LIBRARIES}
-    ${rostime_LIBRARIES}
-    ${rosconsole_LIBRARIES}
-    ${household_objects_database_LIBRARIES}
-    ${tf_LIBRARIES}
-    marker_generator
-    tabletop_model_fitter
-    tabletop_db
+link_ecto(tabletop_object ${catkin_LIBRARIES}
+                          ${Boost_LIBRARIES}
+                          ${PCL_LIBRARIES}
+                          marker_generator
+                          tabletop_model_fitter
+                          tabletop_db
 )

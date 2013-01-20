@@ -1,15 +1,9 @@
-find_package(ecto REQUIRED)
-
 # Create a library for tabletop db interfaces
-add_library(tabletop_db SHARED
-            db_sql_household.cpp
-            db_mesh.cpp
+add_library(tabletop_db db_sql_household.cpp
+                        db_mesh.cpp
 )
 
-target_link_libraries(tabletop_db
-                      ${object_recognition_core_LIBRARIES}
-                      ${household_objects_database_LIBRARIES}
-)
+target_link_libraries(tabletop_db ${catkin_LIBRARIES})
 
 if (ROS_FUERTE_FOUND)
 install(TARGETS tabletop_db
@@ -25,14 +19,11 @@ endif()
 # create a Python module to wrap the DB functionalities
 find_package(PythonLibs)
 include_directories(SYSTEM ${PYTHON_INCLUDE_PATH})
-add_library(tabletop_db_interface SHARED
-            module_python.cpp
-            wrap_object_db.cpp
+add_library(tabletop_db_interface module_python.cpp
+                                  wrap_object_db.cpp
 )
 
-target_link_libraries(tabletop_db_interface
-                      tabletop_db
-)
+target_link_libraries(tabletop_db_interface tabletop_db)
 
 if (ROS_FUERTE_FOUND)
 set(ECTO_PYTHON_BUILD_PATH ${CMAKE_BINARY_DIR}/gen/py/)

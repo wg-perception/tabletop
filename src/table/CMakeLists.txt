@@ -5,29 +5,6 @@ if (genmsg_FOUND)
   SET(TABLETOP_ROS_CELLS TableMsgAssembler.cpp TableVisualizationMsgAssembler.cpp)
 endif()
 
-find_package(OpenCV REQUIRED)
-find_package(PCL REQUIRED)
-find_package(ecto)
-
-if (ROS_FUERTE_FOUND)
-find_package(object_recognition_core REQUIRED)
-find_package(object_recognition_msgs REQUIRED)
-    include_directories(SYSTEM
-                        /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
-                        /opt/ros/fuerte/stacks/bullet/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/
-    )
-    find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
-include_directories(SYSTEM
-                    ${object_recognition_core_INCLUDE_DIRS}
-                    ${object_recognition_msgs_INCLUDE_DIRS}
-)
-
-endif()
-
-
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
                            ${OpenCV_INCLUDE_DIRS}
                            ${PCL_INCLUDE_DIRS}
@@ -44,17 +21,9 @@ ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
   ${TABLETOP_ROS_CELLS}
 )
 
-link_ecto(tabletop_table
-    ${PCL_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${object_recognition_core_LIBRARIES}
-    ${OpenCV_LIBS}
-    ${OpenCV_LIBRARIES}
-    ${pcl_ros_tf_LIBRARIES}
-    ${roscpp_LIBRARIES}
-    ${roscpp_serialization_LIBRARIES}
-    ${rostime_LIBRARIES}
-    ${rosconsole_LIBRARIES}
-    ${tf_LIBRARIES}
-    marker_generator
+link_ecto(tabletop_table ${Boost_LIBRARIES}
+                         ${catkin_LIBRARIES}
+                         ${OpenCV_LIBRARIES}
+                         ${PCL_LIBRARIES}
+                         marker_generator
 )
