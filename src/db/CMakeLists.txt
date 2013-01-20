@@ -1,28 +1,10 @@
 find_package(ecto REQUIRED)
 
-if (ROS_FUERTE_FOUND)
-    include_directories(SYSTEM
-                        /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
-                        /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                        /opt/ros/fuerte/stacks/sql_database/database_interface/include/
-    )
-    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-else()
-    include_directories(SYSTEM
-                        /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
-                        /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-    )
-    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
-endif()
-
 # Create a library for tabletop db interfaces
 add_library(tabletop_db SHARED
             db_sql_household.cpp
             db_mesh.cpp
 )
-
 
 target_link_libraries(tabletop_db
                       ${object_recognition_core_LIBRARIES}

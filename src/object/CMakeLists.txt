@@ -1,11 +1,14 @@
-include_directories(SYSTEM /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/)
-
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
 install(TARGETS marker_generator
         DESTINATION lib
 )
+
+
+if (${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
+return()
+endif()
 
 find_package(ecto REQUIRED)
 find_package(PCL REQUIRED)
@@ -22,8 +25,7 @@ if (ROS_FUERTE_FOUND)
                         /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
                         /opt/ros/fuerte/stacks/sql_database/database_interface/include/
     )
-    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-endif()
+    endif()
 if (ROS_GROOVY_FOUND)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
                         /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
@@ -31,7 +33,6 @@ include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
                         /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
                         /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
     )
-    find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 endif()
 
 include_directories(SYSTEM ${catkin_INLUDE_DIRS}
@@ -58,16 +59,12 @@ target_link_libraries(tabletop_model_fitter
     ${rostime_LIBRARIES}
     ${rosconsole_LIBRARIES}
     ${tf_LIBRARIES}
-    marker_generator
     ${distance_field_LIBRARIES}
 )
 
 install(TARGETS tabletop_model_fitter
         DESTINATION lib
 )
-
-# old stuff, useless now
-#rosbuild_add_executable(tabletop_object_recognition tabletop_object_recognition.cpp)
 
 # deal with the detection module
 find_package(object_recognition_core REQUIRED)
