@@ -21,11 +21,13 @@ source1:
 sink1:
   type: TablePublisher
   module: 'object_recognition_tabletop'
+  inputs: [source1]
   visualize: True
 
 sink2:
   type: Publisher
   module: 'object_recognition_ros.io'
+  inputs: [source1]
   visualize: True
   publish_clusters: False
 

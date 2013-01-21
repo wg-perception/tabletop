@@ -22,6 +22,7 @@ source1:
 sink1:
   type: TablePublisher
   module: 'object_recognition_tabletop'
+  inputs: [source1]
   visualize: True
 
 pipeline1:
