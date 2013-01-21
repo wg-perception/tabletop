@@ -6,7 +6,6 @@ Module defining the transparent objects detector to find objects in a scene
 from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
 from object_recognition_core.db import ObjectDb, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectorBase
-from object_recognition_tabletop.ecto_cells import tabletop_object
 from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
 import ecto
 
@@ -57,6 +56,8 @@ class TabletopObjectDetector(ecto.BlackBox, DetectorBase):
         DetectorBase.__init__(self)
 
     def declare_cells(self, _p):
+        from object_recognition_tabletop.ecto_cells import tabletop_object
+
         return {'main': tabletop_object.ObjectRecognizer(object_ids=self._params['object_ids'],
                                                          db=ObjectDb(ObjectDbParameters(self._params['db'])))}
 
