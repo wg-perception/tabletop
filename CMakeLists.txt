@@ -26,17 +26,22 @@ list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_naviga
 
 else()
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=0)
-find_package(ecto REQUIRED)
-find_package(ecto_ros REQUIRED)
-find_package(genmsg REQUIRED)
-find_package(object_recognition_core REQUIRED)
-find_package(object_recognition_msgs REQUIRED)
-
-find_package(catkin REQUIRED ecto ecto_pcl ecto_ros moveit_msgs object_recognition_core object_recognition_msgs tf)
+find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs tf)
 catkin_stack()
 catkin_project(object_recognition_tabletop
                INCLUDE_DIRS include
 )
+
+set(catkin_LIBRARIES ${ROS_LIBRARIES})
+set(catkin_INCLUDE_DIRS ${ROS_INCLUDE_DIRS})
+set(CATKIN_DEVEL_PREFIX ${CMAKE_BINARY_DIR})
+set(CATKIN_PACKAGE_BIN_DESTINATION share/${PROJECT_NAME}/bin)
+set(CATKIN_PACKAGE_INCLUDE_DESTINATION include/${PROJECT_NAME})
+set(CATKIN_PACKAGE_LIB_DESTINATION lib)
+set(CATKIN_PACKAGE_PYTHON_BUILD_DESTINATION gen/py/${PROJECT_NAME}/)
+set(CATKIN_PACKAGE_PYTHON_DESTINATION ${INSTALLED_PYTHONPATH}/${PROJECT_NAME}/)
+set(CATKIN_PACKAGE_SHARE_DESTINATION share/${PROJECT_NAME}/)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
@@ -47,9 +52,7 @@ find_library(roscpp_LIBRARIES roscpp /opt/ros/fuerte/lib/)
 find_library(roscpp_serialization_LIBRARIES roscpp_serialization /opt/ros/fuerte/lib/)
 find_library(rostime_LIBRARIES rostime /opt/ros/fuerte/lib/)
 
-list(APPEND catkin_INCLUDE_DIRS ${object_recognition_core_INCLUDE_DIRS}
-                                ${object_recognition_msgs_INCLUDE_DIRS}
-                                /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+list(APPEND catkin_INCLUDE_DIRS /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                                 /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
                                 /opt/ros/fuerte/stacks/bullet/include/
                                 /opt/ros/fuerte/stacks/geometry/tf/include

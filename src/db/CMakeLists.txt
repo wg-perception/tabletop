@@ -26,15 +26,10 @@ add_library(tabletop_db_interface module_python.cpp
 target_link_libraries(tabletop_db_interface tabletop_db)
 
 if (ROS_FUERTE_FOUND)
-set(ECTO_PYTHON_BUILD_PATH ${CMAKE_BINARY_DIR}/gen/py/)
 set_target_properties(tabletop_db_interface PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${ECTO_PYTHON_BUILD_PATH}/${PROJECT_NAME}
+                      LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_BUILD_DESTINATION}
                       OUTPUT_NAME db_interface
                       PREFIX ""
-)
-
-install(TARGETS tabletop_db_interface
-        DESTINATION ${ECTO_PYTHON_INSTALL_PATH}/${PROJECT_NAME}
 )
 else()
 set_target_properties(tabletop_db_interface PROPERTIES
@@ -42,8 +37,8 @@ set_target_properties(tabletop_db_interface PROPERTIES
                       OUTPUT_NAME db_interface
                       PREFIX ""
 )
- 
+endif()
+
 install(TARGETS tabletop_db_interface
         DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
-endif()
