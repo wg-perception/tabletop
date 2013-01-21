@@ -26,7 +26,7 @@ list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_naviga
 
 else()
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=0)
-find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs tf)
+find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs)
 catkin_stack()
 catkin_project(object_recognition_tabletop
                INCLUDE_DIRS include
