@@ -26,10 +26,9 @@ class TablePublisher(ecto.BlackBox, SinkBase):
     def declare_cells(cls, p):
         return {'table_msg_assembler': CellInfo(TableMsgAssembler),
                 'table_visualization_msg_assembler': CellInfo(TableVisualizationMsgAssembler),
-                'marker_array_hull': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
-                'marker_array_origin': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
-                'marker_array_table': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
-                'marker_array_delete': CellInfo(MarkerArrayPub),
+                'marker_array_hulls': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
+                'marker_array_origins': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
+                'marker_array_tables': CellInfo(MarkerArrayPub, params={'latched': p.latched}),
                 'marker_array_clusters': CellInfo(MarkerArrayPub),
                 'table_array': CellInfo(Publisher_TableArray),
                 'passthrough': ecto.PassthroughN(items=dict(image_message='The original imagemessage',
@@ -41,14 +40,12 @@ class TablePublisher(ecto.BlackBox, SinkBase):
         p.declare('latched', 'Determines if the topics will be latched.', True)
 
     def declare_forwards(self, _p):
-        p = {'marker_array_hull': [Forward('topic_name', 'marker_hull_topic',
-                                           'The ROS topic to use for the table message.', 'marker_table')],
-             'marker_array_origin': [Forward('topic_name', 'marker_origin_topic',
-                                             'The ROS topic to use for the table message.', 'marker_table')],
-             'marker_array_table': [Forward('topic_name', 'marker_table_topic',
-                                            'The ROS topic to use for the table message.', 'marker_table')],
-             'marker_array_delete': [Forward('topic_name', 'marker_array_delete',
-                                             'The ROS topic to use for the markers to remove.', 'marker_table')],
+        p = {'marker_array_hulls': [Forward('topic_name', 'marker_hull_topic',
+                                           'The ROS topic to use for the table message.', 'marker_table_hulls')],
+             'marker_array_origins': [Forward('topic_name', 'marker_origin_topic',
+                                             'The ROS topic to use for the table message.', 'marker_table_origins')],
+             'marker_array_tables': [Forward('topic_name', 'marker_table_topic',
+                                            'The ROS topic to use for the table message.', 'marker_tables')],
              'marker_array_clusters': [Forward('topic_name', 'marker_array_clusters',
                                                'The ROS topic to use for the markers of the clusters.',
                                                'marker_array_clusters')],
@@ -69,9 +66,8 @@ class TablePublisher(ecto.BlackBox, SinkBase):
 
         connections += [ self.table_msg_assembler['table_array_msg'] >> self.table_array[:],
                         self.table_msg_assembler['table_array_msg'] >> self.table_visualization_msg_assembler['table_array_msg'] ]
-        connections += [self.table_visualization_msg_assembler['marker_array_hull'] >> self.marker_array_hull[:],
-                self.table_visualization_msg_assembler['marker_array_origin'] >> self.marker_array_origin[:],
-                self.table_visualization_msg_assembler['marker_array_table'] >> self.marker_array_table[:],
-                self.table_visualization_msg_assembler['marker_array_delete'] >> self.marker_array_delete[:],
+        connections += [self.table_visualization_msg_assembler['marker_array_hulls'] >> self.marker_array_hulls[:],
+                self.table_visualization_msg_assembler['marker_array_origins'] >> self.marker_array_origins[:],
+                self.table_visualization_msg_assembler['marker_array_tables'] >> self.marker_array_tables[:],
                 self.table_visualization_msg_assembler['marker_array_clusters'] >> self.marker_array_clusters[:] ]
         return connections
