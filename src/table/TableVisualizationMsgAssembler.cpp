@@ -51,9 +51,6 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
 #include <shape_msgs/Mesh.h>
-#include <tf/LinearMath/Transform.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
 
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_msgs/Table.h>
@@ -216,23 +213,6 @@ struct TableVisualizationMsgAssembler {
     return ecto::OK;
   }
 private:
-  /*! Assumes plane coefficients are of the form ax+by+cz+d=0, normalized */
-  tf::Transform getPlaneTransform(const PoseResult& pose_result) {
-    Eigen::Vector3f translation = pose_result.T<Eigen::Vector3f>();
-    Eigen::Matrix3f rotation = pose_result.R<Eigen::Matrix3f>();
-
-    tf::Vector3 position_tf(translation[0], translation[1], translation[2]);
-    tf::Matrix3x3 rotation_tf(rotation.coeff(0, 0), rotation.coeff(0, 1),
-                              rotation.coeff(0, 2), rotation.coeff(1, 0), rotation.coeff(1, 1),
-                              rotation.coeff(1, 2), rotation.coeff(2, 0), rotation.coeff(2, 1),
-                              rotation.coeff(2, 2));
-
-    tf::Quaternion orientation;
-    rotation_tf.getRotation(orientation);
-
-    return tf::Transform(orientation, position_tf);
-  }
-
   template<class PointCloudType>
   void addConvexHullTable(const object_recognition_msgs::Table& table) {
     //create a triangle mesh out of the convex hull points and add it to the table message
