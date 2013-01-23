@@ -149,8 +149,9 @@ visualization_msgs::Marker MarkerGenerator::getConvexHullTableMarker(const shape
   marker.scale.z = 0.001;
   for(size_t i=0; i<mesh.triangles.size(); i++)
   {
-    marker.points.push_back(mesh.vertices[mesh.triangles[i].vertex_indices[0]]);
+    marker.points.push_back(mesh.vertices[mesh.triangles[i].vertex_indices[1]]);
   }
+  marker.points.push_back(mesh.vertices[mesh.triangles[0].vertex_indices[1]]);
   return marker;
 }
 
