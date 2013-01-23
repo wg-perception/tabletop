@@ -17,7 +17,6 @@ ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
   module.cpp
   TableDetector.cpp
   TablePose.cpp
-  tabletop_segmenter.cpp
   ${TABLETOP_ROS_CELLS}
 )
 

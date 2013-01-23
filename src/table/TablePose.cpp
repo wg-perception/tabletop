@@ -38,55 +38,66 @@
 #include <opencv2/core/core.hpp>
 
 #include <object_recognition_core/common/pose_result.h>
-#include "tabletop_segmenter.h"
 
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
 
-namespace tabletop
+/**
+ * If the equation of the plane is ax+by+cz+d=0, the pose (R,t) is such that it takes the horizontal plane (z=0)
+ * to the current equation
+ */
+void
+getPlaneTransform(const cv::Vec4f& plane_coefficients, cv::Matx33f& rotation, cv::Vec3f& translation)
 {
-  /** Ecto implementation of a module that takes
-   *
-   */
-  struct TablePose
-  {
-    static void
-    declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
-    {
-      inputs.declare(&TablePose::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.").required(true);
+  double a = plane_coefficients[0], b = plane_coefficients[1], c = plane_coefficients[2], d = plane_coefficients[3];
+  // assume plane coefficients are normalized
+  translation = cv::Vec3f(-a * d, -b * d, -c * d);
+  cv::Vec3f z(a, b, c);
 
-      outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
-    }
+  //try to align the x axis with the x axis of the original frame
+  //or the y axis if z and x are too close too each other
+  cv::Vec3f x(1, 0, 0);
+  if (fabs(z.dot(x)) > 1.0 - 1.0e-4)
+    x = cv::Vec3f(0, 1, 0);
+  cv::Vec3f y = z.cross(x);
+  x = y.cross(z);
+  x = x / norm(x);
+  y = y / norm(y);
 
-    /** Compute the pose of the table plane
-     * @param inputs
-     * @param outputs
-     * @return
-     */
-    int
-    process(const tendrils& inputs, const tendrils& outputs)
-    {
-      pose_results_->resize(table_coefficients_->size());
-      for (size_t i = 0; i < table_coefficients_->size(); ++i)
-      {
-        cv::Matx33f R;
-        cv::Vec3f T;
-        getPlaneTransform((*table_coefficients_)[i], T, R);
-        PoseResult pose_result;
-        pose_result.set_R(cv::Mat(R));
-        pose_result.set_T(cv::Mat(T));
-        (*pose_results_)[i] = pose_result;
-      }
-
-      return ecto::OK;
-    }
-  private:
-  /** The coefficients of the tables */
-  ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
-
-    ecto::spore<std::vector<PoseResult> > pose_results_;
-  };
+  rotation = cv::Matx33f(x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]);
 }
 
-ECTO_CELL(tabletop_table, tabletop::TablePose, "TablePose", "Given a point cloud, find  a potential table.");
+/** Ecto cell that computes the poses of some planes.
+ */
+struct TablePose {
+  static void
+  declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs) {
+    inputs.declare(&TablePose::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.").required(true);
+
+    outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
+  }
+
+  int
+  process(const tendrils& inputs, const tendrils& outputs) {
+    pose_results_->resize(table_coefficients_->size());
+    for (size_t i = 0; i < table_coefficients_->size(); ++i) {
+      cv::Matx33f R;
+      cv::Vec3f T;
+      getPlaneTransform((*table_coefficients_)[i], R, T);
+      PoseResult pose_result;
+      pose_result.set_R(cv::Mat(R));
+      pose_result.set_T(cv::Mat(T));
+      (*pose_results_)[i] = pose_result;
+    }
+
+    return ecto::OK;
+  }
+private:
+  /** The coefficients of the tables */
+  ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
+  /** The poses of the different planes */
+  ecto::spore<std::vector<PoseResult> > pose_results_;
+};
+
+ECTO_CELL(tabletop_table, TablePose, "TablePose", "Given a point cloud, find  a potential table.");

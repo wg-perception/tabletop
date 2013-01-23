@@ -44,10 +44,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd/rgbd.hpp>
 
-#include <tf/transform_listener.h>
-
-#include "tabletop_segmenter.h"
-
 using ecto::tendrils;
 
 typedef pcl::PointXYZ PointT;
