@@ -97,10 +97,6 @@ include_directories(SYSTEM ${Eigen_INCLUDE_DIRS}
 if (ROS_FUERTE_FOUND)
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the lib directory
-if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-endif()
 endif()
 
 add_subdirectory(src)
@@ -108,10 +104,10 @@ add_subdirectory(src)
 # add the tests
 add_subdirectory(test)
 
+# add the docs
 catkin_doxygen(object_recognition_tabletop-doxygen ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # install the configuration files
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/conf
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-
