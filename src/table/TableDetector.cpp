@@ -46,7 +46,7 @@
 
 #include <tf/transform_listener.h>
 
-#include <tabletop/table/tabletop_segmenter.h>
+#include "tabletop_segmenter.h"
 
 using ecto::tendrils;
 
@@ -65,14 +65,10 @@ namespace tabletop
     {
       params.declare(&TableDetector::min_table_size_, "min_table_size",
                      "The minimum number of points deemed necessary to find a table.", 10000);
-      params.declare(&TableDetector::normal_k_search_, "normal_k_search",
-                     "The number of nearest neighbors to use when computing normals", 10);
       params.declare(&TableDetector::plane_threshold_, "plane_threshold",
-                     "The distance used as a threshold when finding a plane", 0.1);
+                     "The distance used as a threshold when finding a plane", 0.02);
       params.declare(&TableDetector::table_cluster_tolerance_, "table_cluster_tolerance",
                      "The distance used when clustering a plane", 0.2);
-      Eigen::Vector3f default_up(0, 0, 1);
-//      params.declare(&TableDetector::up_direction_, "vertical_direction", "The vertical direction", default_up);
       params.declare(&TableDetector::up_frame_id_, "vertical_frame_id", "The vertical frame id", "/map");
     }
 
@@ -81,21 +77,11 @@ namespace tabletop
     {
       inputs.declare(&TableDetector::points3d_, "points3d", "The 3dpoints as a cv::Mat_<cv::Vec3f>");
       inputs.declare(&TableDetector::K_, "K", "The calibration matrix");
-      inputs.declare(&TableDetector::flatten_plane_, "flatten_plane",
-                     "If true, the plane's normal is vertical_direction.", false);
 
       outputs.declare(&TableDetector::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.");
       outputs.declare(&TableDetector::table_mask_, "table_mask", "The mask of planar surfaces.");
-      outputs.declare(&TableDetector::table_rotations_, "rotations", "The pose rotations of the tables.");
-      outputs.declare(&TableDetector::table_translations_, "translations", "The pose translations of the tables");
       outputs.declare(&TableDetector::clouds_out_, "clouds", "Samples that belong to the table.");
       outputs.declare(&TableDetector::clouds_hull_, "clouds_hull", "Hulls of the samples.");
-    }
-
-    void
-    configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
-    {
-    	up_direction_ = Eigen::Vector3f(0,0,1);
     }
 
   /** Get the 2d keypoints and figure out their 3D position from the depth map
@@ -123,7 +109,7 @@ namespace tabletop
     // Compute the planes
     std::vector<cv::Vec4f> plane_coefficients;
     cv::RgbdPlane plane_finder;
-    plane_finder.set("threshold", 0.02);
+    plane_finder.set("threshold", *plane_threshold_);
     plane_finder.set("min_size", int(*min_table_size_));
     plane_finder.set("sensor_error_a", 0.0075);
     plane_finder(*points3d_, normals, *table_mask_, plane_coefficients);
@@ -182,10 +168,11 @@ namespace tabletop
       std::vector<cv::Point2i> hull;
       cv::convexHull(points_for_hull[i], hull);
 
-      // Add the plane coefficients
-      table_coefficients_->push_back(
-        Eigen::Vector4f(plane_coefficients[i][0], plane_coefficients[i][1],
-                        plane_coefficients[i][2], plane_coefficients[i][3]));
+      // Add the plane coefficients but make sure the normal points towards the camera
+      if (plane_coefficients[i][2] < 0)
+        table_coefficients_->push_back(plane_coefficients[i]);
+      else
+        table_coefficients_->push_back(-plane_coefficients[i]);
 
       // Add the point cloud
       pcl::PointCloud<PointT>::Ptr out(new pcl::PointCloud<PointT>);
@@ -196,25 +183,14 @@ namespace tabletop
       clouds_hull_->push_back(out);
     }
 
-    // Compute the corresponding poses
-    table_rotations_->resize(table_coefficients_->size());
-    table_translations_->resize(table_coefficients_->size());
-    for (size_t i = 0; i < table_coefficients_->size(); ++i)
-      getPlaneTransform((*table_coefficients_)[i], up_direction_, *flatten_plane_, (*table_translations_)[i],
-                        (*table_rotations_)[i]);
-
     return ecto::OK;
   }
   private:
     /** The minimum number of points deemed necessary to find a table */
     ecto::spore<size_t> min_table_size_;
-    /** The number of nearest neighbors to use when computing normals */
-    ecto::spore<unsigned int> normal_k_search_;
     /** The distance used as a threshold when finding a plane */
     ecto::spore<float> plane_threshold_;
 
-    /** if true, the plane coefficients are modified so that up_direction_in is the normal */
-    ecto::spore<bool> flatten_plane_;
     /** The input calibration matrix */
     ecto::spore<cv::Mat> points3d_;
     /** The input cloud */
@@ -225,15 +201,8 @@ namespace tabletop
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_out_;
     /** The output cloud */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
-    /** The rotations of the tables */
-    ecto::spore<std::vector<Eigen::Matrix3f> > table_rotations_;
-    /** The translations of the tables */
-    ecto::spore<std::vector<Eigen::Vector3f> > table_translations_;
-    /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
-    /** The vertical direction */
-//    ecto::spore<Eigen::Vector3f> up_direction_;
-    Eigen::Vector3f up_direction_;
+    /** The coefficients of the tables */
+    ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
     /** The frame id of the vertical direction */
     ecto::spore<std::string> up_frame_id_;
 

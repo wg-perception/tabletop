@@ -56,9 +56,8 @@
 
 #include <object_recognition_msgs/Table.h>
 #include <object_recognition_msgs/TableArray.h>
-#include <tabletop/table/tabletop_segmenter.h>
 
-#include "tabletop_object_detector/marker_generator.h"
+#include <tabletop_object_detector/marker_generator.h>
 #include <object_recognition_core/common/pose_result.h>
 
 #include <tf/LinearMath/Transform.h>

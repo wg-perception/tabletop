@@ -35,9 +35,10 @@
 
 #include <ecto/ecto.hpp>
 
-#include <tabletop/table/tabletop_segmenter.h>
+#include <opencv2/core/core.hpp>
 
 #include <object_recognition_core/common/pose_result.h>
+#include "tabletop_segmenter.h"
 
 using object_recognition_core::common::PoseResult;
 
@@ -53,9 +54,7 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TablePose::table_rotations_, "rotations", "The pose rotations of the tables.").required(true);
-      inputs.declare(&TablePose::table_translations_, "translations", "The pose translations of the tables").required(
-          true);
+      inputs.declare(&TablePose::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.").required(true);
 
       outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
     }
@@ -68,22 +67,23 @@ namespace tabletop
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      pose_results_->clear();
-      for (size_t i = 0; i < table_rotations_->size(); ++i)
+      pose_results_->resize(table_coefficients_->size());
+      for (size_t i = 0; i < table_coefficients_->size(); ++i)
       {
+        cv::Matx33f R;
+        cv::Vec3f T;
+        getPlaneTransform((*table_coefficients_)[i], T, R);
         PoseResult pose_result;
-        pose_result.set_R((*table_rotations_)[i]);
-        pose_result.set_T((*table_translations_)[i]);
-        pose_results_->push_back(pose_result);
+        pose_result.set_R(cv::Mat(R));
+        pose_result.set_T(cv::Mat(T));
+        (*pose_results_)[i] = pose_result;
       }
 
       return ecto::OK;
     }
   private:
-    /** The rotations of the tables */
-    ecto::spore<std::vector<Eigen::Matrix3f> > table_rotations_;
-    /** The translations of the tables */
-    ecto::spore<std::vector<Eigen::Vector3f> > table_translations_;
+  /** The coefficients of the tables */
+  ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
 
     ecto::spore<std::vector<PoseResult> > pose_results_;
   };

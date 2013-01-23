@@ -36,7 +36,7 @@
 #ifndef TABLETOP_SEGMENTER_H_
 #define TABLETOP_SEGMENTER_H_
 
-#include <Eigen/Core>
+#include <opencv2/core/core.hpp>
 
 namespace tabletop
 {
@@ -46,8 +46,7 @@ namespace tabletop
    * @param flatten_plane if true, the plane coefficients are modified so that up_direction_in is the normal
    */
   void
-  getPlaneTransform(const Eigen::Vector4f &plane_coefficients, const Eigen::Vector3f &up_direction, bool flatten_plane,
-                    Eigen::Vector3f & translation, Eigen::Matrix3f & rotation);
+  getPlaneTransform(const cv::Vec4f &plane_coefficients, cv::Vec3f & translation, cv::Matx33f & rotation);
 }
 
 #endif /* TABLETOP_SEGMENTER_H_ */

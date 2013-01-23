@@ -33,50 +33,31 @@
  *
  */
 
-#include <tabletop/table/tabletop_segmenter.h>
-#include <Eigen/Dense>
+#include "tabletop_segmenter.h"
 
 namespace tabletop
 {
-  /** Assumes plane coefficients are of the form ax+by+cz+d=0, normalized
-   * @param plane_coefficients
-   * @param up_direction_in
-   * @param flatten_plane if true, the plane coefficients are modified so that up_direction_in is the normal
-   */
-  void
-  getPlaneTransform(const Eigen::Vector4f &plane_coefficients, const Eigen::Vector3f &up_direction, bool flatten_plane,
-                    Eigen::Vector3f & translation, Eigen::Matrix3f & rotation)
-  {
-    double a = plane_coefficients[0], b = plane_coefficients[1], c = plane_coefficients[2], d = plane_coefficients[3];
-    // assume plane coefficients are normalized
-    translation = Eigen::Vector3f(-a * d, -b * d, -c * d);
-    Eigen::Vector3f z(a, b, c);
+/** Assumes plane coefficients are of the form ax+by+cz+d=0, normalized
+ * @param plane_coefficients
+ */
+void
+getPlaneTransform(const cv::Vec4f& plane_coefficients, cv::Vec3f& translation, cv::Matx33f& rotation)
+{
+  double a = plane_coefficients[0], b = plane_coefficients[1], c = plane_coefficients[2], d = plane_coefficients[3];
+  // assume plane coefficients are normalized
+  translation = cv::Vec3f(-a * d, -b * d, -c * d);
+  cv::Vec3f z(a, b, c);
 
-    //if we are flattening the plane, make z just be up_direction
-    if (flatten_plane)
-    {
-      z = up_direction;
-    }
-    else
-    {
-      //make sure z points "up"
-      if (z.dot(up_direction) < 0)
-      {
-        z = -1.0 * z;
-      }
-      z = -1.0 * z;
-    }
+  //try to align the x axis with the x axis of the original frame
+  //or the y axis if z and x are too close too each other
+  cv::Vec3f x(1, 0, 0);
+  if (fabs(z.dot(x)) > 1.0 - 1.0e-4)
+    x = cv::Vec3f(0, 1, 0);
+  cv::Vec3f y = z.cross(x);
+  x = y.cross(z);
+  x = x / norm(x);
+  y = y / norm(y);
 
-    //try to align the x axis with the x axis of the original frame
-    //or the y axis if z and x are too close too each other
-    Eigen::Vector3f x(1, 0, 0);
-    if (fabs(z.dot(x)) > 1.0 - 1.0e-4)
-      x = Eigen::Vector3f(0, 1, 0);
-    Eigen::Vector3f y = z.cross(x).normalized();
-    x = y.cross(z).normalized();
-
-    rotation << x.coeff(0), x.coeff(1), x.coeff(2), y.coeff(0), y.coeff(1), y.coeff(2), z.coeff(0), z.coeff(1), z.coeff(
-        2);
-    rotation.transposeInPlace();
-  }
+  rotation = cv::Matx33f(x[0], x[1], x[2], y[0], y[1], y[2], z[0], z[1], z[2]);
+}
 }

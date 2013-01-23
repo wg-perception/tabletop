@@ -44,20 +44,21 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <tabletop/table/tabletop_segmenter.h>
-
 using ecto::tendrils;
 
 //typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
-typedef Cloud::Ptr CloudPtr;
-typedef Cloud::ConstPtr CloudConstPtr;
-typedef std::vector<pcl::PointCloud<PointT>, Eigen::aligned_allocator<pcl::PointCloud<PointT> > > CloudVectorType;
 
 float pointDistanceSq(const cv::Vec3f& vec1, const cv::Vec3f& vec2)
 {
-  return cv::norm(vec1 - vec2) * cv::norm(vec1 - vec2);
+  cv::Vec3f vec = vec1 - vec2;
+  return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+}
+
+float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
+{
+  return std::abs(vec[0] * plane[0] + vec[1] * plane[1] + vec[2] * plane[2] + plane[3]);
 }
 
   /** Cell that finds the clusters touching planes detected in a given depth image
@@ -68,7 +69,7 @@ float pointDistanceSq(const cv::Vec3f& vec1, const cv::Vec3f& vec2)
     declare_params(ecto::tendrils& params)
     {
       params.declare(&Clusterer::cluster_distance_, "cluster_distance", "The maximum distance between a point and the cluster it belongs to.",
-                     0.01);
+                     0.02);
       params.declare(&Clusterer::min_cluster_size_, "min_cluster_size", "Min number of points for a cluster", 300);
       params.declare(&Clusterer::table_z_filter_min_, "table_z_filter_min",
                      "Min distance (in meters) from the table to get clusters from.", 0.01);
@@ -139,17 +140,21 @@ float pointDistanceSq(const cv::Vec3f& vec1, const cv::Vec3f& vec2)
         std::list<cv::Point> cluster2d(1, cv::Point(x, y));
         while (!cluster2d.empty()) {
           // Look at the neighboring points
-          const cv::Point& point = cluster2d.front();
-          for (int yy = point.y - 1; yy <= point.y + 1; ++yy)
-            for (int xx = point.x - 1; xx <= point.x + 1; ++xx) {
+          const cv::Point& point2d = cluster2d.front();
+          const cv::Vec3f& point3d_1 = points3d(point2d.y, point2d.x);
+          for (int yy = point2d.y - 1; yy <= point2d.y + 1; ++yy)
+            for (int xx = point2d.x - 1; xx <= point2d.x + 1; ++xx) {
               if (checked(yy, xx))
                 continue;
               // Compute the distance from that point to the original point
-              const cv::Vec3f& point3 = points3d(yy, xx);
-              if (pointDistanceSq(points3d(point.y, point.x), points3d(yy, xx)) < 0.2 * 0.2) {
+              const cv::Vec3f& point3d_2 = points3d(yy, xx);
+              if (pointDistanceSq(point3d_1, point3d_2) < (*cluster_distance_) * (*cluster_distance_)) {
                 checked(yy, xx) = 1;
                 cluster2d.push_back(cv::Point(xx, yy));
-                cluster3d->push_back(PointT(point3[0], point3[1], point3[2]));
+                // Only add the point if it is within the plane distance boundaries
+                float dist = pointPlaneDistance(point3d_2, (*table_coefficients_)[plane_closest]);
+                if ((*table_z_filter_min_ < dist) && (dist < *table_z_filter_max_))
+                  cluster3d->push_back(PointT(point3d_2[0], point3d_2[1], point3d_2[2]));
               }
             }
           cluster2d.pop_front();
@@ -175,7 +180,7 @@ float pointDistanceSq(const cv::Vec3f& vec1, const cv::Vec3f& vec2)
     /** The input cloud */
     ecto::spore<cv::Mat> points3d_;
     /** The minimum number of inliers in order to do pose matching */
-    ecto::spore<std::vector<Eigen::Vector4f> > table_coefficients_;
+    ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
     /** The mask of the different planes */
     ecto::spore<cv::Mat> mask_;
     /** The resulting clusters: for each table, return a vector of clusters */

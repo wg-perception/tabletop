@@ -28,8 +28,7 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
 
         i = {'passthrough': 'all'}
 
-        o = {'table_detector': [Forward('clouds'),Forward('clouds_hull'), Forward('rotations'),
-                                Forward('translations')],
+        o = {'table_detector': [Forward('clouds'),Forward('clouds_hull')],
              'clusterer': [Forward('clusters')],
              'table_pose': [Forward('pose_results')]
              }
@@ -39,8 +38,7 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
     def connections(self, _p):
         # First find the table, then the pose
         connections = [ self.passthrough['points3d', 'K'] >> self.table_detector['points3d', 'K'],
-                        self.table_detector['rotations'] >> self.table_pose['rotations'],
-                        self.table_detector['translations'] >> self.table_pose['translations'] ]
+                        self.table_detector['table_coefficients'] >> self.table_pose['table_coefficients'] ]
         # also find the clusters of points
         connections += [ self.passthrough['points3d'] >> self.clusterer['points3d'],
                          self.table_detector['table_coefficients'] >> self.clusterer['table_coefficients'],

@@ -52,7 +52,6 @@
 #include <tf/transform_broadcaster.h>
 
 #include <household_objects_database/objects_database.h>
-#include <tabletop/table/tabletop_segmenter.h>
 #include <tabletop/object/tabletop_object_detector.h>
 
 #include <object_recognition_core/common/pose_result.h>

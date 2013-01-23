@@ -59,7 +59,6 @@
 #include <object_recognition_msgs/Table.h>
 #include <object_recognition_msgs/TableArray.h>
 
-#include <tabletop/table/tabletop_segmenter.h>
 #include <tabletop_object_detector/marker_generator.h>
 
 using object_recognition_core::common::PoseResult;
