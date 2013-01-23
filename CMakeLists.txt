@@ -5,7 +5,7 @@ find_package(catkin)
 
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
 find_package(catkin REQUIRED ecto ecto_pcl ecto_ros ecto_ros genmsg moveit_msgs object_recognition_core
-                             object_recognition_msgs opencv_candidate pcl_ros rosconsole roscpp shape_msgs tf)
+                             object_recognition_msgs opencv_candidate rosconsole roscpp shape_msgs)
 catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
 add_definitions(-DPCL_VERSION_GE_160=1)
@@ -16,10 +16,16 @@ list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_naviga
 )
 find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
-find_package(sql_database)
 find_package(moveit_core)
-list(APPEND catkin_LIBRARIES ${household_objects_database_LIBRARIES})
-list(APPEND catkin_LIBRARIES ${sql_database_LIBRARIES})
+find_package(pcl_ros)
+find_package(sql_database)
+find_package(tf)
+list(APPEND catkin_LIBRARIES ${household_objects_database_LIBRARIES}
+                             ${moveit_core_LIBRARIES}
+                             ${pcl_ros_LIBRARIES}
+                             ${sql_database_LIBRARIES}
+                             ${tf_LIBRARIES}
+)
 list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                                 /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                                 /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
@@ -29,7 +35,7 @@ endif()
 
 else()
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=0)
-find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs opencv_candidate )
+find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs opencv_candidate)
 catkin_stack()
 catkin_project(object_recognition_tabletop
                INCLUDE_DIRS include
