@@ -33,22 +33,7 @@
  *
  */
 
-#include <fstream>
-#include <iostream>
-
-#include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <ecto/ecto.hpp>
-
-#include <pcl/ModelCoefficients.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/PointIndices.h>
-
-#include <sensor_msgs/PointCloud.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
 
 #include <tabletop/table/tabletop_segmenter.h>
 
@@ -66,11 +51,6 @@ namespace tabletop
   struct TablePose
   {
     static void
-    declare_params(ecto::tendrils& params)
-    {
-    }
-
-    static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
       inputs.declare(&TablePose::table_rotations_, "rotations", "The pose rotations of the tables.").required(true);
@@ -78,11 +58,6 @@ namespace tabletop
           true);
 
       outputs.declare(&TablePose::pose_results_, "pose_results", "The results of object recognition");
-    }
-
-    void
-    configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
-    {
     }
 
     /** Compute the pose of the table plane
