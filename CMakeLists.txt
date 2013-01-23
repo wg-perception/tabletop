@@ -109,3 +109,9 @@ add_subdirectory(src)
 add_subdirectory(test)
 
 catkin_doxygen(object_recognition_tabletop-doxygen ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# install the configuration files
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/conf
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
