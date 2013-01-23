@@ -5,7 +5,7 @@ find_package(catkin)
 
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
 find_package(catkin REQUIRED ecto ecto_pcl ecto_ros ecto_ros genmsg moveit_core moveit_msgs object_recognition_core
-                             object_recognition_msgs pcl_ros rosconsole roscpp shape_msgs sql_database tf)
+                             object_recognition_msgs opencv_candidate pcl_ros rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
 add_definitions(-DPCL_VERSION_GE_160=1)
@@ -26,7 +26,7 @@ list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_naviga
 
 else()
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=0)
-find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs)
+find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg moveit_msgs object_recognition_core object_recognition_msgs opencv_candidate )
 catkin_stack()
 catkin_project(object_recognition_tabletop
                INCLUDE_DIRS include

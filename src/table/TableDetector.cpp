@@ -33,9 +33,6 @@
  *
  */
 
-#include <fstream>
-#include <iostream>
-
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -44,31 +41,17 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <tabletop/table/tabletop_segmenter.h>
-
-#if PCL_VERSION_COMPARE(>=,1,6,0)
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/features/integral_image_normal.h>
-#include <pcl/segmentation/organized_multi_plane_segmentation.h>
-#include <pcl/segmentation/planar_polygon_fusion.h>
-#include <pcl/common/transforms.h>
-#include <pcl/segmentation/plane_coefficient_comparator.h>
-#include <pcl/segmentation/euclidean_plane_coefficient_comparator.h>
-#include <pcl/segmentation/rgb_plane_coefficient_comparator.h>
-#include <pcl/segmentation/edge_aware_plane_comparator.h>
-#include <pcl/segmentation/euclidean_cluster_comparator.h>
-#include <pcl/segmentation/organized_connected_component_segmentation.h>
-#endif
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/rgbd/rgbd.hpp>
 
 #include <tf/transform_listener.h>
+
+#include <tabletop/table/tabletop_segmenter.h>
 
 using ecto::tendrils;
 
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> Cloud;
-typedef Cloud::Ptr CloudPtr;
-typedef Cloud::ConstPtr CloudConstPtr;
-typedef std::vector<pcl::PointCloud<PointT>, Eigen::aligned_allocator<pcl::PointCloud<PointT> > > CloudVectorType;
 
 namespace tabletop
 {
@@ -82,8 +65,6 @@ namespace tabletop
     {
       params.declare(&TableDetector::min_table_size_, "min_table_size",
                      "The minimum number of points deemed necessary to find a table.", 10000);
-      params.declare(&TableDetector::plane_detection_voxel_size_, "plane_detection_voxel_size",
-                     "The size of a voxel cell when downsampling ", 0.01);
       params.declare(&TableDetector::normal_k_search_, "normal_k_search",
                      "The number of nearest neighbors to use when computing normals", 10);
       params.declare(&TableDetector::plane_threshold_, "plane_threshold",
@@ -98,11 +79,13 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TableDetector::cloud_in_, "cloud", "The point cloud in which to find a table.");
+      inputs.declare(&TableDetector::points3d_, "points3d", "The 3dpoints as a cv::Mat_<cv::Vec3f>");
+      inputs.declare(&TableDetector::K_, "K", "The calibration matrix");
       inputs.declare(&TableDetector::flatten_plane_, "flatten_plane",
                      "If true, the plane's normal is vertical_direction.", false);
 
-      outputs.declare(&TableDetector::table_coefficients_, "coefficients", "The coefficients of planar surfaces.");
+      outputs.declare(&TableDetector::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.");
+      outputs.declare(&TableDetector::table_mask_, "table_mask", "The mask of planar surfaces.");
       outputs.declare(&TableDetector::table_rotations_, "rotations", "The pose rotations of the tables.");
       outputs.declare(&TableDetector::table_translations_, "translations", "The pose translations of the tables");
       outputs.declare(&TableDetector::clouds_out_, "clouds", "Samples that belong to the table.");
@@ -115,134 +98,116 @@ namespace tabletop
     	up_direction_ = Eigen::Vector3f(0,0,1);
     }
 
-    /** Get the 2d keypoints and figure out their 3D position from the depth map
-     * @param inputs
-     * @param outputs
-     * @return
-     */
-    int
-    process(const tendrils& inputs, const tendrils& outputs)
-    {
-      pcl::ModelCoefficients::Ptr table_coefficients;
-
-      // Find the table, it assumes only one plane for now TODO
-      clouds_out_->clear();
-      clouds_hull_->clear();
-      table_coefficients_->clear();
-
-#if PCL_VERSION_COMPARE(>=,1,6,0)
-      pcl::PointCloud<PointT>::Ptr init_cloud_ptr(new pcl::PointCloud<PointT>);
-      pcl::PointCloud<PointT>::Ptr prev_cloud(new pcl::PointCloud<PointT>);
-      *prev_cloud = *(*cloud_in_);
-
-      pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
-      ne.setNormalEstimationMethod(ne.COVARIANCE_MATRIX);
-      ne.setMaxDepthChangeFactor(0.03f);
-      ne.setNormalSmoothingSize(20.0f);
-
-      pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
-      mps.setMinInliers(*min_table_size_);
-      mps.setAngularThreshold(pcl::deg2rad(3.0)); //3 degrees
-      mps.setDistanceThreshold(*plane_threshold_);// from params
-
-      std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions;
-      pcl::PointCloud<PointT>::Ptr contour(new pcl::PointCloud<PointT>);
-      size_t prev_models_size = 0;
-
-      regions.clear();
-      pcl::PointCloud<pcl::Normal>::Ptr normal_cloud(new pcl::PointCloud<pcl::Normal>);
-      ne.setInputCloud(prev_cloud);
-      ne.compute(*normal_cloud);
-
-      mps.setInputNormals(normal_cloud);
-      mps.setInputCloud(prev_cloud);
-      mps.segmentAndRefine(regions);
-      BOOST_FOREACH(const pcl::PlanarRegion<PointT> & region, regions)
-      {
-    	  table_coefficients_->push_back(region.getCoefficients());
-
-    	  pcl::PointCloud<PointT>::Ptr contour_cloud (new pcl::PointCloud<PointT>());
-    	  for (size_t i = 0; i < region.getContour().size(); ++i)
-    	  {
-    		contour_cloud->push_back(region.getContour()[i]);
-    	  }
-
-    	  // TODO improve: cloud & hull are the same in this case
-    	  pcl::PointCloud<PointT>::Ptr hull(new pcl::PointCloud<PointT>);
-    	  TabletopSegmenter::reconstructConvexHull<pcl::PointXYZ>(*contour_cloud, *hull);
-    	  clouds_out_->push_back(hull);
-    	  clouds_hull_->push_back(hull);
-      }
-#else
-      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out;
-      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull;
-      pcl::PointCloud<PointT>::Ptr cloud_copy(new pcl::PointCloud<PointT>);
-      pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
-//      *cloud_copy = *(*cloud_in_);
-
-      TabletopSegmenter table_segmenter(*min_table_size_, *plane_detection_voxel_size_,
-                                        *normal_k_search_, *plane_threshold_, *table_cluster_tolerance_);
-      table_segmenter.downsample<pcl::PointXYZ>(*plane_detection_voxel_size_, cloud_filtered, cloud_copy);
-
-      while (table_segmenter.findTable<pcl::PointXYZ>(cloud_copy, table_coefficients, cloud_out, cloud_hull)
-             == TabletopSegmenter::SUCCESS)
-      {
-        // First of all, check that the table has a normal close to what is wanted
-        //(*cloud_in_)->header;
-        if (!up_frame_id_->empty())
-        {
-          Eigen::Vector4f up_direction(table_coefficients->values[0], table_coefficients->values[1],
-                                       table_coefficients->values[2], table_coefficients->values[3]);
-          /*tf::TransformListener listener;
-          geometry_msgs::Vector3Stamped stamped_in;
-          geometry_msgs::Vector3Stamped stamped_out;
-          listener.tranformVector(*up_frame_id_, stamped_in, stamped_out);*/
-        }
-
-        //
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out_copy(new pcl::PointCloud<pcl::PointXYZ>(*cloud_out));
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_hull_copy(new pcl::PointCloud<pcl::PointXYZ>(*cloud_hull));
-        clouds_out_->push_back(cloud_out_copy);
-        clouds_hull_->push_back(cloud_hull_copy);
-        table_coefficients_->push_back(
-            Eigen::Vector4f(table_coefficients->values[0], table_coefficients->values[1], table_coefficients->values[2],
-                            table_coefficients->values[3]));
-
-        // ---[ Get the objects on top of the (non-flat) table
-        pcl::PointIndices::Ptr cloud_object_indices(new pcl::PointIndices);
-
-        pcl::ExtractPolygonalPrismData<pcl::PointXYZ> prism_;
-        //prism_.setInputCloud (cloud_all_minus_table_ptr);
-        prism_.setInputCloud(cloud_copy);
-        prism_.setInputPlanarHull(cloud_hull);
-        prism_.setHeightLimits(-10000, 10000);
-        prism_.segment(*cloud_object_indices);
-
-        // ---[ Remove the table and the objects from the point cloud
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_copy_no_prism(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::ExtractIndices<pcl::PointXYZ> extractor;
-        extractor.setInputCloud(cloud_copy);
-        extractor.setIndices(cloud_object_indices);
-        extractor.setNegative(true);
-        extractor.filter(*cloud_copy_no_prism);
-        cloud_copy = cloud_copy_no_prism;
-      }
-#endif
-
-      // Compute the corresponding poses
-      table_rotations_->resize(table_coefficients_->size());
-      table_translations_->resize(table_coefficients_->size());
-      for (size_t i = 0; i < table_coefficients_->size(); ++i)
-        getPlaneTransform((*table_coefficients_)[i], up_direction_, *flatten_plane_, (*table_translations_)[i],
-                          (*table_rotations_)[i]);
-
-      return ecto::OK;
+  /** Get the 2d keypoints and figure out their 3D position from the depth map
+   * @param inputs
+   * @param outputs
+   * @return
+   */
+  int
+  process(const tendrils& inputs, const tendrils& outputs) {
+    if ((points3d_->rows != prev_image_rows_)
+        || (points3d_->cols != prev_image_cols_)) {
+      prev_image_rows_ = points3d_->rows;
+      prev_image_cols_ = points3d_->cols;
+      normal_computer_ = cv::RgbdNormals(points3d_->rows, points3d_->cols,
+                                         CV_32F, *K_, 5, cv::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
     }
+
+    // Compute the normals
+    cv::Mat normals = normal_computer_(*points3d_);
+    std::vector<cv::Mat> channels;
+    cv::split(normals, channels);
+    cv::Mat channel_view;
+    cv::Mat(cv::abs(channels[2])).convertTo(channel_view, CV_8U, 255);
+
+    // Compute the planes
+    std::vector<cv::Vec4f> plane_coefficients;
+    cv::RgbdPlane plane_finder;
+    plane_finder.set("threshold", 0.02);
+    plane_finder.set("min_size", int(*min_table_size_));
+    plane_finder.set("sensor_error_a", 0.0075);
+    plane_finder(*points3d_, normals, *table_mask_, plane_coefficients);
+
+    // Prepare the plane clusters
+    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clouds_out;
+    BOOST_FOREACH(const cv::Vec4f & plane_coefficient, plane_coefficients) {
+      pcl::PointCloud<PointT>::Ptr out(new pcl::PointCloud<PointT>);
+      clouds_out.push_back(out);
+    }
+
+    // Figure out the points of each plane
+    std::vector<std::vector<cv::Point2i> > points_for_hull(
+      plane_coefficients.size());
+    cv::Mat_<cv::Vec3f>::const_iterator point3d = points3d_->begin<cv::Vec3f>();
+    cv::Mat_<uchar>::const_iterator point_mask = table_mask_->begin<uchar>();
+    cv::Point2i prev_point;
+    for (int y = 0; y < table_mask_->rows; ++y) {
+      int prev_index = 255;
+      for (int x = 0; x < table_mask_->cols; ++x, ++point3d, ++point_mask) {
+        int index = *point_mask;
+        if (index == 255) {
+          // Close the previous segment
+          if (prev_index != 255)
+            points_for_hull[prev_index].push_back(prev_point);
+          prev_index = 255;
+          continue;
+        }
+        // Add the point to the plane no matter what
+        const cv::Vec3f& point = *point3d;
+        clouds_out[index]->push_back(PointT(point[0], point[1], point[2]));
+        // Add it to the points to compute the hull only if it is different for the previous one
+        // or if it is the first/last one on a line
+        if (index != prev_index) {
+          points_for_hull[index].push_back(cv::Point2i(x, y));
+          if (prev_index != 255)
+            points_for_hull[prev_index].push_back(prev_point);
+        }
+        prev_index = index;
+        prev_point = cv::Point2i(x, y);
+      }
+      // Add the last point of the line if it belongs to a plane
+      if (prev_index != 255)
+        points_for_hull[prev_index].push_back(prev_point);
+    }
+
+    // Fill the outputs
+    clouds_out_->clear();
+    clouds_hull_->clear();
+    table_coefficients_->clear();
+    for (int i = 0; i < points_for_hull.size(); ++i) {
+      // Copy the points out
+      clouds_out_->push_back(clouds_out[i]);
+
+      // Compute the convex hull
+      std::vector<cv::Point2i> hull;
+      cv::convexHull(points_for_hull[i], hull);
+
+      // Add the plane coefficients
+      table_coefficients_->push_back(
+        Eigen::Vector4f(plane_coefficients[i][0], plane_coefficients[i][1],
+                        plane_coefficients[i][2], plane_coefficients[i][3]));
+
+      // Add the point cloud
+      pcl::PointCloud<PointT>::Ptr out(new pcl::PointCloud<PointT>);
+      BOOST_FOREACH(const cv::Point2i & point2d, hull) {
+        const cv::Vec3f& point3d = (*points3d_).at<cv::Vec3f>(point2d.y, point2d.x);
+        out->push_back(PointT(point3d[0], point3d[1], point3d[2]));
+      }
+      clouds_hull_->push_back(out);
+    }
+
+    // Compute the corresponding poses
+    table_rotations_->resize(table_coefficients_->size());
+    table_translations_->resize(table_coefficients_->size());
+    for (size_t i = 0; i < table_coefficients_->size(); ++i)
+      getPlaneTransform((*table_coefficients_)[i], up_direction_, *flatten_plane_, (*table_translations_)[i],
+                        (*table_rotations_)[i]);
+
+    return ecto::OK;
+  }
   private:
     /** The minimum number of points deemed necessary to find a table */
     ecto::spore<size_t> min_table_size_;
-    /** The size of a voxel cell when downsampling */
-    ecto::spore<float> plane_detection_voxel_size_;
     /** The number of nearest neighbors to use when computing normals */
     ecto::spore<unsigned int> normal_k_search_;
     /** The distance used as a threshold when finding a plane */
@@ -250,8 +215,12 @@ namespace tabletop
 
     /** if true, the plane coefficients are modified so that up_direction_in is the normal */
     ecto::spore<bool> flatten_plane_;
+    /** The input calibration matrix */
+    ecto::spore<cv::Mat> points3d_;
     /** The input cloud */
-    ecto::spore<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> cloud_in_;
+    ecto::spore<cv::Mat> K_;
+    /** The mask of the foundplanes */
+    ecto::spore<cv::Mat> table_mask_;
     /** The input cloud */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_out_;
     /** The output cloud */
@@ -269,6 +238,11 @@ namespace tabletop
     ecto::spore<std::string> up_frame_id_;
 
     ecto::spore<float> table_cluster_tolerance_;
+
+    /** Cache the size of the previous image */
+    int prev_image_rows_, prev_image_cols_;
+    /** Cache the normal computer as it precomputes data */
+    cv::RgbdNormals normal_computer_;
   };
 }
 

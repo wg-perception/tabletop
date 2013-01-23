@@ -34,6 +34,7 @@
  */
 
 #include <tabletop/table/tabletop_segmenter.h>
+#include <Eigen/Dense>
 
 namespace tabletop
 {

@@ -16,7 +16,8 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
 
     @classmethod
     def declare_cells(cls, _p):
-        return {'passthrough': ecto.Passthrough(),
+        return {'passthrough': ecto.PassthroughN(items={'K': 'The original calibration matrix',
+                                                        'points3d': 'The 3d points as cv::Mat_<cv::Vec3f>.'}),
                 'table_detector': TableDetector(),
                 'table_pose': CellInfo(TablePose),
                 'clusterer': Clusterer()
@@ -25,7 +26,7 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
     def declare_forwards(self, p):
         p = {'clusterer': 'all', 'table_detector': 'all'}
 
-        i = {'passthrough': [Forward('in', 'point_cloud')]}
+        i = {'passthrough': 'all'}
 
         o = {'table_detector': [Forward('clouds'),Forward('clouds_hull'), Forward('rotations'),
                                 Forward('translations')],
@@ -37,12 +38,13 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
 
     def connections(self, _p):
         # First find the table, then the pose
-        connections = [ self.passthrough['out'] >> self.table_detector['cloud'],
+        connections = [ self.passthrough['points3d', 'K'] >> self.table_detector['points3d', 'K'],
                         self.table_detector['rotations'] >> self.table_pose['rotations'],
                         self.table_detector['translations'] >> self.table_pose['translations'] ]
         # also find the clusters of points
-        connections += [ self.passthrough['out'] >> self.clusterer['cloud'],
-                       self.table_detector['clouds_hull'] >> self.clusterer['clouds_hull'] ]
+        connections += [ self.passthrough['points3d'] >> self.clusterer['points3d'],
+                         self.table_detector['table_coefficients'] >> self.clusterer['table_coefficients'],
+                         self.table_detector['table_mask'] >> self.clusterer['table_mask'] ]
 
         return connections
 
