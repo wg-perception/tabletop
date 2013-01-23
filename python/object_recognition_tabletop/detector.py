@@ -28,7 +28,7 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
 
         i = {'passthrough': 'all'}
 
-        o = {'table_detector': [Forward('clouds'),Forward('clouds_hull')],
+        o = {'table_detector': [Forward('clouds_hull')],
              'clusterer': [Forward('clusters')],
              'table_pose': [Forward('pose_results')]
              }

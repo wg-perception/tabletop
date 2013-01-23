@@ -52,7 +52,7 @@ class TablePublisher(ecto.BlackBox, SinkBase):
              'table_array': [Forward('topic_name', 'table_array', 'The array of found tables.', 'table_array')]
              }
 
-        i = {'table_msg_assembler': [Forward('clouds'), Forward('clouds_hull')],
+        i = {'table_msg_assembler': [Forward('clouds_hull')],
              'table_visualization_msg_assembler': [Forward('clusters'), Forward('table_array_msg')],
              'passthrough': [Forward('image_message'), Forward('pose_results')]}
 

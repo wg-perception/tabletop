@@ -76,7 +76,6 @@ namespace tabletop
 
       outputs.declare(&TableDetector::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.");
       outputs.declare(&TableDetector::table_mask_, "table_mask", "The mask of planar surfaces.");
-      outputs.declare(&TableDetector::clouds_out_, "clouds", "Samples that belong to the table.");
       outputs.declare(&TableDetector::clouds_hull_, "clouds_hull", "Hulls of the samples.");
     }
 
@@ -110,13 +109,6 @@ namespace tabletop
     plane_finder.set("sensor_error_a", 0.0075);
     plane_finder(*points3d_, normals, *table_mask_, plane_coefficients);
 
-    // Prepare the plane clusters
-    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clouds_out;
-    BOOST_FOREACH(const cv::Vec4f & plane_coefficient, plane_coefficients) {
-      pcl::PointCloud<PointT>::Ptr out(new pcl::PointCloud<PointT>);
-      clouds_out.push_back(out);
-    }
-
     // Figure out the points of each plane
     std::vector<std::vector<cv::Point2i> > points_for_hull(
       plane_coefficients.size());
@@ -134,9 +126,6 @@ namespace tabletop
           prev_index = 255;
           continue;
         }
-        // Add the point to the plane no matter what
-        const cv::Vec3f& point = *point3d;
-        clouds_out[index]->push_back(PointT(point[0], point[1], point[2]));
         // Add it to the points to compute the hull only if it is different for the previous one
         // or if it is the first/last one on a line
         if (index != prev_index) {
@@ -153,13 +142,9 @@ namespace tabletop
     }
 
     // Fill the outputs
-    clouds_out_->clear();
     clouds_hull_->clear();
     table_coefficients_->clear();
     for (int i = 0; i < points_for_hull.size(); ++i) {
-      // Copy the points out
-      clouds_out_->push_back(clouds_out[i]);
-
       // Compute the convex hull
       std::vector<cv::Point2i> hull;
       cv::convexHull(points_for_hull[i], hull);
@@ -193,8 +178,6 @@ namespace tabletop
     ecto::spore<cv::Mat> K_;
     /** The mask of the foundplanes */
     ecto::spore<cv::Mat> table_mask_;
-    /** The input cloud */
-    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_out_;
     /** The output cloud */
     ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
     /** The coefficients of the tables */
