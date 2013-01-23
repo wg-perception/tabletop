@@ -4,7 +4,7 @@ project(object_recognition_tabletop)
 find_package(catkin)
 
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
-find_package(catkin REQUIRED ecto ecto_pcl ecto_ros ecto_ros genmsg moveit_core moveit_msgs object_recognition_core
+find_package(catkin REQUIRED ecto ecto_pcl ecto_ros ecto_ros genmsg moveit_msgs object_recognition_core
                              object_recognition_msgs opencv_candidate pcl_ros rosconsole roscpp shape_msgs tf)
 catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
@@ -17,6 +17,7 @@ list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_naviga
 find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
 find_package(sql_database)
+find_package(moveit_core)
 list(APPEND catkin_LIBRARIES ${household_objects_database_LIBRARIES})
 list(APPEND catkin_LIBRARIES ${sql_database_LIBRARIES})
 list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
