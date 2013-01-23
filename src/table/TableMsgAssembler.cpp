@@ -148,9 +148,9 @@ private:
 
     //get the extents of the table
     table.x_min = std::numeric_limits<float>::max();
-    table.x_max = std::numeric_limits<float>::min();
+    table.x_max = -table.x_min;
     table.y_min = std::numeric_limits<float>::max();
-    table.y_max = std::numeric_limits<float>::min();
+    table.y_max = -table.y_min;
 
     for (size_t i = 0; i < convex_hull.points.size(); ++i) {
       cv::Vec3f point = R.t() * cv::Vec3f(convex_hull.points[i].x, convex_hull.points[i].y, convex_hull.points[i].z) - R.t() * T;
