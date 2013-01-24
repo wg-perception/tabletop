@@ -34,20 +34,13 @@
  */
 
 #include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <ecto/ecto.hpp>
-
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd/rgbd.hpp>
 
 using ecto::tendrils;
-
-typedef pcl::PointXYZ PointT;
-typedef pcl::PointCloud<PointT> Cloud;
 
 namespace tabletop
 {
@@ -156,10 +149,10 @@ namespace tabletop
         table_coefficients_->push_back(-plane_coefficients[i]);
 
       // Add the point cloud
-      pcl::PointCloud<PointT>::Ptr out(new pcl::PointCloud<PointT>);
+      std::vector<cv::Vec3f> out;
+      out.reserve(hull.size());
       BOOST_FOREACH(const cv::Point2i & point2d, hull) {
-        const cv::Vec3f& point3d = (*points3d_).at<cv::Vec3f>(point2d.y, point2d.x);
-        out->push_back(PointT(point3d[0], point3d[1], point3d[2]));
+        out.push_back((*points3d_).at<cv::Vec3f>(point2d.y, point2d.x));
       }
       clouds_hull_->push_back(out);
     }
@@ -179,7 +172,7 @@ namespace tabletop
     /** The mask of the foundplanes */
     ecto::spore<cv::Mat> table_mask_;
     /** The output cloud */
-    ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
+    ecto::spore<std::vector<std::vector<cv::Vec3f> > > clouds_hull_;
     /** The coefficients of the tables */
     ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
     /** The frame id of the vertical direction */

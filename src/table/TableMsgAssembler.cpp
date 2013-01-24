@@ -35,21 +35,12 @@
 
 #include <opencv2/core/core.hpp>
 
-#include <fstream>
-#include <iostream>
-
 #include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <ecto/ecto.hpp>
-
-#include <pcl/ModelCoefficients.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/PointIndices.h>
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
@@ -59,6 +50,9 @@
 
 #include <tabletop_object_detector/marker_generator.h>
 #include <object_recognition_core/common/pose_result.h>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 using object_recognition_core::common::PoseResult;
 
@@ -86,8 +80,6 @@ struct TableMsgAssembler {
    */
   int
   process(const tendrils& inputs, const tendrils& outputs) {
-    typedef pcl::PointXYZ Point;
-
     std::string frame_id;
     if (*image_message_)
       frame_id = (*image_message_)->header.frame_id;
@@ -99,15 +91,15 @@ struct TableMsgAssembler {
 
     for (size_t table_index = 0; table_index < pose_results_->size(); ++table_index) {
       const PoseResult& pose_result = (*pose_results_)[table_index];
-      pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_hull = (*clouds_hull_)[table_index];
-
       cv::Matx33f R = pose_result.R<cv::Mat_<float> >();
       cv::Vec3f T = pose_result.T<cv::Mat_<float> >();
 
-      object_recognition_msgs::Table table = getTable<pcl::PointCloud<pcl::PointXYZ> >(message_header, R, T, *cloud_hull);
+      const std::vector<cv::Vec3f>& cloud_hull = (*clouds_hull_)[table_index];
+
+      object_recognition_msgs::Table table = getTable(message_header, cloud_hull, R, T);
 
       // ---[ Add the convex hull as a triangle mesh to the Table message
-      addConvexHullTable<pcl::PointCloud<pcl::PointXYZ> >(table, *cloud_hull, R, T);
+      addConvexHullTable(table, cloud_hull, R, T);
       table_array_msg.tables.push_back(table);
     }
 
@@ -116,20 +108,19 @@ struct TableMsgAssembler {
     return ecto::OK;
   }
 private:
-  template<class PointCloudType>
   void
-  addConvexHullTable(object_recognition_msgs::Table& table, const PointCloudType& convex_hull, const cv::Matx33f& R, const cv::Vec3f& T) {
+  addConvexHullTable(object_recognition_msgs::Table& table, const std::vector<cv::Vec3f>& convex_hull, const cv::Matx33f& R, const cv::Vec3f& T) {
     //create a triangle mesh out of the convex hull points and add it to the table message
     //Make sure the points belong to the table frame
-    for (size_t i = 0; i < convex_hull.points.size(); i++) {
+    for (size_t i = 0; i < convex_hull.size(); i++) {
       geometry_msgs::Point vertex;
-      cv::Vec3f point = R.t() * cv::Vec3f(convex_hull.points[i].x, convex_hull.points[i].y, convex_hull.points[i].z) - R.t() * T;
+      cv::Vec3f point = R.t() * (convex_hull[i] - T);
       vertex.x = point[0];
       vertex.y = point[1];
       vertex.z = point[2];
       table.convex_hull.vertices.push_back(vertex);
 
-      if (i == 0 || i == convex_hull.points.size() - 1)
+      if (i == 0 || i == convex_hull.size() - 1)
         continue;
 
       shape_msgs::MeshTriangle tri;
@@ -140,10 +131,8 @@ private:
     }
   }
 
-  template<class PointCloudType>
   object_recognition_msgs::Table
-  getTable(const std_msgs::Header& cloud_header, const cv::Matx33f& R, const cv::Vec3f& T,
-           const PointCloudType& convex_hull) {
+  getTable(const std_msgs::Header& cloud_header, const std::vector<cv::Vec3f>& convex_hull, const cv::Matx33f& R, const cv::Vec3f& T) {
     object_recognition_msgs::Table table;
 
     //get the extents of the table
@@ -152,8 +141,8 @@ private:
     table.y_min = std::numeric_limits<float>::max();
     table.y_max = -table.y_min;
 
-    for (size_t i = 0; i < convex_hull.points.size(); ++i) {
-      cv::Vec3f point = R.t() * cv::Vec3f(convex_hull.points[i].x, convex_hull.points[i].y, convex_hull.points[i].z) - R.t() * T;
+    for (size_t i = 0; i < convex_hull.size(); ++i) {
+      cv::Vec3f point = R.t() * (convex_hull[i] - T);
       if (point[0] < table.x_min && point[0] > -3.0)
         table.x_min = point[0];
       if (point[0] > table.x_max && point[0] < 3.0)
@@ -183,7 +172,7 @@ private:
   }
 
   /** flag indicating whether we run in debug mode */
-  ecto::spore<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > clouds_hull_;
+  ecto::spore<std::vector<std::vector<cv::Vec3f> > > clouds_hull_;
 
   //! The current marker being published
   ecto::spore<sensor_msgs::ImageConstPtr> image_message_;
