@@ -90,8 +90,8 @@ struct TableMsgAssembler {
 
     for (size_t table_index = 0; table_index < pose_results_->size(); ++table_index) {
       const PoseResult& pose_result = (*pose_results_)[table_index];
-      cv::Matx33f R = pose_result.R<cv::Mat_<float> >();
-      cv::Vec3f T = pose_result.T<cv::Mat_<float> >();
+      cv::Matx33f R = pose_result.R<cv::Matx33f>();
+      cv::Vec3f T = pose_result.T<cv::Vec3f>();
 
       const std::vector<cv::Vec3f>& cloud_hull = (*clouds_hull_)[table_index];
 
