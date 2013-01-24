@@ -1,15 +1,9 @@
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
 
-if (ROS_FUERTE_FOUND)
-install(TARGETS marker_generator
-        DESTINATION lib
-)
-else()
 install(TARGETS marker_generator
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
-endif()
 
 if (${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
 return()

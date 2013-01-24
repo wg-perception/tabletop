@@ -41,8 +41,6 @@
 
 #include <geometry_msgs/Pose.h>
 
-#include <tf/transform_datatypes.h>
-
 #include "tabletop_object_detector/model_fitter.h"
 
 namespace tabletop_object_detector {
