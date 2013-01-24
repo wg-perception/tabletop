@@ -33,15 +33,13 @@
 
 // Author(s): Marius Muja and Matei Ciocarlie
 
-#include "tabletop_object_detector/marker_generator.h"
+#include <tabletop_object_detector/marker_generator.h>
 
 //for random colors
 #include <stdlib.h>
 #include <time.h>
 
 #include <geometry_msgs/Pose.h>
-
-#include "tabletop_object_detector/model_fitter.h"
 
 namespace tabletop_object_detector {
 

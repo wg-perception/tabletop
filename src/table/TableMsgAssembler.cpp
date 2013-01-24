@@ -48,7 +48,6 @@
 #include <object_recognition_msgs/Table.h>
 #include <object_recognition_msgs/TableArray.h>
 
-#include <tabletop_object_detector/marker_generator.h>
 #include <object_recognition_core/common/pose_result.h>
 
 #include <Eigen/Core>
