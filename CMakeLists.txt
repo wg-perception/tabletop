@@ -52,8 +52,9 @@ set(CATKIN_PACKAGE_PYTHON_DESTINATION ${INSTALLED_PYTHONPATH}/${PROJECT_NAME}/)
 set(CATKIN_PACKAGE_SHARE_DESTINATION share/${PROJECT_NAME}/)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
+if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
+find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
 find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
 find_library(rosconsole_LIBRARIES rosconsole /opt/ros/fuerte/lib/)
@@ -83,6 +84,7 @@ list(APPEND catkin_LIBRARIES ${distance_field_LIBRARIES}
                              ${roscpp_serialization_LIBRARIES}
                              ${rostime_LIBRARIES}
 )
+endif()
 endif()
 
 # deal with Python
