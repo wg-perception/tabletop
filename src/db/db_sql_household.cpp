@@ -117,9 +117,8 @@ ObjectDbSqlHousehold::set_attachment_stream(const DocumentId & document_id, cons
 }
 
 void
-ObjectDbSqlHousehold::get_attachment_stream(const DocumentId & document_id, const std::string& attachment_name,
-                                            const std::string& content_type, std::ostream& stream,
-                                            RevisionId & revision_id)
+ObjectDbSqlHousehold::get_attachment_stream(const DocumentId & document_id, const RevisionId & revision_id, const std::string& attachment_name,
+                                            const std::string& content_type, std::ostream& stream)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
