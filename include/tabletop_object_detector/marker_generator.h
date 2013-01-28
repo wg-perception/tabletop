@@ -38,7 +38,7 @@
 
 #include <vector>
 
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <opencv2/core/core.hpp>
 
 #include <visualization_msgs/Marker.h>
 #include <shape_msgs/Mesh.h>
@@ -57,8 +57,7 @@ class MarkerGenerator {
   //! Create a line strip marker that goes around a detected table
   static visualization_msgs::Marker getTableMarker(float xmin, float xmax, float ymin, float ymax);
   //! A marker with all the points in a cloud in a random color
-  template <class PointCloudType>
-  static visualization_msgs::Marker getCloudMarker(const PointCloudType& cloud);
+  static visualization_msgs::Marker getCloudMarker(const std::vector<cv::Vec3f>& cloud);
   //! A marker showing where a fit model is believed to be
   static visualization_msgs::Marker getFitMarker(const shape_msgs::Mesh &mesh, double rank);
   //! A marker showing where a convex hull table is
@@ -67,47 +66,6 @@ class MarkerGenerator {
   static visualization_msgs::Marker createMarker(std::string frame_id, double duration, double xdim, double ydim, double zdim,
 					  double r, double g, double b, int type, int id, std::string ns, geometry_msgs::Pose pose);
 };
-
-/*!
-  It is the responsibility of the caller to set the appropriate pose for the marker so that
-  it shows up in the right reference frame.
-*/
-template <class PointCloudType>
-visualization_msgs::Marker MarkerGenerator::getCloudMarker(const PointCloudType& cloud)
-{
-  static bool first_time = true;
-  if (first_time) {
-    srand ( time(NULL) );
-    first_time = false;
-  }
-
-  //create the marker
-  visualization_msgs::Marker marker;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.lifetime = ros::Duration(5);
-
-  marker.type = visualization_msgs::Marker::POINTS;
-  marker.scale.x = 0.002;
-  marker.scale.y = 0.002;
-  marker.scale.z = 1.0;
-
-  marker.color.r = ((double)rand())/RAND_MAX;
-  marker.color.g = ((double)rand())/RAND_MAX;
-  marker.color.b = ((double)rand())/RAND_MAX;
-  marker.color.a = 1.0;
-
-  for(size_t i=0; i<cloud.points.size(); i++) {
-    geometry_msgs::Point p;
-    p.x = cloud.points[i].x;
-    p.y = cloud.points[i].y;
-    p.z = cloud.points[i].z;
-    marker.points.push_back(p);
-  }
-
-  //the caller must decide the header; we are done here
-  return marker;
-}
-
 
 }//namespace
 

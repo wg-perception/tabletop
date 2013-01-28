@@ -58,8 +58,8 @@ class TabletopObjectDetector(ecto.BlackBox, DetectorBase):
     def declare_cells(self, _p):
         from object_recognition_tabletop.ecto_cells import tabletop_object
 
-        return {'main': tabletop_object.ObjectRecognizer(object_ids=self._params['object_ids'],
-                                                         db=ObjectDb(ObjectDbParameters(self._params['db'])))}
+        return {'main': tabletop_object.ObjectRecognizer(object_ids=self._params['json_object_ids'],
+                                                         db=ObjectDb(ObjectDbParameters(self._params['json_db'])))}
 
     def declare_forwards(self, p):
         return ({},{'main':'all'},{'main':'all'})

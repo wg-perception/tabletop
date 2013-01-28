@@ -54,6 +54,8 @@
 #include <household_objects_database/objects_database.h>
 #include <tabletop/object/tabletop_object_detector.h>
 
+#include <opencv2/core/core.hpp>
+
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
 #include <object_recognition_msgs/shape_conversion.h>
@@ -61,6 +63,31 @@
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
+
+/**
+ * If the equation of the plane is ax+by+cz+d=0, the pose (R,t) is such that it takes the horizontal plane (z=0)
+ * to the current equation
+ */
+void
+getPlaneTransform(const cv::Vec4f& plane_coefficients, cv::Matx33f& rotation, cv::Vec3f& translation)
+{
+  double a = plane_coefficients[0], b = plane_coefficients[1], c = plane_coefficients[2], d = plane_coefficients[3];
+  // assume plane coefficients are normalized
+  translation = cv::Vec3f(-a * d, -b * d, -c * d);
+  cv::Vec3f z(a, b, c);
+
+  //try to align the x axis with the x axis of the original frame
+  //or the y axis if z and x are too close too each other
+  cv::Vec3f x(1, 0, 0);
+  if (fabs(z.dot(x)) > 1.0 - 1.0e-4)
+    x = cv::Vec3f(0, 1, 0);
+  cv::Vec3f y = z.cross(x);
+  x = y.cross(z);
+  x = x / norm(x);
+  y = y / norm(y);
+
+  rotation = cv::Matx33f(x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]);
+}
 
 namespace tabletop
 {
@@ -113,10 +140,7 @@ namespace tabletop
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
       inputs.declare(&ObjectRecognizer::clusters_, "clusters", "The object clusters.").required(true);
-      inputs.declare(&ObjectRecognizer::table_rotations_, "rotations", "The pose rotations of the tables.").required(
-          true);
-      inputs.declare(&ObjectRecognizer::table_translations_, "translations", "The pose translations of the tables").required(
-          true);
+      inputs.declare(&ObjectRecognizer::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.").required(true);
 
       outputs.declare(&ObjectRecognizer::pose_results_, "pose_results", "The results of object recognition");
     }
@@ -148,26 +172,31 @@ namespace tabletop
       // Map to store the transformation for each cluster (table_index)
       std::map<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t> cluster_table;
 
+      std::vector<cv::Vec3f> translations(clusters_->size());
+      std::vector<cv::Matx33f> rotations(clusters_->size());
       for (size_t table_index = 0; table_index < clusters_->size(); ++table_index)
       {
-        Eigen::Quaternionf quat((*table_rotations_)[table_index]);
+        getPlaneTransform((*table_coefficients_)[table_index], rotations[table_index], translations[table_index]);
 
         // Make the clusters be in the table frame
         size_t n_clusters = (*clusters_)[table_index].size();
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters(n_clusters);
 
-		Eigen::Matrix4f t;
-		t.block(0, 0, 3, 3) = (*table_rotations_)[table_index].transpose();
-		t.block(0, 3, 3, 1) = -(*table_rotations_)[table_index].transpose() * (*table_translations_)[table_index];
+        cv::Matx33f Rinv = rotations[table_index].t();
+        cv::Vec3f Tinv = -Rinv*translations[table_index];
 
-		for (size_t cluster_index = 0; cluster_index < n_clusters; ++cluster_index)
-		{
-		  clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
-		  pcl::transformPointCloud(*((*clusters_)[table_index][cluster_index]), *(clusters[cluster_index]), t);
-		  cluster_table.insert(std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t>(clusters[cluster_index], table_index));
-		}
+        for (size_t cluster_index = 0; cluster_index < n_clusters; ++cluster_index)
+        {
+          clusters[cluster_index] = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+          for(size_t i = 0; i < (*clusters_)[table_index][cluster_index].size(); ++i)
+          {
+            cv::Vec3f res = Rinv*(*clusters_)[table_index][cluster_index][i] + Tinv;
+            clusters[cluster_index]->push_back(pcl::PointXYZ(res[0], res[1], res[2]));
+          }
+          cluster_table.insert(std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t>(clusters[cluster_index], table_index));
+        }
 
-		clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
+	clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
       }
         object_recognizer_.objectDetection<pcl::PointXYZ>(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
 
@@ -185,14 +214,14 @@ namespace tabletop
 
           // Add the pose
           const geometry_msgs::Pose &pose = result.pose_;
-          Eigen::Vector3f T(pose.position.x, pose.position.y, pose.position.z);
+          cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
           Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
 
-          Eigen::Vector3f new_T = (*table_rotations_)[table_index] * T + (*table_translations_)[table_index];
-          pose_result.set_T(new_T);
+          cv::Vec3f new_T = rotations[table_index] * T + translations[table_index];
+          pose_result.set_T(cv::Mat(new_T));
 
           pose_result.set_R(quat);
-          Eigen::Matrix3f R = (*table_rotations_)[table_index] * pose_result.R<Eigen::Matrix3f>();
+          cv::Mat R = cv::Mat(rotations[table_index] * pose_result.R<cv::Matx33f>());
           pose_result.set_R(R);
           pose_result.set_confidence(result.confidence_);
 
@@ -203,17 +232,7 @@ namespace tabletop
 	      ros_clouds[0] = cluster_cloud;
 	      pose_result.set_clouds(ros_clouds);
 
-          /*
-          typedef std::vector<pcl::PointCloud<pcl::PointXYZ>, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZ> > > CloudVec;          
-          CloudVec point_clouds(1);
-          point_clouds[0] = *(result.cloud_);
-          CloudVec *point_clouds_ptr = (CloudVec *) malloc(sizeof(CloudVec));
-          *point_clouds_ptr = point_clouds;
-          pose_result.set_point_clouds(reinterpret_cast<char*>(point_clouds_ptr));
-          */
-
           pose_results_->push_back(pose_result);
-//        }
       }
 
       return ecto::OK;
@@ -225,11 +244,9 @@ namespace tabletop
     /** The resulting poses of the objects */
     ecto::spore<std::vector<PoseResult> > pose_results_;
     /** The input clusters */
-    ecto::spore<std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > > clusters_;
-    /** The rotations of the tables */
-    ecto::spore<std::vector<Eigen::Matrix3f> > table_rotations_;
-    /** The translations of the tables */
-    ecto::spore<std::vector<Eigen::Vector3f> > table_translations_;
+    ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters_;
+    /** The coefficients of the tables */
+    ecto::spore<std::vector<cv::Vec4f> > table_coefficients_;
     /** The number of models to fit to each cluster */
     float confidence_cutoff_;
     bool perform_fit_merge_;

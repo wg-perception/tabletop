@@ -176,4 +176,43 @@ visualization_msgs::Marker MarkerGenerator::createMarker(std::string frame_id, d
 }
 
 
+/*!
+  It is the responsibility of the caller to set the appropriate pose for the marker so that
+  it shows up in the right reference frame.
+*/
+visualization_msgs::Marker MarkerGenerator::getCloudMarker(const std::vector<cv::Vec3f>& cloud)
+{
+  static bool first_time = true;
+  if (first_time) {
+    srand ( time(NULL) );
+    first_time = false;
+  }
+
+  //create the marker
+  visualization_msgs::Marker marker;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.lifetime = ros::Duration(5);
+
+  marker.type = visualization_msgs::Marker::POINTS;
+  marker.scale.x = 0.002;
+  marker.scale.y = 0.002;
+  marker.scale.z = 1.0;
+
+  marker.color.r = ((double)rand())/RAND_MAX;
+  marker.color.g = ((double)rand())/RAND_MAX;
+  marker.color.b = ((double)rand())/RAND_MAX;
+  marker.color.a = 1.0;
+
+  for(size_t i=0; i<cloud.size(); i++) {
+    geometry_msgs::Point p;
+    p.x = cloud[i][0];
+    p.y = cloud[i][1];
+    p.z = cloud[i][2];
+    marker.points.push_back(p);
+  }
+
+  //the caller must decide the header; we are done here
+  return marker;
+}
+
 } //namespace tabletop_object_detector

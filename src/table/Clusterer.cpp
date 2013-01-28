@@ -41,14 +41,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd/rgbd.hpp>
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
 using ecto::tendrils;
-
-//typedef pcl::PointXYZRGBA PointT;
-typedef pcl::PointXYZ PointT;
-typedef pcl::PointCloud<PointT> Cloud;
 
 float pointDistanceSq(const cv::Vec3f& vec1, const cv::Vec3f& vec2)
 {
@@ -134,7 +127,7 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
         if (plane_closest < 0)
           continue;
         // Create a new cluster
-        pcl::PointCloud<PointT>::Ptr cluster3d(new pcl::PointCloud<PointT>);
+        std::vector<cv::Vec3f> cluster3d;
 
         // Now, proceed by region growing to find the rest of the object
         std::list<cv::Point> cluster2d(1, cv::Point(x, y));
@@ -154,13 +147,13 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
                 // Only add the point if it is within the plane distance boundaries
                 float dist = pointPlaneDistance(point3d_2, (*table_coefficients_)[plane_closest]);
                 if ((*table_z_filter_min_ < dist) && (dist < *table_z_filter_max_))
-                  cluster3d->push_back(PointT(point3d_2[0], point3d_2[1], point3d_2[2]));
+                  cluster3d.push_back(point3d_2);
               }
             }
           cluster2d.pop_front();
         }
 
-        if (cluster3d->size() < 100)
+        if (cluster3d.size() < 100)
           continue;
         (*clusters_)[plane_closest].push_back(cluster3d);
       }
@@ -184,7 +177,7 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
     /** The mask of the different planes */
     ecto::spore<cv::Mat> mask_;
     /** The resulting clusters: for each table, return a vector of clusters */
-    ecto::spore<std::vector<std::vector<pcl::PointCloud<PointT>::Ptr> > > clusters_;
+    ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters_;
   };
 
 ECTO_CELL(tabletop_table, Clusterer, "Clusterer",

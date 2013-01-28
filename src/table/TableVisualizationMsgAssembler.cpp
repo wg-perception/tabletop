@@ -45,9 +45,6 @@
 
 #include <ecto/ecto.hpp>
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
 #include <shape_msgs/Mesh.h>
@@ -57,6 +54,9 @@
 #include <object_recognition_msgs/TableArray.h>
 
 #include <tabletop_object_detector/marker_generator.h>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 using object_recognition_core::common::PoseResult;
 
@@ -187,10 +187,10 @@ struct TableVisualizationMsgAssembler {
       const object_recognition_msgs::Table& table =
         (*table_array_msg_)->tables[table_index];
 
-      getTable<sensor_msgs::PointCloud>(table, message_header);
+      getTable(table, message_header);
 
       // ---[ Add the convex hull as a triangle mesh to the Table message
-      addConvexHullTable<sensor_msgs::PointCloud>(table);
+      addConvexHullTable(table);
 
       // Publish each clusters
       addClusterMarkers((*clusters_)[table_index],
@@ -213,7 +213,6 @@ struct TableVisualizationMsgAssembler {
     return ecto::OK;
   }
 private:
-  template<class PointCloudType>
   void addConvexHullTable(const object_recognition_msgs::Table& table) {
     //create a triangle mesh out of the convex hull points and add it to the table message
     visualization_msgs::Marker marker_hull;
@@ -247,7 +246,6 @@ private:
                                      "tabletop_node", marker_pose));
   }
 
-  template<class PointCloudType>
   void getTable(const object_recognition_msgs::Table& table,
                 const std_msgs::Header& cloud_header) {
     visualization_msgs::Marker marker_table =
@@ -260,12 +258,11 @@ private:
   }
 
   void addClusterMarkers(
-    const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters,
+    const std::vector<std::vector<cv::Vec3f> > &clusters,
     const std_msgs::Header& cloud_header) {
     for (size_t i = 0; i < clusters.size(); i++) {
       visualization_msgs::Marker cloud_marker =
-        tabletop_object_detector::MarkerGenerator::getCloudMarker(
-          *(clusters[i]));
+        tabletop_object_detector::MarkerGenerator::getCloudMarker(clusters[i]);
       cloud_marker.header = cloud_header;
       cloud_marker.pose.orientation.w = 1;
       cloud_marker.ns = "tabletop_node";
@@ -285,7 +282,7 @@ private:
   MarkerArrayWrapper marker_array_origin_;
   MarkerArrayWrapper marker_array_table_;
   /** For each table, a vector of clusters */
-  ecto::spore<std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> > > clusters_;
+  ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters_;
 };
 
 ECTO_CELL(tabletop_table, TableVisualizationMsgAssembler,
