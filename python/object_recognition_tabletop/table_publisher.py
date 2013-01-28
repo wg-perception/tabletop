@@ -8,6 +8,7 @@ from object_recognition_tabletop.ecto_cells.tabletop_table import TableMsgAssemb
 from object_recognition_msgs.ecto_cells.ecto_object_recognition_msgs import Publisher_TableArray
 import ecto
 from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
+from object_recognition_ros import init_ros
 
 MarkerPub = Publisher_Marker
 MarkerArrayPub = Publisher_MarkerArray
@@ -19,6 +20,7 @@ class TablePublisher(ecto.BlackBox, SinkBase):
     Class publishing the different results of tabletop
     """
     def __init__(self, *args, **kwargs):
+        init_ros()
         ecto.BlackBox.__init__(self, *args, **kwargs)
         SinkBase.__init__(self)
 
