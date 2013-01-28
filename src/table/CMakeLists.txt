@@ -7,13 +7,13 @@ endif()
 
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
                            ${OpenCV_INCLUDE_DIRS}
-                           ${PCL_INCLUDE_DIRS}
 )
 
 # deal with the detection TOD module
 ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
                           INSTALL
-  Clusterer.cpp
+                          ClusterDrawer.cpp
+                          Clusterer.cpp
   module.cpp
   TableDetector.cpp
   TablePose.cpp
@@ -23,6 +23,5 @@ ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
 link_ecto(tabletop_table ${Boost_LIBRARIES}
                          ${catkin_LIBRARIES}
                          ${OpenCV_LIBRARIES}
-                         ${PCL_LIBRARIES}
                          marker_generator
 )

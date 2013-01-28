@@ -1,0 +1,22 @@
+source1:
+  type: OpenNI
+  module: 'object_recognition_core.io'
+
+sink1:
+  type: TableVisualizer
+  module: 'object_recognition_tabletop'
+  inputs: [source1]
+
+pipeline1:
+  type: TabletopTableDetector
+  module: 'object_recognition_tabletop'
+  subtype: ''
+  inputs: [source1]
+  outputs: [sink1]
+  parameters:
+    table_detector:
+      min_table_size: 4000
+      plane_threshold: 0.01
+    #clusterer:
+    #  table_z_filter_max: 0.35
+    #  table_z_filter_min: 0.025

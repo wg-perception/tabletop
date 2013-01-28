@@ -77,7 +77,8 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
       inputs.declare(&Clusterer::mask_, "table_mask", "The mask of the different planes.");
       inputs.declare(&Clusterer::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.");
 
-      outputs.declare(&Clusterer::clusters_, "clusters", "For each table, a vector of clusters.");
+      outputs.declare(&Clusterer::clusters2d_, "clusters2d", "For each table, a vector of 2d clusters.");
+      outputs.declare(&Clusterer::clusters3d_, "clusters3d", "For each table, a vector of 3d clusters.");
     }
 
     /** Get the 2d keypoints and figure out their 3D position from the depth map
@@ -88,8 +89,10 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-    clusters_->clear();
-    clusters_->resize(table_coefficients_->size());
+    clusters2d_->clear();
+    clusters2d_->resize(table_coefficients_->size());
+    clusters3d_->clear();
+    clusters3d_->resize(table_coefficients_->size());
 
     const cv::Mat_<cv::Vec3f> &points3d = *points3d_;
 
@@ -98,9 +101,6 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
     cv::Mat_<uchar> mask_binary = (*mask_) != 255, object_seeds;
     cv::dilate(mask_binary, object_seeds, cv::Mat());
     object_seeds = object_seeds - mask_binary;
-
-    clusters_->clear();
-    clusters_->resize(table_coefficients_->size());
 
     // For each potential pixel ...
     cv::Mat_<uchar> checked = mask_binary.clone();
@@ -127,13 +127,14 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
         if (plane_closest < 0)
           continue;
         // Create a new cluster
+        std::vector<cv::Vec2f> cluster2d;
         std::vector<cv::Vec3f> cluster3d;
 
         // Now, proceed by region growing to find the rest of the object
-        std::list<cv::Point> cluster2d(1, cv::Point(x, y));
-        while (!cluster2d.empty()) {
+        std::list<cv::Point> point_list(1, cv::Point(x, y));
+        while (!point_list.empty()) {
           // Look at the neighboring points
-          const cv::Point& point2d = cluster2d.front();
+          const cv::Point& point2d = point_list.front();
           const cv::Vec3f& point3d_1 = points3d(point2d.y, point2d.x);
           for (int yy = point2d.y - 1; yy <= point2d.y + 1; ++yy)
             for (int xx = point2d.x - 1; xx <= point2d.x + 1; ++xx) {
@@ -143,19 +144,20 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
               const cv::Vec3f& point3d_2 = points3d(yy, xx);
               if (pointDistanceSq(point3d_1, point3d_2) < (*cluster_distance_) * (*cluster_distance_)) {
                 checked(yy, xx) = 1;
-                cluster2d.push_back(cv::Point(xx, yy));
+                point_list.push_back(cv::Point(xx, yy));
                 // Only add the point if it is within the plane distance boundaries
                 float dist = pointPlaneDistance(point3d_2, (*table_coefficients_)[plane_closest]);
                 if ((*table_z_filter_min_ < dist) && (dist < *table_z_filter_max_))
                   cluster3d.push_back(point3d_2);
               }
             }
-          cluster2d.pop_front();
+          point_list.pop_front();
         }
 
         if (cluster3d.size() < 100)
           continue;
-        (*clusters_)[plane_closest].push_back(cluster3d);
+        (*clusters2d_)[plane_closest].push_back(cluster2d);
+        (*clusters3d_)[plane_closest].push_back(cluster3d);
       }
     }
 
@@ -177,7 +179,8 @@ float pointPlaneDistance(const cv::Vec3f& vec, const cv::Vec4f& plane)
     /** The mask of the different planes */
     ecto::spore<cv::Mat> mask_;
     /** The resulting clusters: for each table, return a vector of clusters */
-    ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters_;
+    ecto::spore<std::vector<std::vector<std::vector<cv::Vec2f> > > > clusters2d_;
+    ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters3d_;
   };
 
 ECTO_CELL(tabletop_table, Clusterer, "Clusterer",

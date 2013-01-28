@@ -139,7 +139,7 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&ObjectRecognizer::clusters_, "clusters", "The object clusters.").required(true);
+      inputs.declare(&ObjectRecognizer::clusters_, "clusters3d", "The object clusters.").required(true);
       inputs.declare(&ObjectRecognizer::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.").required(true);
 
       outputs.declare(&ObjectRecognizer::pose_results_, "pose_results", "The results of object recognition");
