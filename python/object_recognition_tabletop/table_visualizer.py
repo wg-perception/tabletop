@@ -5,8 +5,7 @@ Module defining a cell to visualize the output of the plane/cluster finder
 import ecto
 from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
 from ecto_opencv.highgui import imshow
-from ecto_opencv.rgbd import PlaneDrawer
-from object_recognition_tabletop.ecto_cells.tabletop_table import ClusterDrawer
+from ecto_opencv.rgbd import ClusterDrawer, PlaneDrawer
 
 ########################################################################################################################
 

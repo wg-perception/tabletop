@@ -6,7 +6,8 @@ Module defining the transparent objects detector to find objects in a scene
 from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
 from object_recognition_core.db import ObjectDb, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectorBase
-from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, Clusterer, TableDetector
+from ecto_opencv.rgbd import OnPlaneClusterer
+from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, TableDetector
 import ecto
 
 class TabletopTableDetector(ecto.BlackBox, DetectorBase):
@@ -20,7 +21,7 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
                                                         'points3d': 'The 3d points as cv::Mat_<cv::Vec3f>.'}),
                 'table_detector': TableDetector(),
                 'table_pose': CellInfo(TablePose),
-                'clusterer': Clusterer()
+                'clusterer': OnPlaneClusterer()
                 }
 
     def declare_forwards(self, p):

@@ -12,8 +12,6 @@ include_directories(SYSTEM ${catkin_INCLUDE_DIRS}
 # deal with the detection TOD module
 ectomodule(tabletop_table DESTINATION ${PROJECT_NAME}/ecto_cells
                           INSTALL
-                          ClusterDrawer.cpp
-                          Clusterer.cpp
   module.cpp
   TableDetector.cpp
   TablePose.cpp
