@@ -88,7 +88,8 @@ namespace tabletop
     }
 
     // Compute the normals
-    cv::Mat normals = normal_computer_(*points3d_);
+    cv::Mat normals;
+    normal_computer_(*points3d_, normals);
     std::vector<cv::Mat> channels;
     cv::split(normals, channels);
     cv::Mat channel_view;
