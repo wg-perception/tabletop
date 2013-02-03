@@ -39,7 +39,7 @@ if __name__ == '__main__':
     connections = [ source['image'] >> plane_finder['image'],
                     source['depth_raw'] >> depth_to_3d['depth'],
                     source['K'] >> depth_to_3d['K'],
-                    depth_to_3d['points3d'] >> plane_finder['point3d'],
+                    depth_to_3d['points3d'] >> plane_finder['points3d'],
                     source['K'] >> plane_finder['K'] ]
     connections += [plane_finder['image'] >> imshow(name='hulls')[:],
                     source['image'] >> imshow(name='original')[:]]
