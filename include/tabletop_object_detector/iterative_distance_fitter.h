@@ -133,7 +133,11 @@ double IterativeTranslationFitter::getFitScoreAndGradient(const PointCloudType& 
 					  voxel.closest_point_[1],
 					  voxel.closest_point_[2],
 					  cx,cy,cz);
+#if ROS_GROOVY_OR_ABOVE_FOUND
+	val = distance_voxel_grid_->getDistance(x,y,z);
+#else
 	val = distance_voxel_grid_->getDistanceFromCell(x,y,z);
+#endif
 	vector.x += (cx-wx);
 	vector.y += (cy-wy);
 	vector.z += (cz-wz);
