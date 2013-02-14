@@ -10,10 +10,6 @@ catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
 add_definitions(-DPCL_VERSION_GE_160=1)
 
-list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                                /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
-                                /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-)
 find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
 if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
 find_package(moveit_core)
@@ -26,7 +22,7 @@ list(APPEND catkin_LIBRARIES ${household_objects_database_LIBRARIES}
                              ${sql_database_LIBRARIES}
                              ${tf_LIBRARIES}
 )
-list(APPEND catkin_INCLUDE_DIRS /opt/ros/groovy/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
+list(APPEND catkin_INCLUDE_DIRS
                                 /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
                                 /opt/ros/groovy/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
                                 /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/

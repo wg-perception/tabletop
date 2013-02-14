@@ -58,7 +58,9 @@
 
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
+#if not ROS_GROOVY_OR_ABOVE_FOUND
 #include <object_recognition_msgs/shape_conversion.h>
+#endif
 
 using object_recognition_core::common::PoseResult;
 
@@ -119,12 +121,20 @@ namespace tabletop
       for (size_t i = 0; i < models.size(); i++)
       {
         int model_id = models[i]->id_.data();
+#if ROS_GROOVY_OR_ABOVE_FOUND
+        shape_msgs::Mesh mesh;
+#else
         arm_navigation_msgs::Shape mesh;
+#endif
 
         if (!database->getScaledModelMesh(model_id, mesh))
           continue;
 
+#if ROS_GROOVY_OR_ABOVE_FOUND
+        object_recognizer_.addObject(model_id, mesh);
+#else
         object_recognizer_.addObject(model_id, an_shape_to_mesh(mesh));
+#endif
       }
     }
 
