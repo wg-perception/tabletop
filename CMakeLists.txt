@@ -113,6 +113,7 @@ add_subdirectory(test)
 
 # add the docs
 catkin_doxygen(object_recognition_tabletop-doxygen ${CMAKE_CURRENT_SOURCE_DIR}/include)
+ecto_sphinx(${CMAKE_CURRENT_SOURCE_DIR}/doc/source doc)
 
 # install the configuration files
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/conf

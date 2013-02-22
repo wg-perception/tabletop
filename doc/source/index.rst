@@ -1,3 +1,5 @@
+:orphan:
+
 .. _tabletop:
 
 object_recognition_tabletop: Tabletop Object Recognition
