@@ -1,5 +1,6 @@
 add_library(marker_generator SHARED marker_generator.cpp)
 add_dependencies(marker_generator tabletop_gencpp)
+target_link_libraries(marker_generator ${catkin_LIBRARIES})
 
 install(TARGETS marker_generator
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
