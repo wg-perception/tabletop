@@ -62,6 +62,8 @@
 #include <object_recognition_msgs/shape_conversion.h>
 #endif
 
+#include <object_recognition_tabletop/household.h>
+
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
@@ -108,7 +110,7 @@ namespace tabletop
 
       object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
 
-      object_recognition_core::db::ObjectDbParameters parameters = (*db_)->parameters();
+      object_recognition_core::db::ObjectDbParameters parameters(*json_db_params_);
       household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
           parameters.at("host").get_str(), parameters.at("port").get_str(), parameters.at("user").get_str(),
           parameters.at("password").get_str(), parameters.at("name").get_str());
@@ -141,9 +143,9 @@ namespace tabletop
     static void
     declare_params(ecto::tendrils& params)
     {
-      params.declare(&ObjectRecognizer::object_ids_, "object_ids",
+      params.declare(&ObjectRecognizer::object_ids_, "json_object_ids",
                      "The DB id of the objects to load in the household database.").required(true);
-      params.declare(&ObjectRecognizer::db_, "db", "The DB parameters").required(true);
+      params.declare(&ObjectRecognizer::json_db_params_, "json_db", "The DB parameters").required(true);
     }
 
     static void
@@ -210,6 +212,12 @@ namespace tabletop
       }
         object_recognizer_.objectDetection<pcl::PointXYZ>(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
 
+      or_json::mValue value;
+      or_json::read(*json_db_params_, value);
+      ObjectDbParametersRaw params = value.get_obj();
+
+      object_recognition_core::db::ObjectDbPtr db(new ObjectDbSqlHousehold(params));
+
         for (size_t i = 0; i < results.size(); ++i)
         {
           const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> & result = results[i];
@@ -220,7 +228,7 @@ namespace tabletop
           // Add the object id
           std::stringstream ss;
           ss << result.object_id_;
-          pose_result.set_object_id(*db_, ss.str());
+          pose_result.set_object_id(db, ss.str());
 
           // Add the pose
           const geometry_msgs::Pose &pose = result.pose_;
@@ -261,7 +269,7 @@ namespace tabletop
     float confidence_cutoff_;
     bool perform_fit_merge_;
     ecto::spore<std::string> object_ids_;
-    ecto::spore<object_recognition_core::db::ObjectDbPtr> db_;
+    ecto::spore<std::string> json_db_params_;
   };
 }
 

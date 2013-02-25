@@ -41,7 +41,8 @@ class TablePublisher(ecto.BlackBox, SinkBase):
     def declare_direct_params(p):
         p.declare('latched', 'Determines if the topics will be latched.', True)
 
-    def declare_forwards(self, _p):
+    @staticmethod
+    def declare_forwards(_p):
         p = {'marker_array_hulls': [Forward('topic_name', 'marker_hull_topic',
                                            'The ROS topic to use for the table message.', 'marker_table_hulls')],
              'marker_array_origins': [Forward('topic_name', 'marker_origin_topic',
