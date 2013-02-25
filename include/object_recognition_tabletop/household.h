@@ -33,8 +33,8 @@
  *
  */
 
-#ifndef DB_COUCH_H_
-#define DB_COUCH_H_
+#ifndef DB_SQL_HOUSEHOLD_H_
+#define DB_SQL_HOUSEHOLD_H_
 
 #include <object_recognition_core/db/db.h>
 #include <object_recognition_core/db/db_base.h>
@@ -163,4 +163,4 @@ private:
   boost::shared_ptr<household_objects_database::ObjectsDatabase> db_;
 };
 
-#endif /* DB_COUCH_H_ */
+#endif /* DB_SQL_HOUSEHOLD_H_ */

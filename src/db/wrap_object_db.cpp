@@ -35,7 +35,7 @@
 
 #include <object_recognition_core/db/wrap_object_db.h>
 
-#include "db_sql_household.h"
+#include <object_recognition_tabletop/household.h>
 
 namespace bp = boost::python;
 

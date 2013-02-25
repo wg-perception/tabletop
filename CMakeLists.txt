@@ -112,3 +112,8 @@ ecto_sphinx(${CMAKE_CURRENT_SOURCE_DIR}/doc/source doc)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/conf
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+# install the incldue folder
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/object_recognition_tabletop
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
