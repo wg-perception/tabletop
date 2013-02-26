@@ -14,7 +14,6 @@
   <build_depends>ecto</build_depends>
   <build_depends>ecto_pcl</build_depends>
   <build_depends>ecto_ros</build_depends>
-  <build_depends>geometry</build_depends>
   <build_depends>moveit_msgs</build_depends>
   <build_depends>object_recognition_core</build_depends>
   <build_depends>object_recognition_msgs</build_depends>
@@ -23,7 +22,6 @@
   <depends>ecto</depends>
   <depends>ecto_pcl</depends>
   <depends>ecto_ros</depends>
-  <depends>geometry</depends>
   <depends>object_recognition_core</depends>
   <depends>object_recognition_msgs</depends>
   <depends>opencv_candidate</depends>
