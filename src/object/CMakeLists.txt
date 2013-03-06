@@ -6,7 +6,7 @@ install(TARGETS marker_generator
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
-if (${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
+if (NOT ${TABLETOP_DO_OBJECT})
 return()
 endif()
 

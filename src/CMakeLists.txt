@@ -1,4 +1,4 @@
-if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
+if (${TABLETOP_DO_OBJECT})
 add_subdirectory(db)
 endif()
 add_subdirectory(object)
