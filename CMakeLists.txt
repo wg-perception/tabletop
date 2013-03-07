@@ -13,15 +13,7 @@ catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
 add_definitions(-DPCL_VERSION_GE_160=1)
 
-find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/groovy/stacks/object_manipulation/household_objects_database/lib)
-if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
 set(TABLETOP_DO_OBJECT TRUE)
-list(APPEND catkin_LIBRARIES ${household_objects_database_LIBRARIES}
-)
-list(APPEND catkin_INCLUDE_DIRS
-                                /opt/ros/groovy/stacks/object_manipulation/household_objects_database/include/
-)
-endif()
 
 else()
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=0)
@@ -48,6 +40,8 @@ if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_data
 find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
 find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
 find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
+
+set(TABLETOP_DO_OBJECT TRUE)
 
 list(APPEND catkin_INCLUDE_DIRS /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
                                 /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
