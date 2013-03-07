@@ -140,7 +140,7 @@ private:
 struct TableVisualizationMsgAssembler {
   static void declare_io(const tendrils& params, tendrils& inputs,
                          tendrils& outputs) {
-    inputs.declare(&TableVisualizationMsgAssembler::clusters_, "clusters",
+    inputs.declare(&TableVisualizationMsgAssembler::clusters3d_, "clusters3d",
                    "The clusters on top of the table.").required(true);
     inputs.declare(&TableVisualizationMsgAssembler::image_message_,
                    "image_message", "the image message to get the header").required(true);
@@ -193,7 +193,7 @@ struct TableVisualizationMsgAssembler {
       addConvexHullTable(table);
 
       // Publish each clusters
-      addClusterMarkers((*clusters_)[table_index],
+      addClusterMarkers((*clusters3d_)[table_index],
                         table.pose.header/*message_header*/);
     }
 
@@ -282,7 +282,7 @@ private:
   MarkerArrayWrapper marker_array_origin_;
   MarkerArrayWrapper marker_array_table_;
   /** For each table, a vector of clusters */
-  ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters_;
+  ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters3d_;
 };
 
 ECTO_CELL(tabletop_table, TableVisualizationMsgAssembler,

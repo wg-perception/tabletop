@@ -64,8 +64,8 @@ namespace tabletop
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
     {
-      inputs.declare(&TableDetector::points3d_, "points3d", "The 3dpoints as a cv::Mat_<cv::Vec3f>");
-      inputs.declare(&TableDetector::K_, "K", "The calibration matrix");
+      inputs.declare(&TableDetector::points3d_, "points3d", "The 3dpoints as a cv::Mat_<cv::Vec3f>").required();
+      inputs.declare(&TableDetector::K_, "K", "The calibration matrix").required();
 
       outputs.declare(&TableDetector::table_coefficients_, "table_coefficients", "The coefficients of planar surfaces.");
       outputs.declare(&TableDetector::table_mask_, "table_mask", "The mask of planar surfaces.");

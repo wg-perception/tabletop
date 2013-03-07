@@ -43,8 +43,8 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
                         self.table_detector['table_coefficients'] >> self.table_pose['table_coefficients'] ]
         # also find the clusters of points
         connections += [ self.passthrough['points3d'] >> self.clusterer['points3d'],
-                         self.table_detector['table_coefficients'] >> self.clusterer['planes'],
-                         self.table_detector['table_mask'] >> self.clusterer['masks'] ]
+                         self.table_detector['table_coefficients', 'table_mask'] >> self.clusterer['planes', 'masks'],
+                         ]
 
         return connections
 

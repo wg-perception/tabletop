@@ -56,7 +56,7 @@ class TablePublisher(ecto.BlackBox, SinkBase):
              }
 
         i = {'table_msg_assembler': [Forward('clouds_hull')],
-             'table_visualization_msg_assembler': [Forward('clusters'), Forward('table_array_msg')],
+             'table_visualization_msg_assembler': [Forward('clusters3d'), Forward('table_array_msg')],
              'passthrough': [Forward('image_message'), Forward('pose_results')]}
 
         return (p,i,{})
