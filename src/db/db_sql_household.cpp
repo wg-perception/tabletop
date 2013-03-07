@@ -42,8 +42,7 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold()
 {
   ObjectDbParametersRaw parameters = default_raw_parameters();
   // Create the DB object
-  db_ = boost::shared_ptr<household_objects_database::ObjectsDatabase>(
-      new household_objects_database::ObjectsDatabase(parameters["host"].get_str(), parameters["port"].get_str(),
+  db_.reset(new household_objects_database::ObjectsDatabase(parameters["host"].get_str(), parameters["port"].get_str(),
                                                       parameters["user"].get_str(), parameters["password"].get_str(),
                                                       parameters["name"].get_str()));
 }
@@ -68,11 +67,10 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters
 
 
 // Create the DB object
-  db_ = boost::shared_ptr<household_objects_database::ObjectsDatabase>(
-      new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
+  /*db_.reset(new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
                                                       parameters.at("user").get_str(),
                                                       parameters.at("password").get_str(),
-                                                      parameters.at("name").get_str()));
+                                                      parameters.at("name").get_str()));*/
 }
 
 ObjectDbParametersRaw

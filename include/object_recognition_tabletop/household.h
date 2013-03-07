@@ -61,7 +61,7 @@ public:
 
   ObjectDbSqlHousehold(ObjectDbParametersRaw & parameters);
 
-  ObjectDbParametersRaw
+  virtual ObjectDbParametersRaw
   default_raw_parameters() const;
 
   virtual void

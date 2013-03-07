@@ -6,7 +6,7 @@ find_package(catkin)
 set(TABLETOP_DO_OBJECT FALSE)
 
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
-find_package(catkin REQUIRED ecto ecto_pcl ecto_ros genmsg household_objects_database_msgs
+find_package(catkin REQUIRED ecto ecto_pcl ecto_ros genmsg household_objects_database household_objects_database_msgs
                              moveit_core moveit_msgs object_recognition_core object_recognition_msgs opencv_candidate
                              pcl_ros rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
