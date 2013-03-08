@@ -62,10 +62,10 @@ class TablePublisher(ecto.BlackBox, SinkBase):
         return (p,i,{})
 
     def connections(self, _p):
-        connections = [self.passthrough['image_message'] >> self.table_msg_assembler['image_message'],
-                       self.passthrough['image_message'] >> self.table_visualization_msg_assembler['image_message'],
-                       self.passthrough['pose_results'] >> self.table_msg_assembler['pose_results'],
-                       self.passthrough['pose_results'] >> self.table_visualization_msg_assembler['pose_results'] ]
+        connections = [self.passthrough['image_message','pose_results'] >>
+                                                self.table_msg_assembler['image_message','pose_results'],
+                       self.passthrough['image_message','pose_results'] >>
+                                                self.table_visualization_msg_assembler['image_message','pose_results'] ]
 
         connections += [ self.table_msg_assembler['table_array_msg'] >> self.table_array[:],
                         self.table_msg_assembler['table_array_msg'] >> self.table_visualization_msg_assembler['table_array_msg'] ]
