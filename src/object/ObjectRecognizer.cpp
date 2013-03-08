@@ -114,8 +114,8 @@ namespace tabletop
     object_recognition_core::db::ObjectDbParametersRaw parameters =
         object_recognition_core::db::ObjectDbParameters(*json_db_params_).raw();
 
-    boost::shared_ptr<household_objects_database::ObjectsDatabase> database =
-        ObjectDbSqlHousehold(parameters).db();
+    db_.reset(new ObjectDbSqlHousehold(parameters));
+    boost::shared_ptr<household_objects_database::ObjectsDatabase> database = db_->db();
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
       std::cout << "Loading model set: " << model_set << std::endl;
@@ -223,12 +223,6 @@ namespace tabletop
       }
         object_recognizer_.objectDetection<pcl::PointXYZ>(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
 
-      or_json::mValue value;
-      or_json::read(*json_db_params_, value);
-      ObjectDbParametersRaw params = value.get_obj();
-
-      object_recognition_core::db::ObjectDbPtr db(new ObjectDbSqlHousehold(params));
-
         for (size_t i = 0; i < results.size(); ++i)
         {
           const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> & result = results[i];
@@ -239,7 +233,7 @@ namespace tabletop
           // Add the object id
           std::stringstream ss;
           ss << result.object_id_;
-          pose_result.set_object_id(db, ss.str());
+          pose_result.set_object_id(db_, ss.str());
 
           // Add the pose
           const geometry_msgs::Pose &pose = result.pose_;
@@ -268,6 +262,8 @@ namespace tabletop
     }
   private:
     typedef std::vector<tabletop_object_detector::ModelFitInfo> ModelFitInfos;
+    /** The db we are dealing with */
+    boost::shared_ptr<ObjectDbSqlHousehold> db_;
     /** The object recognizer */
     tabletop_object_detector::TabletopObjectRecognizer object_recognizer_;
     /** The resulting poses of the objects */
