@@ -53,24 +53,35 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters
   // Read the parameters
   for (ObjectDbParametersRaw::const_iterator iter = parameters.begin(), end = parameters.end(); iter != end; ++iter)
   {
-    if(iter->first == "type")
+    if (iter->first == "type")
       continue;
 
     ObjectDbParametersRaw::const_iterator val = in_parameters.find(iter->first);
     if (val == in_parameters.end())
-      std::cerr << "The db parameters do not contain the field \"" << iter->first << "\". Using the default: \""
-                << iter->second.get_str() << "\"" << std::endl;
-    else
-      parameters[iter->first] = val->second.get_str();
+      std::cerr << "The db parameters do not contain the field \""
+          << iter->first << "\". Using the default: \""
+          << iter->second.get_str() << "\"" << std::endl;
+    else {
+      if ((iter->first == "port") && (val->second.type() == or_json::int_type)) {
+        std::stringstream ss;
+        ss << val->second.get_int();
+        parameters[iter->first] = ss.str();
+      } else {
+        if (val->second.type() != or_json::str_type)
+          throw std::runtime_error(
+              std::string("Key \"") + val->first
+                  + std::string("\" needs to be a string"));
+        parameters[iter->first] = val->second.get_str();
+      }
+    }
   }
   in_parameters = parameters;
 
-
-// Create the DB object
-  /*db_.reset(new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
+  // Create the DB object
+  db_.reset(new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
                                                       parameters.at("user").get_str(),
                                                       parameters.at("password").get_str(),
-                                                      parameters.at("name").get_str()));*/
+                                                      parameters.at("name").get_str()));
 }
 
 ObjectDbParametersRaw

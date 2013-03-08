@@ -111,6 +111,10 @@ public:
   {
     return "SqlHousehold";
   }
+
+  boost::shared_ptr<household_objects_database::ObjectsDatabase> db() {
+    return db_;
+  }
 private:
 
   inline void

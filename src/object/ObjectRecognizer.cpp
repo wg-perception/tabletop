@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include <boost/foreach.hpp>
 #include <boost/python.hpp>
@@ -108,12 +109,13 @@ namespace tabletop
       //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
       //std::copy(begin, end, std::back_inserter(object_ids));
 
-      object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
+    object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
 
-      object_recognition_core::db::ObjectDbParameters parameters(*json_db_params_);
-      household_objects_database::ObjectsDatabase *database = new household_objects_database::ObjectsDatabase(
-          parameters.at("host").get_str(), parameters.at("port").get_str(), parameters.at("user").get_str(),
-          parameters.at("password").get_str(), parameters.at("name").get_str());
+    object_recognition_core::db::ObjectDbParametersRaw parameters =
+        object_recognition_core::db::ObjectDbParameters(*json_db_params_).raw();
+
+    boost::shared_ptr<household_objects_database::ObjectsDatabase> database =
+        ObjectDbSqlHousehold(parameters).db();
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
       if (!database->getScaledModelsBySet(models, model_set))
