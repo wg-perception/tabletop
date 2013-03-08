@@ -118,6 +118,7 @@ namespace tabletop
         ObjectDbSqlHousehold(parameters).db();
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
+      std::cout << "Loading model set: " << model_set << std::endl;
       if (!database->getScaledModelsBySet(models, model_set))
         return;
 
@@ -131,24 +132,32 @@ namespace tabletop
         arm_navigation_msgs::Shape mesh;
 #endif
 
-        if (!database->getScaledModelMesh(model_id, mesh))
+        std::cout << "Loading model: " << model_id;
+        if (!database->getScaledModelMesh(model_id, mesh)) {
+          std::cout << "  ... Failed" << std::endl;
           continue;
+        }
 
 #if ROS_GROOVY_OR_ABOVE_FOUND
         object_recognizer_.addObject(model_id, mesh);
 #else
         object_recognizer_.addObject(model_id, an_shape_to_mesh(mesh));
 #endif
+        std::cout << std::endl;
       }
     }
 
-    static void
-    declare_params(ecto::tendrils& params)
-    {
-      params.declare(&ObjectRecognizer::object_ids_, "json_object_ids",
-                     "The DB id of the objects to load in the household database.").required(true);
-      params.declare(&ObjectRecognizer::json_db_params_, "json_db", "The DB parameters").required(true);
-    }
+  static void declare_params(ecto::tendrils& params) {
+    params.declare(
+        &ObjectRecognizer::object_ids_, "json_object_ids",
+        "The DB id of the objects to load in the household database.");
+    params.declare(
+        &ObjectRecognizer::tabletop_object_ids_, "tabletop_object_ids",
+        "The object_ids set as defined by the household object database.",
+        "REDUCED_MODEL_SET");
+    params.declare(&ObjectRecognizer::json_db_params_, "json_db",
+                   "The DB parameters").required(true);
+  }
 
     static void
     declare_io(const tendrils& params, tendrils& inputs, tendrils& outputs)
@@ -162,8 +171,8 @@ namespace tabletop
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
-      object_ids_.set_callback(boost::bind(&ObjectRecognizer::ParameterCallback, this, _1));
-      object_ids_.dirty(true);
+      tabletop_object_ids_.set_callback(boost::bind(&ObjectRecognizer::ParameterCallback, this, _1));
+      tabletop_object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
       confidence_cutoff_ = 0.01f;
@@ -271,6 +280,7 @@ namespace tabletop
     float confidence_cutoff_;
     bool perform_fit_merge_;
     ecto::spore<std::string> object_ids_;
+    ecto::spore<std::string> tabletop_object_ids_;
     ecto::spore<std::string> json_db_params_;
   };
 }
