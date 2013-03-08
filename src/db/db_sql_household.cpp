@@ -34,6 +34,7 @@
  */
 
 #include <sstream>
+#include <object_recognition_core/db/db.h>
 #include <object_recognition_tabletop/household.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +42,8 @@
 ObjectDbSqlHousehold::ObjectDbSqlHousehold()
 {
   ObjectDbParametersRaw parameters = default_raw_parameters();
+  this->set_parameters(object_recognition_core::db::ObjectDbParameters(parameters));
+
   // Create the DB object
   db_.reset(new household_objects_database::ObjectsDatabase(parameters["host"].get_str(), parameters["port"].get_str(),
                                                       parameters["user"].get_str(), parameters["password"].get_str(),
@@ -76,6 +79,7 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters
     }
   }
   in_parameters = parameters;
+  this->set_parameters(object_recognition_core::db::ObjectDbParameters(parameters));
 
   // Create the DB object
   db_.reset(new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
