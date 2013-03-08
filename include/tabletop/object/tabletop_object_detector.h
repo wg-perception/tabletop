@@ -172,6 +172,7 @@ namespace tabletop_object_detector
         result.pose_ = raw_fit_results[i][0].getPose();
         result.confidence_ = 1.0 - (raw_fit_results[i][0].getScore() / confidence_cutoff);
         result.cloud_ = clusters[i];
+        result.cloud_->width = result.cloud_->size();
 
         results.push_back(result);
       }
