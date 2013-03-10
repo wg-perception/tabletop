@@ -55,7 +55,7 @@ pipeline2:
     object_ids: 'all'
     tabletop_object_ids: 'REDUCED_MODEL_SET'
     db:
-      type: 'SqlHousehold'
+      type: 'ObjectDbSqlHousehold'
       host: 'wgs36'
       port: 5432
       user: 'willow'

@@ -41,26 +41,22 @@
 
 ObjectDbSqlHousehold::ObjectDbSqlHousehold()
 {
-  ObjectDbParametersRaw parameters = default_raw_parameters();
-  this->set_parameters(object_recognition_core::db::ObjectDbParameters(parameters));
-
-  // Create the DB object
-  db_.reset(new household_objects_database::ObjectsDatabase(parameters["host"].get_str(), parameters["port"].get_str(),
-                                                      parameters["user"].get_str(), parameters["password"].get_str(),
-                                                      parameters["name"].get_str()));
+  object_recognition_core::db::ObjectDbParameters parameters(default_raw_parameters());
+  this->set_parameters(parameters);
 }
 
-ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters)
+void
+ObjectDbSqlHousehold::set_parameters(ObjectDbParameters & in_parameters)
 {
-  ObjectDbParametersRaw parameters = default_raw_parameters();
+  ObjectDbParametersRaw parameters = in_parameters.raw();
   // Read the parameters
   for (ObjectDbParametersRaw::const_iterator iter = parameters.begin(), end = parameters.end(); iter != end; ++iter)
   {
     if (iter->first == "type")
       continue;
 
-    ObjectDbParametersRaw::const_iterator val = in_parameters.find(iter->first);
-    if (val == in_parameters.end())
+    ObjectDbParametersRaw::const_iterator val = parameters.find(iter->first);
+    if (val == parameters.end())
       std::cerr << "The db parameters do not contain the field \""
           << iter->first << "\". Using the default: \""
           << iter->second.get_str() << "\"" << std::endl;
@@ -78,8 +74,8 @@ ObjectDbSqlHousehold::ObjectDbSqlHousehold(ObjectDbParametersRaw & in_parameters
       }
     }
   }
-  in_parameters = parameters;
-  this->set_parameters(object_recognition_core::db::ObjectDbParameters(parameters));
+  in_parameters = object_recognition_core::db::ObjectDbParameters(parameters);
+  parameters_ = in_parameters;
 
   // Create the DB object
   db_.reset(new household_objects_database::ObjectsDatabase(parameters.at("host").get_str(), parameters.at("port").get_str(),
@@ -132,18 +128,6 @@ ObjectDbSqlHousehold::set_attachment_stream(const DocumentId & document_id, cons
 void
 ObjectDbSqlHousehold::get_attachment_stream(const DocumentId & document_id, const RevisionId & revision_id, const std::string& attachment_name,
                                             const std::string& content_type, std::ostream& stream)
-{
-  throw std::runtime_error("Function not implemented in the SQL household DB.");
-}
-
-void
-ObjectDbSqlHousehold::GetObjectRevisionId(DocumentId& document_id, RevisionId & revision_id)
-{
-  throw std::runtime_error("Function not implemented in the SQL household DB.");
-}
-
-void
-ObjectDbSqlHousehold::GetRevisionId(RevisionId & revision_id)
 {
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
@@ -226,8 +210,6 @@ ObjectDbSqlHousehold::DeleteCollection(const CollectionName &collection)
   throw std::runtime_error("Function not implemented in the SQL household DB.");
 }
 
-void
-ObjectDbSqlHousehold::upload_json(const or_json::mObject &params, const std::string& url, const std::string& request)
-{
-  throw std::runtime_error("Function not implemented in the SQL household DB.");
-}
+#include <pluginlib/class_list_macros.h>
+
+PLUGINLIB_EXPORT_CLASS(ObjectDbSqlHousehold, object_recognition_core::db::ObjectDb)

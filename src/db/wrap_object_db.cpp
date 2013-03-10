@@ -51,8 +51,9 @@ namespace object_recognition_core
     ObjectDbSqlHouseholdConstructor(const ObjectDbParameters & db_params)
     {
       // Create the ObjectDbSqlHousehold
-      ObjectDbParametersRaw db_params_raw = db_params.raw();
-      ObjectDbPtr db_ptr(new ObjectDbSqlHousehold(db_params_raw));
+      ObjectDbPtr db_ptr(new ObjectDbSqlHousehold);
+      ObjectDbParameters db_params_tmp = db_params;
+      db_ptr->set_parameters(db_params_tmp);
 
       return db_ptr;
     }

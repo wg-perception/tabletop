@@ -111,10 +111,10 @@ namespace tabletop
 
     object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
 
-    object_recognition_core::db::ObjectDbParametersRaw parameters =
-        object_recognition_core::db::ObjectDbParameters(*json_db_params_).raw();
+    object_recognition_core::db::ObjectDbParameters parameters(*json_db_params_);
 
-    db_.reset(new ObjectDbSqlHousehold(parameters));
+    db_.reset(new ObjectDbSqlHousehold());
+    db_->set_parameters(parameters);
     boost::shared_ptr<household_objects_database::ObjectsDatabase> database = db_->db();
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;

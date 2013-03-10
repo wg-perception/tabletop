@@ -47,6 +47,7 @@ using object_recognition_core::db::DbType;
 using object_recognition_core::db::DocumentId;
 using object_recognition_core::db::ObjectId;
 using object_recognition_core::db::MimeType;
+using object_recognition_core::db::ObjectDbParameters;
 using object_recognition_core::db::ObjectDbParametersRaw;
 using object_recognition_core::db::RevisionId;
 using object_recognition_core::db::View;
@@ -59,10 +60,15 @@ class ObjectDbSqlHousehold: public object_recognition_core::db::ObjectDb
 public:
   ObjectDbSqlHousehold();
 
-  ObjectDbSqlHousehold(ObjectDbParametersRaw & parameters);
+  virtual
+  ~ObjectDbSqlHousehold() {
+  }
 
   virtual ObjectDbParametersRaw
   default_raw_parameters() const;
+
+  virtual void
+  set_parameters(ObjectDbParameters & in_parameters);
 
   virtual void
   insert_object(const or_json::mObject &fields, DocumentId & document_id, RevisionId & revision_id);
@@ -109,53 +115,13 @@ public:
   virtual DbType
   type() const
   {
-    return "SqlHousehold";
+    return "ObjectDbSqlHousehold";
   }
 
   boost::shared_ptr<household_objects_database::ObjectsDatabase> db() {
     return db_;
   }
 private:
-
-  inline void
-  precondition_id(const DocumentId & id) const
-  {
-    if (id.empty())
-      throw std::runtime_error("The document's id must be initialized.");
-  }
-
-  inline void
-  precondition_rev(const RevisionId & rev) const
-  {
-    if (rev.empty())
-      throw std::runtime_error("The document must have a valid revision.");
-  }
-
-  void
-  upload_json(const or_json::mObject &ptree, const std::string& url, const std::string& request);
-
-  template<typename T>
-  void
-  read_json(T &reader, or_json::mObject& object)
-  {
-    or_json::mValue value;
-    or_json::read(reader, value);
-    object = value.get_obj();
-  }
-
-  template<typename T>
-  void
-  write_json(const or_json::mObject& object, T &writer)
-  {
-    or_json::mValue value(object);
-    or_json::write(value, writer);
-  }
-
-  void
-  GetObjectRevisionId(DocumentId& document_id, RevisionId & revision_id);
-
-  void
-  GetRevisionId(RevisionId & revision_id);
 
   /** Once json_reader_stream_ has been filled, call that function to get the results of the view
    *

@@ -8,7 +8,7 @@ set(TABLETOP_DO_OBJECT FALSE)
 if (${catkin_VERSION} VERSION_GREATER "0.5.28")
 find_package(catkin REQUIRED ecto ecto_pcl ecto_ros genmsg household_objects_database household_objects_database_msgs
                              moveit_core moveit_msgs object_recognition_core object_recognition_msgs opencv_candidate
-                             pcl_ros rosconsole roscpp shape_msgs sql_database tf)
+                             pcl_ros pluginlib rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
 add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
 add_definitions(-DPCL_VERSION_GE_160=1)
@@ -105,3 +105,10 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/conf
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/object_recognition_tabletop/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
+
+# install the plugin file
+if (NOT ROS_FUERTE_FOUND)
+install(FILES ${PROJECT_SOURCE_DIR}/db_plugin.xml
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+endif()

@@ -37,4 +37,8 @@
   <run_depend>tf</run_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+    <object_recognition_core plugin="${prefix}/db_plugin.xml" />
+  </export>
 </package>
