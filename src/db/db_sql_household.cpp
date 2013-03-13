@@ -146,7 +146,78 @@ ObjectDbSqlHousehold::QueryView(const object_recognition_core::db::View & view, 
   {
     case object_recognition_core::db::View::VIEW_MODEL_WHERE_OBJECT_ID_AND_MODEL_TYPE:
     {
-      throw std::runtime_error("Function not implemented in the SQL household DB.");
+      object_recognition_core::db::View::Key key;
+      std::string options;
+      if (view.key(key))
+      {
+        // Load the mesh from the DB
+        household_objects_database::DatabaseMesh mesh;
+        db_->getScaledModelMesh(atoi(key.get_str().c_str()), mesh);
+
+        std::stringstream stream;
+        // Write the mesh to a stream according to the specs at http://en.wikipedia.org/wiki/STL_%28file_format%29
+        int sizeof_uc = 1;
+        int sizeof_us = 2;
+        int sizeof_ui = 4;
+        int sizeof_f = 4;
+        // Write the random 80 character header
+        for (unsigned char i = 0; i < 80; ++i)
+          stream.write(reinterpret_cast<char*>(&i), sizeof_uc);
+        unsigned int n_triangles = mesh.triangles_.data().size() / 3;
+        stream.write(reinterpret_cast<char*>(&n_triangles), sizeof_ui);
+
+        unsigned short zero_us = 0;
+        for (size_t i = 0; i < n_triangles; ++i) {
+          float x1[3];
+          float x2[3];
+          float x3[3];
+          float X1[3], X2[3];
+          // For each coordinate of the vertex
+          for (char k = 0; k < 3; ++k) {
+            x1[k] = mesh.vertices_.data().at(
+                3 * mesh.triangles_.data().at(3 * i + 0) + k);
+            x2[k] = mesh.vertices_.data().at(
+                3 * mesh.triangles_.data().at(3 * i + 1) + k);
+            x3[k] = mesh.vertices_.data().at(
+                3 * mesh.triangles_.data().at(3 * i + 2) + k);
+            X1[k] = x2[k]-x1[k];
+            X2[k] = x3[k]-x1[k];
+          }
+          float normal[3];
+          normal[0] = X1[1] * X2[2] - X1[2] * X2[1];
+          normal[1] = X2[0] * X1[2] - X2[2] * X1[0];
+          normal[2] = X1[0] * X2[1] - X1[1] * X2[0];
+          float norm = std::sqrt(
+              normal[0] * normal[0] + normal[1] * normal[1]
+                  + normal[2] * normal[2]);
+          for (char k = 0; k < 3; ++k)
+            normal[k] = 0*normal[k] / norm;
+          // Write the normal
+          stream.write(reinterpret_cast<char*>(&normal[0]), sizeof_f).write(
+              reinterpret_cast<char*>(&normal[1]), sizeof_f).write(
+              reinterpret_cast<char*>(&normal[2]), sizeof_f);
+          // Write the 3 vertices
+          stream.write(reinterpret_cast<char*>(&x1[0]), sizeof_f).write(
+              reinterpret_cast<char*>(&x1[1]), sizeof_f).write(
+              reinterpret_cast<char*>(&x1[2]), sizeof_f);
+          stream.write(reinterpret_cast<char*>(&x2[0]), sizeof_f).write(
+              reinterpret_cast<char*>(&x2[1]), sizeof_f).write(
+              reinterpret_cast<char*>(&x2[2]), sizeof_f);
+          stream.write(reinterpret_cast<char*>(&x3[0]), sizeof_f).write(
+              reinterpret_cast<char*>(&x3[1]), sizeof_f).write(
+              reinterpret_cast<char*>(&x3[2]), sizeof_f);
+          // Write the attribute
+          stream.write(reinterpret_cast<char*>(&zero_us), sizeof_us);
+        }
+
+        // Create the view element
+        ViewElement view_element("", key.get_str());
+        view_element.set_field("name", key.get_str());
+        view_element.set_attachment_stream("mesh", stream);
+        view_elements.push_back(view_element);
+      }
+      else
+        throw std::runtime_error("Function not implemented in the SQL household DB.");
       break;
     }
     case object_recognition_core::db::View::VIEW_OBJECT_INFO_WHERE_OBJECT_ID:
@@ -155,11 +226,9 @@ ObjectDbSqlHousehold::QueryView(const object_recognition_core::db::View & view, 
       std::string options;
       if (view.key(key))
       {
-        // Get the information from the different tables
-        BOOST_FOREACH(ViewElement & view_element, view_elements)
-        {
-
-        }
+        ViewElement view_element("", key.get_str());
+        view_element.set_field("name", key.get_str());
+        view_elements.push_back(view_element);
       }
       else
         throw std::runtime_error("Function not implemented in the SQL household DB.");
