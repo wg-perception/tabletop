@@ -47,7 +47,7 @@ namespace object_recognition_core
     // Specializations for cv::FileNode
     template<>
     void
-    object_recognition_core::db::Document::get_attachment<shape_msgs::Mesh>(
+    object_recognition_core::db::DummyDocument::get_attachment<shape_msgs::Mesh>(
         const AttachmentName &attachment_name, shape_msgs::Mesh &value) const;
 
     template<>
@@ -57,7 +57,7 @@ namespace object_recognition_core
 
     template<>
     void
-    object_recognition_core::db::Document::set_attachment<shape_msgs::Mesh>(
+    object_recognition_core::db::DummyDocument::set_attachment<shape_msgs::Mesh>(
         const AttachmentName &attachment_name, const shape_msgs::Mesh &value);
   }
 }
