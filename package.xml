@@ -16,7 +16,6 @@
   <build_depend>household_objects_database</build_depend>
   <build_depend>household_objects_database_msgs</build_depend>
   <build_depend>moveit_core</build_depend>
-  <build_depend>moveit_msgs</build_depend>
   <build_depend>object_recognition_core</build_depend>
   <build_depend>object_recognition_msgs</build_depend>
   <build_depend>opencv_candidate</build_depend>
