@@ -4,12 +4,12 @@ source1:
   #
   # Example parameters to set (the default settings are using the ros topics starting with /camera/....) 
   #  
-  #parameters:
-    #rgb_frame_id: '/kinect_head_rgb_optical_frame'
-    #rgb_image_topic: '/kinect_head/rgb/image_rect_color'
-    #rgb_camera_info: '/kinect_head/rgb/camera_info'
-    #depth_image_topic: '/kinect_head/depth_registered/image_rect'
-    #depth_camera_info: '/kinect_head/depth_registered/camera_info'
+  parameters:
+    #rgb_frame_id: camera_rgb_optical_frame
+    rgb_image_topic: camera_rgb_image_rect_color
+    rgb_camera_info: camera_rgb_camera_info
+    depth_image_topic: camera_depth_registered_image_rect
+    depth_camera_info: camera_depth_registered_camera_info
     #
     #crop_enabled: True
     #x_min: -0.4
