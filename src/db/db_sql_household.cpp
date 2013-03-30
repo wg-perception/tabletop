@@ -41,8 +41,6 @@
 
 ObjectDbSqlHousehold::ObjectDbSqlHousehold()
 {
-  object_recognition_core::db::ObjectDbParameters parameters(default_raw_parameters());
-  this->set_parameters(parameters);
 }
 
 void
