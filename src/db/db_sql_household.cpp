@@ -152,7 +152,7 @@ ObjectDbSqlHousehold::QueryView(const object_recognition_core::db::View & view, 
         household_objects_database::DatabaseMesh mesh;
         db_->getScaledModelMesh(atoi(key.get_str().c_str()), mesh);
 
-        std::stringstream stream;
+	std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
         // Write the mesh to a stream according to the specs at http://en.wikipedia.org/wiki/STL_%28file_format%29
         int sizeof_uc = 1;
         int sizeof_us = 2;
@@ -208,6 +208,7 @@ ObjectDbSqlHousehold::QueryView(const object_recognition_core::db::View & view, 
           stream.write(reinterpret_cast<char*>(&zero_us), sizeof_us);
         }
 
+	stream.seekg(0);
         // Create the view element
         ViewElement view_element("", key.get_str());
         view_element.set_field("name", key.get_str());
