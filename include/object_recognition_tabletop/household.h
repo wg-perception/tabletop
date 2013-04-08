@@ -43,6 +43,7 @@
 using object_recognition_core::db::AttachmentName;
 using object_recognition_core::db::CollectionName;
 using object_recognition_core::db::DbType;
+using object_recognition_core::db::Document;
 using object_recognition_core::db::DocumentId;
 using object_recognition_core::db::ObjectId;
 using object_recognition_core::db::MimeType;
@@ -50,7 +51,6 @@ using object_recognition_core::db::ObjectDbParameters;
 using object_recognition_core::db::ObjectDbParametersRaw;
 using object_recognition_core::db::RevisionId;
 using object_recognition_core::db::View;
-using object_recognition_core::db::ViewElement;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,11 +93,11 @@ public:
   virtual
   void
   QueryView(const View & view, int limit_rows, int start_offset, int& total_rows, int& offset,
-        std::vector<ViewElement> & view_elements);
+        std::vector<Document> & view_elements);
 
   virtual void
   QueryGeneric(const std::vector<std::string> & queries, int limit_rows, int start_offset, int& total_rows, int& offset,
-               std::vector<ViewElement> & view_elements);
+               std::vector<Document> & view_elements);
 
   virtual std::string
   Status() const;
@@ -127,7 +127,7 @@ private:
    */
   void
   QueryView(const CollectionName & collection_name, int limit_rows, int start_offset, const std::string &options,
-            int& total_rows, int& offset, std::vector<ViewElement> & view_elements, bool do_throw);
+            int& total_rows, int& offset, std::vector<Document> & view_elements, bool do_throw);
 
   boost::shared_ptr<household_objects_database::ObjectsDatabase> db_;
 };
