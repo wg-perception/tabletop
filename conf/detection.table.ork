@@ -10,7 +10,6 @@ sink1:
 pipeline1:
   type: TabletopTableDetector
   module: 'object_recognition_tabletop'
-  subtype: ''
   inputs: [source1]
   outputs: [sink1]
   parameters:
