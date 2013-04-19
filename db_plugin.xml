@@ -1,4 +1,4 @@
-<library path="lib/libtabletop_db">
+<library path="libtabletop_db">
   <class type="ObjectDbSqlHousehold" base_class_type="object_recognition_core::db::ObjectDb">
   <description>
   This is a plugin to wrap the DB used in Tabletop (based on the household DB) in the RViz plugin
