@@ -94,28 +94,22 @@ getPlaneTransform(const cv::Vec4f& plane_coefficients, cv::Matx33f& rotation, cv
   rotation = cv::Matx33f(x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]);
 }
 
-namespace tabletop
-{
-  /** Ecto implementation of a module that recognizes objects using the tabletop code
-   *
-   */
-  struct ObjectRecognizer
-  {
-    void
-    ParameterCallback(const std::string &model_set)
-    {
-      //std::vector<object_recognition_core::db::ModelId> object_ids;
-
-      //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
-      //std::copy(begin, end, std::back_inserter(object_ids));
-
+namespace tabletop {
+/** Ecto implementation of a module that recognizes objects using the tabletop code
+ */
+struct ObjectRecognizer {
+  void ParameterCallback(const std::string &model_set) {
     object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
 
+    // Read the DB parameters
     object_recognition_core::db::ObjectDbParameters parameters(*json_db_params_);
 
-    db_.reset(new ObjectDbSqlHousehold());
-    db_->set_parameters(parameters);
-    boost::shared_ptr<household_objects_database::ObjectsDatabase> database = db_->db();
+    if (parameters.type() == object_recognition_core::db::ObjectDbParameters::NONCORE) {
+      // If we are dealing with a household DB
+      ObjectDbSqlHousehold *db = new ObjectDbSqlHousehold();
+      db->set_parameters(parameters);
+      db_.reset(db);
+      boost::shared_ptr<household_objects_database::ObjectsDatabase> database = db->db();
 
       std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
       std::cout << "Loading model set: " << model_set << std::endl;
@@ -123,8 +117,7 @@ namespace tabletop
         return;
 
       object_recognizer_.clearObjects();
-      for (size_t i = 0; i < models.size(); i++)
-      {
+      for (size_t i = 0; i < models.size(); i++) {
         int model_id = models[i]->id_.data();
 #if ROS_GROOVY_OR_ABOVE_FOUND
         shape_msgs::Mesh mesh;
@@ -145,7 +138,11 @@ namespace tabletop
 #endif
         std::cout << std::endl;
       }
+    } else {
+      // We are dealing with a core DB so read meshes from that DB
+      // TODO
     }
+  }
 
   static void declare_params(ecto::tendrils& params) {
     params.declare(
@@ -263,7 +260,7 @@ namespace tabletop
   private:
     typedef std::vector<tabletop_object_detector::ModelFitInfo> ModelFitInfos;
     /** The db we are dealing with */
-    boost::shared_ptr<ObjectDbSqlHousehold> db_;
+    boost::shared_ptr<object_recognition_core::db::ObjectDb> db_;
     /** The object recognizer */
     tabletop_object_detector::TabletopObjectRecognizer object_recognizer_;
     /** The resulting poses of the objects */
