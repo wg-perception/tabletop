@@ -17,19 +17,11 @@ add_library(tabletop_db_interface module_python.cpp
 )
 target_link_libraries(tabletop_db_interface tabletop_db ${catkin_LIBRARIES})
 
-if (ROS_FUERTE_FOUND)
-set_target_properties(tabletop_db_interface PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_BUILD_DESTINATION}
-                      OUTPUT_NAME db_interface
-                      PREFIX ""
-)
-else()
 set_target_properties(tabletop_db_interface PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}
                       OUTPUT_NAME db_interface
                       PREFIX ""
 )
-endif()
 
 install(TARGETS tabletop_db_interface
         DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}

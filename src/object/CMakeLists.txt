@@ -6,10 +6,6 @@ install(TARGETS marker_generator
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
-if (NOT ${TABLETOP_DO_OBJECT})
-return()
-endif()
-
 include_directories(SYSTEM ${catkin_INLUDE_DIRS})
 
 add_library(tabletop_model_fitter SHARED
@@ -26,15 +22,9 @@ target_link_libraries(tabletop_model_fitter
     ${PCL_LIBRARIES}
 )
 
-if (ROS_FUERTE_FOUND)
-install(TARGETS tabletop_model_fitter
-        DESTINATION lib
-)
-else()
 install(TARGETS tabletop_model_fitter
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
-endif()
 
 ectomodule(tabletop_object DESTINATION ${PROJECT_NAME}/ecto_cells
                            INSTALL

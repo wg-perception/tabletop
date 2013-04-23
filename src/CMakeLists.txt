@@ -1,5 +1,3 @@
-if (${TABLETOP_DO_OBJECT})
 add_subdirectory(db)
-endif()
 add_subdirectory(object)
 add_subdirectory(table)

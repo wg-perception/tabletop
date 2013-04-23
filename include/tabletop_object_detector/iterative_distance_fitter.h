@@ -40,11 +40,7 @@
 #include "tabletop_object_detector/model_fitter.h"
 
 #include <math.h>
-#if ROS_GROOVY_OR_ABOVE_FOUND
 #include <moveit/distance_field/propagation_distance_field.h>
-#else
-#include <distance_field/propagation_distance_field.h>
-#endif
 
 #include "tabletop_object_detector/marker_generator.h"
 
@@ -133,11 +129,7 @@ double IterativeTranslationFitter::getFitScoreAndGradient(const PointCloudType& 
 					  voxel.closest_point_[1],
 					  voxel.closest_point_[2],
 					  cx,cy,cz);
-#if ROS_GROOVY_OR_ABOVE_FOUND
 	val = distance_voxel_grid_->getDistance(x,y,z);
-#else
-	val = distance_voxel_grid_->getDistanceFromCell(x,y,z);
-#endif
 	vector.x += (cx-wx);
 	vector.y += (cy-wy);
 	vector.z += (cz-wz);

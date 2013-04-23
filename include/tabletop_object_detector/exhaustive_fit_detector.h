@@ -45,9 +45,7 @@
 #include <sensor_msgs/PointCloud.h>
 
 #include <household_objects_database/objects_database.h>
-#if ROS_GROOVY_OR_ABOVE_FOUND
 #include <shape_msgs/Mesh.h>
-#endif
 
 #include "tabletop_object_detector/model_fitter.h"
 
@@ -193,11 +191,7 @@ ExhaustiveFitDetector<Fitter>::~ExhaustiveFitDetector()
   for(size_t i=0; i<models.size(); i++)
   {
     int model_id = models[i]->id_.data();
-#if ROS_GROOVY_OR_ABOVE_FOUND
     shape_msgs::Mesh mesh;
-#else
-    arm_navigation_msgs::Shape mesh;
-#endif
 
     if (!database_->getScaledModelMesh(model_id, mesh))
       continue;

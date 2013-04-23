@@ -1,68 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(object_recognition_tabletop)
 
-find_package(catkin)
-
-set(TABLETOP_DO_OBJECT FALSE)
-
-if (${catkin_VERSION} VERSION_GREATER "0.5.28")
 find_package(catkin REQUIRED ecto ecto_pcl ecto_ros genmsg household_objects_database household_objects_database_msgs
                              moveit_core object_recognition_core object_recognition_msgs opencv_candidate
                              pcl_ros pluginlib rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
-add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=1)
-add_definitions(-DPCL_VERSION_GE_160=1)
-
-set(TABLETOP_DO_OBJECT TRUE)
-
-else()
-add_definitions(-DROS_GROOVY_OR_ABOVE_FOUND=0)
-find_package(ROS REQUIRED ecto ecto_pcl ecto_ros genmsg object_recognition_core
-                          object_recognition_msgs opencv_candidate rosconsole roscpp)
-catkin_stack()
-catkin_project(object_recognition_tabletop
-               INCLUDE_DIRS include
-)
-
-set(catkin_LIBRARIES ${ROS_LIBRARIES})
-set(catkin_INCLUDE_DIRS ${ROS_INCLUDE_DIRS})
-set(CATKIN_DEVEL_PREFIX ${CMAKE_BINARY_DIR})
-set(CATKIN_PACKAGE_BIN_DESTINATION share/${PROJECT_NAME}/bin)
-set(CATKIN_PACKAGE_INCLUDE_DESTINATION include/${PROJECT_NAME})
-set(CATKIN_PACKAGE_LIB_DESTINATION lib)
-set(CATKIN_PACKAGE_PYTHON_BUILD_DESTINATION gen/py/${PROJECT_NAME}/)
-set(CATKIN_PACKAGE_PYTHON_DESTINATION ${INSTALLED_PYTHONPATH}/${PROJECT_NAME}/)
-set(CATKIN_PACKAGE_SHARE_DESTINATION share/${PROJECT_NAME}/)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-find_library(household_objects_database_LIBRARIES household_objects_database /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/lib)
-if (NOT ${household_objects_database_LIBRARIES} STREQUAL "household_objects_database_LIBRARIES-NOTFOUND")
-find_library(distance_field_LIBRARIES distance_field /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/lib/)
-find_library(pcl_ros_tf_LIBRARIES pcl_ros_tf /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/lib)
-find_library(tf_LIBRARIES tf /opt/ros/fuerte/stacks/geometry/tf/lib/)
-
-set(TABLETOP_DO_OBJECT TRUE)
-
-list(APPEND catkin_INCLUDE_DIRS /opt/ros/fuerte/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include/
-                                /opt/ros/fuerte/stacks/arm_navigation_experimental/distance_field/include/
-                                /opt/ros/fuerte/stacks/bullet/include/
-                                /opt/ros/fuerte/stacks/geometry/tf/include
-                                /opt/ros/fuerte/stacks/geometry/tf/msg_gen/cpp/include/
-                                /opt/ros/fuerte/stacks/geometry/tf/srv_gen/cpp/include/
-                                /opt/ros/fuerte/stacks/object_manipulation/household_objects_database/include/
-                                /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include/
-                                /opt/ros/fuerte/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include/
-                                /opt/ros/fuerte/stacks/perception_pcl/pcl_ros/include/
-                                /opt/ros/fuerte/stacks/sql_database/database_interface/include/
-)
-
-list(APPEND catkin_LIBRARIES ${distance_field_LIBRARIES}
-                             ${household_objects_database_LIBRARIES}
-                             ${pcl_ros_tf_LIBRARIES}
-                             ${tf_LIBRARIES}
-)
-endif()
-endif()
 
 # deal with Python
 catkin_python_setup()
@@ -81,11 +23,6 @@ include_directories(${catkin_INCLUDE_DIRS}
 include_directories(SYSTEM ${Eigen_INCLUDE_DIRS}
                            ${PCL_INCLUDE_DIRS}
 )
-
-if (ROS_FUERTE_FOUND)
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-endif()
 
 add_subdirectory(src)
 
@@ -107,8 +44,6 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/object_recognition_tabletop/
 )
 
 # install the plugin file
-if (NOT ROS_FUERTE_FOUND)
 install(FILES ${PROJECT_SOURCE_DIR}/db_plugin.xml
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-endif()

@@ -59,9 +59,7 @@
 
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
-#if not ROS_GROOVY_OR_ABOVE_FOUND
 #include <object_recognition_msgs/shape_conversion.h>
-#endif
 
 #include <object_recognition_tabletop/household.h>
 
@@ -119,11 +117,7 @@ struct ObjectRecognizer {
       object_recognizer_.clearObjects();
       for (size_t i = 0; i < models.size(); i++) {
         int model_id = models[i]->id_.data();
-#if ROS_GROOVY_OR_ABOVE_FOUND
         shape_msgs::Mesh mesh;
-#else
-        arm_navigation_msgs::Shape mesh;
-#endif
 
         std::cout << "Loading model: " << model_id;
         if (!database->getScaledModelMesh(model_id, mesh)) {
@@ -131,11 +125,7 @@ struct ObjectRecognizer {
           continue;
         }
 
-#if ROS_GROOVY_OR_ABOVE_FOUND
         object_recognizer_.addObject(model_id, mesh);
-#else
-        object_recognizer_.addObject(model_id, an_shape_to_mesh(mesh));
-#endif
         std::cout << std::endl;
       }
     } else {

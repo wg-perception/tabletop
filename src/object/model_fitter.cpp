@@ -36,11 +36,7 @@
 
 #include "tabletop_object_detector/model_fitter.h"
 
-#if ROS_GROOVY_OR_ABOVE_FOUND
 #include <moveit/distance_field/propagation_distance_field.h>
-#else
-#include <distance_field/propagation_distance_field.h>
-#endif
 #include "tabletop_object_detector/iterative_distance_fitter.h"
 
 namespace tabletop_object_detector {
@@ -101,7 +97,6 @@ void DistanceFieldFitter::initializeFromBtVectors(const std::vector<tf::Vector3>
 								      min[2] - table_padding,
 								      2 * truncate_value_ );
   distance_voxel_grid_->reset();
-#if ROS_GROOVY_OR_ABOVE_FOUND
   EigenSTL::vector_Vector3d eigen_points(points.size());
   for(size_t i = 0; i < points.size(); ++i)
   {
@@ -110,9 +105,6 @@ void DistanceFieldFitter::initializeFromBtVectors(const std::vector<tf::Vector3>
     eigen_points[i][2] = points[i][2];
   }
   distance_voxel_grid_->addPointsToField(eigen_points);
-#else
-  distance_voxel_grid_->addPointsToField(points);
-#endif
 }
 
 double dist(const tf::Vector3 &v0, const tf::Vector3 &v1)
