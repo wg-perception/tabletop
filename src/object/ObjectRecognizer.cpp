@@ -59,7 +59,6 @@
 
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
-#include <object_recognition_msgs/shape_conversion.h>
 
 #include <object_recognition_tabletop/household.h>
 
