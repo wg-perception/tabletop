@@ -211,6 +211,13 @@ void ModelToCloudFitter::sampleMesh(const shape_msgs::Mesh &mesh,
 void DistanceFieldFitter::initializeFromMesh(const shape_msgs::Mesh &mesh)
 {
   std::vector<tf::Vector3> btVectors;
+  model_points_.reserve(mesh.vertices.size());
+  typedef std::vector<geometry_msgs::Point>::const_iterator I;
+  for (I i = mesh.vertices.begin(); i != mesh.vertices.end(); i++)
+    model_points_.push_back(tf::Vector3(i->x,i->y,i->z));
+  // 20mm resolution
+  //sampleMesh(mesh, model_points_, 0.02 );
+
   //we use a slightly larger resolution than the distance field, in an attempt to bring
   //down pre-computation time
   sampleMesh(mesh, btVectors,  1.5 * distance_field_resolution_ ); 

@@ -91,14 +91,23 @@ getPlaneTransform(const cv::Vec4f& plane_coefficients, cv::Matx33f& rotation, cv
   rotation = cv::Matx33f(x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]);
 }
 
-namespace tabletop {
-/** Ecto implementation of a module that recognizes objects using the tabletop code
- */
-struct ObjectRecognizer {
-  void ParameterCallback(const std::string &model_set) {
-    object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
+namespace tabletop
+{
+  /** Ecto implementation of a module that recognizes objects using the tabletop code
+   *
+   */
+  struct ObjectRecognizer
+  {
+    void
+    ParameterCallback(const std::string &model_set)
+    {
+      //std::vector<object_recognition_core::db::ModelId> object_ids;
 
-    // Read the DB parameters
+      //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
+      //std::copy(begin, end, std::back_inserter(object_ids));
+
+    object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer <pcl::PointXYZ>();
+
     object_recognition_core::db::ObjectDbParameters parameters(*json_db_params_);
 
     if (parameters.type() == object_recognition_core::db::ObjectDbParameters::NONCORE) {
@@ -161,7 +170,7 @@ struct ObjectRecognizer {
       tabletop_object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
-      confidence_cutoff_ = 0.01f;
+      confidence_cutoff_ = 0.85f;
     }
 
     /** Compute the pose of the table plane
@@ -172,7 +181,7 @@ struct ObjectRecognizer {
     int
     process(const tendrils& inputs, const tendrils& outputs)
     {
-      std::vector<tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> > results;
+      std::vector<tabletop_object_detector::TabletopObjectRecognizer<pcl::PointXYZ>::TabletopResult > results;
 
       // Process each table
       pose_results_->clear();
@@ -205,53 +214,54 @@ struct ObjectRecognizer {
           cluster_table.insert(std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t>(clusters[cluster_index], table_index));
         }
 
-	clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
-      }
-        object_recognizer_.objectDetection<pcl::PointXYZ>(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
-
-        for (size_t i = 0; i < results.size(); ++i)
-        {
-          const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult<pcl::PointXYZ> & result = results[i];
-          const size_t table_index = cluster_table[result.cloud_];
-
-          PoseResult pose_result;
-
-          // Add the object id
-          std::stringstream ss;
-          ss << result.object_id_;
-          pose_result.set_object_id(db_, ss.str());
-
-          // Add the pose
-          const geometry_msgs::Pose &pose = result.pose_;
-          cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
-          Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
-
-          cv::Vec3f new_T = rotations[table_index] * T + translations[table_index];
-          pose_result.set_T(cv::Mat(new_T));
-
-          pose_result.set_R(quat);
-          cv::Mat R = cv::Mat(rotations[table_index] * pose_result.R<cv::Matx33f>());
-          pose_result.set_R(R);
-          pose_result.set_confidence(result.confidence_);
-
-          // Add the cluster of points
-          std::vector<sensor_msgs::PointCloud2ConstPtr> ros_clouds (1);
-          sensor_msgs::PointCloud2Ptr cluster_cloud (new sensor_msgs::PointCloud2());
-	      pcl::toROSMsg(*result.cloud_, *cluster_cloud);
-	      ros_clouds[0] = cluster_cloud;
-	      pose_result.set_clouds(ros_clouds);
-
-          pose_results_->push_back(pose_result);
+        clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
       }
 
+      object_recognizer_.objectDetection(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
+
+      for (size_t i = 0; i < results.size(); ++i)
+      {
+        const tabletop_object_detector::TabletopObjectRecognizer<pcl::PointXYZ>::TabletopResult & result = results[i];
+        const size_t table_index = cluster_table[result.cloud_];
+
+        PoseResult pose_result;
+
+        // Add the object id
+        std::stringstream ss;
+        ss << result.object_id_;
+        pose_result.set_object_id(db_, ss.str());
+
+        // Add the pose
+        const geometry_msgs::Pose &pose = result.pose_;
+        cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
+        Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
+
+        cv::Vec3f new_T = rotations[table_index] * T + translations[table_index];
+        pose_result.set_T(cv::Mat(new_T));
+
+        pose_result.set_R(quat);
+        cv::Mat R = cv::Mat(rotations[table_index] * pose_result.R<cv::Matx33f>());
+        pose_result.set_R(R);
+        pose_result.set_confidence(result.confidence_);
+
+        // Add the cluster of points
+        std::vector<sensor_msgs::PointCloud2ConstPtr> ros_clouds (1);
+        sensor_msgs::PointCloud2Ptr cluster_cloud (new sensor_msgs::PointCloud2());
+        pcl::toROSMsg(*result.cloud_, *cluster_cloud);
+        ros_clouds[0] = cluster_cloud;
+        pose_result.set_clouds(ros_clouds);
+
+        pose_results_->push_back(pose_result);
+      }
       return ecto::OK;
     }
+
   private:
     typedef std::vector<tabletop_object_detector::ModelFitInfo> ModelFitInfos;
     /** The db we are dealing with */
     boost::shared_ptr<object_recognition_core::db::ObjectDb> db_;
     /** The object recognizer */
-    tabletop_object_detector::TabletopObjectRecognizer object_recognizer_;
+    tabletop_object_detector::TabletopObjectRecognizer<pcl::PointXYZ> object_recognizer_;
     /** The resulting poses of the objects */
     ecto::spore<std::vector<PoseResult> > pose_results_;
     /** The input clusters */
