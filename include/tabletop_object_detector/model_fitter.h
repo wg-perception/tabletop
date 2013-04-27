@@ -71,8 +71,12 @@ class ModelFitInfo {
 
  public:
   //! Populates this instance with all the relevant information
-  ModelFitInfo(int model_id, const geometry_msgs::Pose &pose, float score) : model_id_(model_id), 
-    fit_pose_(pose), score_(score) {}
+  ModelFitInfo(int model_id, const geometry_msgs::Pose &pose, float score)
+    : model_id_(model_id)
+    , fit_pose_(pose)
+    , score_(score)
+  {
+  }
 
   //! Return the model if of this fit
   int getModelId() const {return model_id_;}
@@ -84,7 +88,7 @@ class ModelFitInfo {
   //! Helper function for sorting based on scores
   static bool compareScores(const ModelFitInfo &mf1, const ModelFitInfo &mf2)
   {
-    return mf1.score_ < mf2.score_;
+    return mf1.score_ > mf2.score_;
   }  
 };
 
@@ -154,6 +158,8 @@ class DistanceFieldFitter : public ModelToCloudFitter
   
   //! Calls initialize from points on the vertices of the mesh
   void initializeFromMesh(const shape_msgs::Mesh &mesh);
+
+  std::vector<tf::Vector3> model_points_;
 };
 
 } //namespace tabletop_object_detector

@@ -43,6 +43,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <sensor_msgs/PointCloud.h>
+#include <pcl/search/search.h>
 
 #include <household_objects_database/objects_database.h>
 #include <shape_msgs/Mesh.h>
@@ -124,14 +125,14 @@ class ExhaustiveFitDetector
     \param rotate true if we search for the optimal rotation as well
   */
   template <class PointCloudType>
-  std::vector<ModelFitInfo> fitBestModels(const PointCloudType& cloud, int numResults)
+  std::vector<ModelFitInfo> fitBestModels(const PointCloudType& cloud, int numResults, const pcl::search::Search<typename PointCloudType::PointType>& search)
   {
     std::vector<ModelFitInfo> fit_results;
     if (numResults <= 0) return fit_results;
     
     for (size_t i=0; i<templates.size(); ++i) 
     {
-      ModelFitInfo current = templates[i]->template fitPointCloud<PointCloudType>(cloud);
+      ModelFitInfo current = templates[i]->fitPointCloud(cloud, search);
       // If the model that was matched is not in the exclusion list
       bool found = (model_exclusion_set_.find(current.getModelId()) != model_exclusion_set_.end());
       if (negate_exclusions_ == found)
@@ -143,7 +144,7 @@ class ExhaustiveFitDetector
         }
         else
         {
-          if (fit_results.back().getScore() > current.getScore())
+          if (fit_results.back().getScore() < current.getScore())
           {
             fit_results.back() = current;
             std::sort(fit_results.begin(), fit_results.end(), ModelFitInfo::compareScores);

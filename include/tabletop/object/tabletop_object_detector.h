@@ -41,6 +41,7 @@
 #include <string>
 
 #include <pcl/point_cloud.h>
+#include <pcl/search/kdtree.h>
 
 #include "tabletop_object_detector/exhaustive_fit_detector.h"
 #include "tabletop_object_detector/marker_generator.h"
@@ -48,18 +49,28 @@
 
 namespace tabletop_object_detector
 {
+  template <typename PointType>
   class TabletopObjectRecognizer
   {
   private:
     //! The instance of the detector used for all detecting tasks
-    ExhaustiveFitDetector<IterativeTranslationFitter> detector_;
+    ExhaustiveFitDetector<IterativeTranslationFitter<pcl::PointCloud<PointType> > > detector_;
 
     //! The threshold for merging two models that were fit very close to each other
     double fit_merge_threshold_;
 
+    double getConfidence (double score) const
+    {
+      return (1.0 - (1.0 - score) * (1.0 - score));
+    }
   public:
     //! Subscribes to and advertises topics; initializes fitter
-    TabletopObjectRecognizer();
+    TabletopObjectRecognizer()
+    {
+      detector_ = ExhaustiveFitDetector<IterativeTranslationFitter<pcl::PointCloud<PointType> > >();
+      //initialize operational flags
+      fit_merge_threshold_ = 0.02;
+    }
 
     //! Empty stub
     ~TabletopObjectRecognizer()
@@ -67,13 +78,18 @@ namespace tabletop_object_detector
     }
 
     void
-    clearObjects();
+    clearObjects()
+    {
+      detector_.clearObjects();
+    }
 
     void
-    addObject(int model_id, const shape_msgs::Mesh & mesh);
+    addObject(int model_id, const shape_msgs::Mesh & mesh)
+    {
+      detector_.addObject(model_id, mesh);
+    }
 
     /** Structure used a return type for objectDetection */
-    template<class PointType>
     struct TabletopResult
     {
       geometry_msgs::Pose pose_;
@@ -84,30 +100,32 @@ namespace tabletop_object_detector
 
     /*! Performs the detection on each of the clusters, and populates the returned message.
      */
-    template<class PointType>
     void
     objectDetection(std::vector<typename pcl::PointCloud<PointType>::Ptr> &clusters, float confidence_cutoff,
-                    bool perform_fit_merge, std::vector<TabletopResult<PointType> > &results)
+                    bool perform_fit_merge, std::vector<TabletopResult > &results)
     {
       //do the model fitting part
       std::vector<size_t> cluster_model_indices;
       std::vector<std::vector<ModelFitInfo> > raw_fit_results(clusters.size());
+      std::vector<typename pcl::search::KdTree<PointType>::Ptr> search (clusters.size ());
       cluster_model_indices.resize(clusters.size(), -1);
       int num_models = 1;
       for (size_t i = 0; i < clusters.size(); i++)
       {
-        std::vector<ModelFitInfo> fit_results = detector_.fitBestModels<typename pcl::PointCloud<PointType> >(
-            *(clusters[i]), std::max(1, num_models));
+        cluster_model_indices[i] = i;
+        search[i].reset (new pcl::search::KdTree<PointType> ());
+        search[i]->setInputCloud (clusters[i]);
+
+        std::vector<ModelFitInfo> fit_results = detector_.fitBestModels (
+            *(clusters[i]), std::max(1, num_models), *search[i]);
         std::vector<ModelFitInfo> &final_fit_results = raw_fit_results[i];
 
         final_fit_results.reserve(fit_results.size());
         BOOST_FOREACH(const ModelFitInfo & fit_info, fit_results)
-            {
-              if (fit_info.getScore() <= confidence_cutoff)
-                final_fit_results.push_back(fit_info);
-            }
-
-        cluster_model_indices[i] = i;
+        {
+          if (getConfidence(fit_info.getScore()) >= confidence_cutoff)
+            final_fit_results.push_back(fit_info);
+        }
       }
 
       //merge models that were fit very close to each other
@@ -130,18 +148,18 @@ namespace tabletop_object_detector
             if (cluster_model_indices[j] != (int) j)
               continue;
             //if there are no fits, merge based on cluster vs. fit
-            if (raw_fit_results.at(j).empty())
-            {
-              if (fitClusterDistance<typename pcl::PointCloud<PointType> >(raw_fit_results.at(i).at(0), *clusters[j])
-                  < fit_merge_threshold_)
-                break;
-              else
-                continue;
-            }
+//            if (raw_fit_results.at(j).empty())
+//            {
+//              if (fitClusterDistance<typename pcl::PointCloud<PointType> >(raw_fit_results.at(i).at(0), *clusters[j])
+//                  < fit_merge_threshold_)
+//                break;
+//              else
+//                continue;
+//            }
             //else merge based on fits
-            if (fitDistance(raw_fit_results.at(i).at(0), raw_fit_results.at(j).at(0)) < fit_merge_threshold_)
+            if (!raw_fit_results.at(j).empty() && fitDistance(raw_fit_results.at(i).at(0), raw_fit_results.at(j).at(0)) < fit_merge_threshold_)
               break;
-          }
+          }          
           if (j < clusters.size())
           {
             //merge cluster j into i
@@ -152,7 +170,7 @@ namespace tabletop_object_detector
             //fits for cluster j now point at fit for cluster i
             cluster_model_indices[j] = i;
             //refit cluster i
-            raw_fit_results.at(i) = detector_.fitBestModels(*(clusters[i]), std::max(1, num_models));
+            raw_fit_results.at(i) = detector_.fitBestModels(*(clusters[i]), std::max(1, num_models), *search[i]);
           }
           else
           {
@@ -167,10 +185,15 @@ namespace tabletop_object_detector
         if ((cluster_model_indices[i] != int(i)) || (raw_fit_results[i].empty()))
           continue;
 
-        TabletopResult<PointType> result;
+        double confidence = getConfidence (raw_fit_results[i][0].getScore());
+
+        if (confidence < confidence_cutoff)
+          continue;
+
+        TabletopResult result;
         result.object_id_ = raw_fit_results[i][0].getModelId();
         result.pose_ = raw_fit_results[i][0].getPose();
-        result.confidence_ = 1.0 - (raw_fit_results[i][0].getScore() / confidence_cutoff);
+        result.confidence_ = confidence;
         result.cloud_ = clusters[i];
         result.cloud_->width = result.cloud_->size();
 
@@ -182,7 +205,13 @@ namespace tabletop_object_detector
 
     //! Helper function that returns the distance along the plane between two fit models
     double
-    fitDistance(const ModelFitInfo &m1, const ModelFitInfo &m2);
+    fitDistance(const ModelFitInfo &m1, const ModelFitInfo &m2)
+    {
+      double dx = m1.getPose().position.x - m2.getPose().position.x;
+      double dy = m1.getPose().position.y - m2.getPose().position.y;
+      double d = dx * dx + dy * dy;
+      return sqrt(d);
+    }
 
     template<class PointCloudType>
     double
@@ -190,7 +219,7 @@ namespace tabletop_object_detector
     {
       double dist = 100.0 * 100.0;
       double mx = m.getPose().position.x;
-      double my = m.getPose().position.x;
+      double my = m.getPose().position.y;
       for (size_t i = 0; i < cluster.points.size(); i++)
       {
         double dx = cluster.points[i].x - mx;
