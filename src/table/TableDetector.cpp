@@ -34,11 +34,11 @@
  */
 
 #include <boost/foreach.hpp>
-
 #include <ecto/ecto.hpp>
-
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd/rgbd.hpp>
+#include <tf/transform_listener.h>
+#include <ros/ros.h>
 
 using ecto::tendrils;
 
@@ -72,90 +72,164 @@ namespace tabletop
       outputs.declare(&TableDetector::clouds_hull_, "clouds_hull", "Hulls of the samples.");
     }
 
+
+    void
+    configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
+    {
+      ros::NodeHandle nh("~");
+      nh.param("filter_planes", filter_planes_, true);
+      nh.param("min_table_height", min_table_height_, 0.5);
+      nh.param("max_table_height", max_table_height_, 1.0);
+      nh.param("robot_frame", robot_frame_id_, std::string("/base_link"));
+      nh.param("sensor_frame", sensor_frame_id_, std::string("/head_mount_kinect_rgb_optical_frame"));
+
+      double max_angle_diff;
+      double table_normal_x;
+      double table_normal_y;
+      double table_normal_z;
+      nh.param("max_angle_diff", max_angle_diff, 0.1);
+      nh.param("table_normal_x", table_normal_x, 0.0);
+      nh.param("table_normal_y", table_normal_y, 0.0);
+      nh.param("table_normal_z", table_normal_z, 1.0);
+      tf_.reset (new tf::TransformListener);
+      min_angle_cos_ = cos(max_angle_diff);
+
+      axis_ = tf::Vector3 (table_normal_x, table_normal_y, table_normal_z);
+      std::cout << __LINE__ << " :: " << min_table_height_ << " , " << max_table_height_ << " , " << min_angle_cos_
+                << " , " << robot_frame_id_ << " , " << sensor_frame_id_ << std::endl;
+    }
+
   /** Get the 2d keypoints and figure out their 3D position from the depth map
    * @param inputs
    * @param outputs
    * @return
    */
   int
-  process(const tendrils& inputs, const tendrils& outputs) {
-    if ((points3d_->rows != prev_image_rows_)
-        || (points3d_->cols != prev_image_cols_)) {
-      prev_image_rows_ = points3d_->rows;
-      prev_image_cols_ = points3d_->cols;
-      normal_computer_ = cv::RgbdNormals(points3d_->rows, points3d_->cols,
-                                         CV_32F, *K_, 5, cv::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
-    }
-
-    // Compute the normals
-    cv::Mat normals;
-    normal_computer_(*points3d_, normals);
-    std::vector<cv::Mat> channels;
-    cv::split(normals, channels);
-    cv::Mat channel_view;
-    cv::Mat(cv::abs(channels[2])).convertTo(channel_view, CV_8U, 255);
-
-    // Compute the planes
-    std::vector<cv::Vec4f> plane_coefficients;
-    cv::RgbdPlane plane_finder;
-    plane_finder.set("threshold", *plane_threshold_);
-    plane_finder.set("min_size", int(*min_table_size_));
-    plane_finder.set("sensor_error_a", 0.0075);
-    plane_finder(*points3d_, normals, *table_mask_, plane_coefficients);
-
-    // Figure out the points of each plane
-    std::vector<std::vector<cv::Point2i> > points_for_hull(
-      plane_coefficients.size());
-    cv::Mat_<cv::Vec3f>::const_iterator point3d = points3d_->begin<cv::Vec3f>();
-    cv::Mat_<uchar>::const_iterator point_mask = table_mask_->begin<uchar>();
-    cv::Point2i prev_point;
-    for (int y = 0; y < table_mask_->rows; ++y) {
-      int prev_index = 255;
-      for (int x = 0; x < table_mask_->cols; ++x, ++point3d, ++point_mask) {
-        int index = *point_mask;
-        if (index == 255) {
-          // Close the previous segment
-          if (prev_index != 255)
-            points_for_hull[prev_index].push_back(prev_point);
-          prev_index = 255;
-          continue;
-        }
-        // Add it to the points to compute the hull only if it is different for the previous one
-        // or if it is the first/last one on a line
-        if (index != prev_index) {
-          points_for_hull[index].push_back(cv::Point2i(x, y));
-          if (prev_index != 255)
-            points_for_hull[prev_index].push_back(prev_point);
-        }
-        prev_index = index;
-        prev_point = cv::Point2i(x, y);
-      }
-      // Add the last point of the line if it belongs to a plane
-      if (prev_index != 255)
-        points_for_hull[prev_index].push_back(prev_point);
-    }
-
-    // Fill the outputs
+  process(const tendrils& inputs, const tendrils& outputs)
+  {
     clouds_hull_->clear();
     table_coefficients_->clear();
-    for (int i = 0; i < points_for_hull.size(); ++i) {
-      // Compute the convex hull
-      std::vector<cv::Point2i> hull;
-      cv::convexHull(points_for_hull[i], hull);
-
-      // Add the plane coefficients but make sure the normal points towards the camera
-      if (plane_coefficients[i][2] < 0)
-        table_coefficients_->push_back(plane_coefficients[i]);
-      else
-        table_coefficients_->push_back(-plane_coefficients[i]);
-
-      // Add the point cloud
-      std::vector<cv::Vec3f> out;
-      out.reserve(hull.size());
-      BOOST_FOREACH(const cv::Point2i & point2d, hull) {
-        out.push_back((*points3d_).at<cv::Vec3f>(point2d.y, point2d.x));
+    if (!filter_planes_ || tf_->waitForTransform(robot_frame_id_, sensor_frame_id_, ros::Time(0), ros::Duration(0.5)))
+    {
+      if ((points3d_->rows != prev_image_rows_) || (points3d_->cols != prev_image_cols_))
+      {
+        prev_image_rows_ = points3d_->rows;
+        prev_image_cols_ = points3d_->cols;
+        normal_computer_ = cv::RgbdNormals(points3d_->rows, points3d_->cols, CV_32F, *K_, 5, cv::RgbdNormals::RGBD_NORMALS_METHOD_FALS);
       }
-      clouds_hull_->push_back(out);
+      // Compute the normals
+      cv::Mat normals;
+      normal_computer_(*points3d_, normals);
+      std::vector<cv::Mat> channels;
+      cv::split(normals, channels);
+      cv::Mat channel_view;
+      cv::Mat(cv::abs(channels[2])).convertTo(channel_view, CV_8U, 255);
+
+      // Compute the planes
+      std::vector<cv::Vec4f> plane_coefficients;
+      cv::RgbdPlane plane_finder;
+      plane_finder.set("threshold", *plane_threshold_);
+      plane_finder.set("min_size", int(*min_table_size_));
+      plane_finder.set("sensor_error_a", 0.0075);
+      plane_finder(*points3d_, normals, *table_mask_, plane_coefficients);
+
+      std::vector<bool> valid_planes;
+      unsigned valid_plane_count = 0;
+      if (filter_planes_) // -> tf_->waitForTransform = true
+      {
+        valid_planes = std::vector<bool>(plane_coefficients.size(), false);
+        tf::StampedTransform transform;
+        tf_->lookupTransform(robot_frame_id_, sensor_frame_id_,ros::Time(0), transform);
+        tf::Matrix3x3 basis = transform.getBasis();
+        tf::Vector3 origin = transform.getOrigin();
+
+        for (unsigned pIdx = 0; pIdx < plane_coefficients.size(); ++pIdx)
+        {
+          tf::Vector3 normal (plane_coefficients[pIdx][0], plane_coefficients[pIdx][1], plane_coefficients[pIdx][2]);
+          double dist = plane_coefficients[pIdx][3];
+
+          tf::Vector3 normal_ = basis * normal;
+          double dist_ = normal_.dot (origin) - dist;
+          if (normal_.dot(axis_) >= min_angle_cos_ && dist_ >= min_table_height_ && dist_ <= max_table_height_)
+          {
+            valid_planes [pIdx] = true;
+            ++valid_plane_count;
+          }
+        }
+      }
+      else
+      {
+        valid_planes = std::vector<bool>(plane_coefficients.size(), true);
+        valid_plane_count = plane_coefficients.size();
+      }
+
+      if (valid_plane_count > 0)
+      {
+        // Figure out the points of each plane
+        std::vector<std::vector<cv::Point2i> > points_for_hull(plane_coefficients.size());
+        cv::Mat_<cv::Vec3f>::const_iterator point3d = points3d_->begin<cv::Vec3f>();
+        cv::Mat_<uchar>::const_iterator point_mask = table_mask_->begin<uchar>();
+        cv::Point2i prev_point;
+        for (int y = 0; y < table_mask_->rows; ++y)
+        {
+          int prev_index = 255;
+          for (int x = 0; x < table_mask_->cols; ++x, ++point3d, ++point_mask)
+          {
+            int index = *point_mask;
+            if (index == 255)
+            {
+              // Close the previous segment
+              if (prev_index != 255)
+                points_for_hull[prev_index].push_back(prev_point);
+              prev_index = 255;
+              continue;
+            }
+            // Add it to the points to compute the hull only if it is different for the previous one
+            // or if it is the first/last one on a line
+            if (index != prev_index)
+            {
+              points_for_hull[index].push_back(cv::Point2i(x, y));
+              if (prev_index != 255)
+                points_for_hull[prev_index].push_back(prev_point);
+            }
+            prev_index = index;
+            prev_point = cv::Point2i(x, y);
+          }
+          // Add the last point of the line if it belongs to a plane
+          if (prev_index != 255)
+            points_for_hull[prev_index].push_back(prev_point);
+        }
+
+        // Fill the outputs
+        for (int i = 0; i < points_for_hull.size(); ++i)
+        {
+          if (valid_planes[i])
+          {
+            // Compute the convex hull
+            std::vector<cv::Point2i> hull;
+            cv::convexHull(points_for_hull[i], hull);
+
+            // Add the plane coefficients but make sure the normal points towards the camera
+            if (plane_coefficients[i][2] < 0)
+              table_coefficients_->push_back(plane_coefficients[i]);
+            else
+              table_coefficients_->push_back(-plane_coefficients[i]);
+
+            // Add the point cloud
+            std::vector<cv::Vec3f> out;
+            out.reserve(hull.size());
+            BOOST_FOREACH(const cv::Point2i & point2d, hull) {
+              out.push_back((*points3d_).at<cv::Vec3f>(point2d.y, point2d.x));
+            }
+            clouds_hull_->push_back(out);
+          }
+        }
+      }
+    }
+    else
+    {
+      *table_mask_ = cv::Mat (points3d_->rows, points3d_->cols, CV_8UC1);
+      ROS_WARN ("Could not get transformation, skipping frame\n");
     }
 
     return ecto::OK;
@@ -185,6 +259,15 @@ namespace tabletop
     int prev_image_rows_, prev_image_cols_;
     /** Cache the normal computer as it precomputes data */
     cv::RgbdNormals normal_computer_;
+
+    boost::shared_ptr<tf::TransformListener> tf_;
+    double min_table_height_;
+    double max_table_height_;
+    tf::Vector3 axis_;
+    double min_angle_cos_;
+    std::string robot_frame_id_;
+    std::string sensor_frame_id_;
+    bool filter_planes_;
   };
 }
 
