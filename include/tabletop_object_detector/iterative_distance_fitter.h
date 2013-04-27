@@ -38,6 +38,9 @@
 #define _ITERATIVE_DISTANCE_FITTER_H_
 
 #include "tabletop_object_detector/model_fitter.h"
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <pcl/search/search.h>
 
 #include <math.h>
 #include <moveit/distance_field/propagation_distance_field.h>
@@ -46,21 +49,36 @@
 
 namespace tabletop_object_detector {
 
+// use M-kernel to weight inliers and suppress the influence of outliers from linear to just constant ->
+// 1) more robust ICP (not too sensitive to outliers)
+// 2) score = inliers, but as a floating point value -> no cut off threshold -> smooth -> can better distinguish between similar poses.
+inline double huberKernel (double clipping, double x)
+{
+  if (x < clipping)
+    return 1.0;
+  else
+    return (clipping / x);
+}
+
 //! Does an ICP-like fitting only in the X and Y translation DOFs
+template<typename PointCloudType>
 class IterativeTranslationFitter : public DistanceFieldFitter
 {
  private:
 
   //! Helper function for fitting
-  template <class PointCloudType>
-    geometry_msgs::Point32 centerOfSupport(const PointCloudType& cloud);
+  geometry_msgs::Point32 centerOfSupport(const PointCloudType& cloud) const;
 
   //! Inner loop when doing translation fitting
-  template <class PointCloudType>
-    double getFitScoreAndGradient(const PointCloudType& cloud, 
+  double getFitScoreAndGradient(const PointCloudType& cloud,
 				  const geometry_msgs::Point32& location, 
 				  geometry_msgs::Point32& vector,
-				  double &maxDist);
+                  boost::function<double(double)> kernel) const;
+
+  double getModelFitScore(const PointCloudType& cloud, const geometry_msgs::Point32& location,
+                          boost::function<double(double)> kernel,
+                          const pcl::search::Search<typename PointCloudType::PointType>& search) const;
+
  public:
   //! Stub, just calls super's constructor
   IterativeTranslationFitter() : DistanceFieldFitter() {}
@@ -68,8 +86,8 @@ class IterativeTranslationFitter : public DistanceFieldFitter
   ~IterativeTranslationFitter() {}
 
   //! Main fitting function
-  template <class PointCloudType>
-    ModelFitInfo fitPointCloud(const PointCloudType& cloud);
+  ModelFitInfo fitPointCloud(const PointCloudType& cloud, const pcl::search::Search<typename PointCloudType::PointType>& search,
+                             double min_object_score = 0.75) const;
 };
 
 //------------------------- Implementation follows ----------------------------------------
@@ -78,7 +96,7 @@ class IterativeTranslationFitter : public DistanceFieldFitter
   gravity. This is the point where the table supports the object. 
 */
 template <class PointCloudType>
-geometry_msgs::Point32 IterativeTranslationFitter::centerOfSupport(const PointCloudType& cloud) 
+geometry_msgs::Point32 IterativeTranslationFitter<PointCloudType>::centerOfSupport(const PointCloudType& cloud) const
 {
   geometry_msgs::Point32 center;
   center.x = center.y = center.z = 0;
@@ -98,13 +116,11 @@ geometry_msgs::Point32 IterativeTranslationFitter::centerOfSupport(const PointCl
 
 
 template <class PointCloudType>
-double IterativeTranslationFitter::getFitScoreAndGradient(const PointCloudType& cloud, 
-							  const geometry_msgs::Point32& location, 
-							  geometry_msgs::Point32& vector,
-							  double &max_dist)
+double IterativeTranslationFitter<PointCloudType>::getFitScoreAndGradient(const PointCloudType& cloud,
+                              const geometry_msgs::Point32& location, geometry_msgs::Point32& vector,
+                              boost::function<double(double)> kernel) const
 {
-  double score = 0;
-  max_dist = 0;
+  double inlier_count = 0;
   
   vector.x = 0;
   vector.y = 0;
@@ -125,41 +141,29 @@ double IterativeTranslationFitter::getFitScoreAndGradient(const PointCloudType& 
       double cx, cy, cz;
       if (voxel.closest_point_[0] != distance_field::PropDistanceFieldVoxel::UNINITIALIZED) 
       {
-	distance_voxel_grid_->gridToWorld(voxel.closest_point_[0],
+        distance_voxel_grid_->gridToWorld(voxel.closest_point_[0],
 					  voxel.closest_point_[1],
 					  voxel.closest_point_[2],
 					  cx,cy,cz);
-	val = distance_voxel_grid_->getDistance(x,y,z);
-	vector.x += (cx-wx);
-	vector.y += (cy-wy);
-	vector.z += (cz-wz);
-	cnt++;
-	if (val>truncate_value_) 
-        {
-	  val = truncate_value_;
-	}
-      }
-      else
-      {
+        val = distance_voxel_grid_->getDistance(x,y,z);
+        double weight = kernel (val);
+        vector.x += weight * (cx-wx);
+        vector.y += weight * (cy-wy);
+        vector.z += weight * (cz-wz);
+
+        inlier_count += weight;
       }
     }
-    else
-    {
-    }    
+  }
 
-    max_dist = std::max(max_dist,val);
-    //score += val*val;
-    score += val;
-  }
-  score /= (cloud.points.size());
-  if (cnt!=0) 
+  if (inlier_count!=0)
   {
-    vector.x /=  cnt;
-    vector.y /=  cnt;
-    vector.z /=  cnt;
+    vector.x /=  inlier_count;
+    vector.y /=  inlier_count;
+    vector.z /=  inlier_count;
   }
-  
-  return score;
+
+  return inlier_count / cloud.size();
 }
 
 /*! Iterates over the inner loop of \a getFitScoreAndGradient, then moves in the direction
@@ -173,39 +177,44 @@ double IterativeTranslationFitter::getFitScoreAndGradient(const PointCloudType& 
   For the same reason. there is no iteration done along z at all.
 */
 template <class PointCloudType>
-ModelFitInfo IterativeTranslationFitter::fitPointCloud(const PointCloudType& cloud)
+ModelFitInfo IterativeTranslationFitter<PointCloudType>::fitPointCloud(const PointCloudType& cloud,
+                                                                       const pcl::search::Search<typename PointCloudType::PointType>& search,
+                                                                       double min_object_score) const
 {
   if (cloud.points.empty()) 
   {
     ROS_ERROR("Attempt to fit model to empty point cloud");
     geometry_msgs::Pose bogus_pose;
-    return ModelFitInfo(model_id_, bogus_pose, -1.0);
+    return ModelFitInfo(model_id_, bogus_pose, 0.0);
   }
   
   // compute center of point cloud
-  geometry_msgs::Point32 center = centerOfSupport<PointCloudType>(cloud);
+  geometry_msgs::Point32 center = centerOfSupport(cloud);
 
   geometry_msgs::Point32 location = center;
   geometry_msgs::Point32 vector;
-  double max_dist;
   geometry_msgs::Pose pose;
-    
-  double score = getFitScoreAndGradient<PointCloudType>(cloud, location, vector, max_dist);
-  double old_score = score + 1;
- 
-  double EPS = 1.0e-6;
-  int max_iterations = 100;
+
+  const double clipping = 0.0075;
+  boost::function<double(double)> kernel = boost::bind (huberKernel, clipping, _1);
+  const int max_iterations = 100;
   int iter = 0;
-  while (score < old_score - EPS && iter < max_iterations)
+  double score = 0;
+  const double EPS = 0.0;
+
+  do
   {
-    old_score = score;
-    location.x -= vector.x;
-    location.y -= vector.y;
-    // see above comment on search along z
-    // location.z -= vector.z;
-    score = getFitScoreAndGradient<PointCloudType>(cloud, location, vector, max_dist);
-    iter++;
-  }
+    double new_score = getFitScoreAndGradient(cloud, location, vector, kernel);
+    if (new_score > score + EPS)
+    {
+      score = new_score;
+      location.x -= vector.x;
+      location.y -= vector.y;
+    }
+    else
+      break;
+  } while (++iter < max_iterations);
+
 
   if (iter == max_iterations) 
   {
@@ -220,7 +229,40 @@ ModelFitInfo IterativeTranslationFitter::fitPointCloud(const PointCloudType& clo
   pose.orientation.z = 0;
   pose.orientation.w = 1;
 
-  return ModelFitInfo(model_id_, pose, old_score);
+  // evaluating the model score is cost-intensive and since the model_score <= 1 ->
+  // if score already below min_object_score, then set to 0 and stop further evaluation!
+  if (score > min_object_score)
+  {
+    double model_score = getModelFitScore (cloud, location, kernel, search);
+    // since for waterthight model only 50% of the points are visible at max, we weight the model_score only half.
+    score *= sqrt (model_score);
+  }
+  else
+    score = 0;
+
+  return ModelFitInfo(model_id_, pose, score);
+}
+
+template <class PointCloudType>
+double IterativeTranslationFitter<PointCloudType>::getModelFitScore(const PointCloudType& cloud, const geometry_msgs::Point32& position,
+                                                    boost::function<double(double)> kernel,
+                                                    const pcl::search::Search<typename PointCloudType::PointType>& search) const
+{
+  typedef typename PointCloudType::PointType PointT;
+  double inlier_count = 0;
+  std::vector<int> indices(1);
+  std::vector<float> distances(1);
+  PointT point;
+  for (std::vector<tf::Vector3>::const_iterator mIt = model_points_.begin(); mIt != model_points_.end(); ++mIt)
+  {
+    point.x = mIt->x () + position.x;
+    point.y = mIt->y () + position.y;
+    point.z = mIt->z () + position.z;
+
+    if (search.nearestKSearchT (point, 1, indices, distances) > 0)
+      inlier_count += kernel (sqrt(distances[0]));
+  }
+  return inlier_count / model_points_.size();
 }
 
 } //namespace

@@ -11,7 +11,6 @@ include_directories(SYSTEM ${catkin_INLUDE_DIRS})
 add_library(tabletop_model_fitter SHARED
     model_fitter.cpp
     iterative_distance_fitter.cpp
-    tabletop_object_recognition.cpp
 )
 
 find_package(Boost REQUIRED)
