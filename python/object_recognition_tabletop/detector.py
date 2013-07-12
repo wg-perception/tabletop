@@ -39,7 +39,8 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
 
     def connections(self, _p):
         # First find the table, then the pose
-        connections = [ self.passthrough['points3d', 'K_image'] >> self.table_detector['points3d', 'K'],
+        connections = [ self.passthrough['points3d'] >> self.table_detector['points3d'],
+                        self.passthrough['K_image'] >> self.table_detector['K'],                        
                         self.table_detector['table_coefficients'] >> self.table_pose['table_coefficients'] ]
         # also find the clusters of points
         connections += [ self.passthrough['points3d'] >> self.clusterer['points3d'],
