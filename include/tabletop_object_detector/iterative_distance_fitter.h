@@ -231,7 +231,7 @@ ModelFitInfo IterativeTranslationFitter<PointCloudType>::fitPointCloud(const Poi
 
   // evaluating the model score is cost-intensive and since the model_score <= 1 ->
   // if score already below min_object_score, then set to 0 and stop further evaluation!
-  /*  if (score > min_object_score)
+  if (score > min_object_score)
   {
     double model_score = getModelFitScore (cloud, location, kernel, search);
     // since for waterthight model only 50% of the points are visible at max, we weight the model_score only half.
@@ -239,8 +239,9 @@ ModelFitInfo IterativeTranslationFitter<PointCloudType>::fitPointCloud(const Poi
   }
   else
     score = 0;
-  std::cerr << __FILE__<< " @ " << __LINE__ << " , " << __PRETTY_FUNCTION__ << std::endl;
-  */
+  
+  //std::cerr << __FILE__<< " @ " << __LINE__ << " , " << __PRETTY_FUNCTION__ << std::endl;
+  
   return ModelFitInfo(model_id_, pose, score);
 }
 
