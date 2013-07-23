@@ -41,10 +41,10 @@
 #include <string>
 
 #include <pcl/point_cloud.h>
-//#include <pcl/search/kdtree.h>
+#include <pcl/search/kdtree.h>
 //#include <pcl/search/brute_force.h>
 //#include <pcl/search/octree.h>
-#include <pcl/search/impl/brute_force.hpp>
+//#include <pcl/search/impl/brute_force.hpp>
 
 #include "tabletop_object_detector/exhaustive_fit_detector.h"
 #include "tabletop_object_detector/marker_generator.h"
@@ -116,8 +116,8 @@ namespace tabletop_object_detector
       for (size_t i = 0; i < clusters.size(); i++)
       {
         cluster_model_indices[i] = i;
-	search[i].reset (new pcl::search::BruteForce<PointType> ());
-	//        search[i]->setInputCloud (clusters[i]);
+	search[i].reset (new pcl::search::KdTree<PointType> ());
+	search[i]->setInputCloud (clusters[i]);
         std::vector<ModelFitInfo> fit_results = detector_.fitBestModels (
             *(clusters[i]), std::max(1, num_models), *search[i]);
         std::vector<ModelFitInfo> &final_fit_results = raw_fit_results[i];
