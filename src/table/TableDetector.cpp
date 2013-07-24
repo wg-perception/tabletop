@@ -219,7 +219,14 @@ namespace tabletop
             std::vector<cv::Vec3f> out;
             out.reserve(hull.size());
             BOOST_FOREACH(const cv::Point2i & point2d, hull) {
-              out.push_back((*points3d_).at<cv::Vec3f>(point2d.y, point2d.x));
+              // Project the point onto the plane
+              cv::Vec3f point = (*points3d_).at<cv::Vec3f>(point2d.y, point2d.x);              
+              double distance = plane_coefficients[i][0] * point[0] + plane_coefficients[i][1] * point[1] 
+                + plane_coefficients[i][2] * point[2] + plane_coefficients[i][3];
+              cv::Vec3f plane_normal(plane_coefficients[i][0], plane_coefficients[i][1], plane_coefficients[i][2]);              
+              cv::Vec3f projected_point = point - distance * plane_normal;              
+              //              out.push_back((*points3d_).at<cv::Vec3f>(point2d.y, point2d.x));
+              out.push_back(projected_point);              
             }
             clouds_hull_->push_back(out);
           }
