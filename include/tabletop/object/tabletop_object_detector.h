@@ -42,9 +42,6 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/search/kdtree.h>
-//#include <pcl/search/brute_force.h>
-//#include <pcl/search/octree.h>
-//#include <pcl/search/impl/brute_force.hpp>
 
 #include "tabletop_object_detector/exhaustive_fit_detector.h"
 #include "tabletop_object_detector/marker_generator.h"

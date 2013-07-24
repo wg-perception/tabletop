@@ -240,8 +240,6 @@ ModelFitInfo IterativeTranslationFitter<PointCloudType>::fitPointCloud(const Poi
   else
     score = 0;
   
-  //std::cerr << __FILE__<< " @ " << __LINE__ << " , " << __PRETTY_FUNCTION__ << std::endl;
-  
   return ModelFitInfo(model_id_, pose, score);
 }
 
@@ -261,7 +259,6 @@ double IterativeTranslationFitter<PointCloudType>::getModelFitScore(const PointC
     point.y = mIt->y () + position.y;
     point.z = mIt->z () + position.z;
 
-    //    std::cerr << "idx: " << mIt - model_points_.begin () << std::flush;
     if (search.nearestKSearchT (point, 1, indices, distances) > 0)
     {
       inlier_count += kernel (sqrt(distances[0]));
