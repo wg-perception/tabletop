@@ -48,6 +48,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
