@@ -62,6 +62,10 @@
 
 #include <object_recognition_tabletop/household.h>
 
+#if PCL_VERSION_COMPARE(>=,1,7,0)
+#include <pcl_conversions/pcl_conversions.h>
+#endif
+
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
@@ -247,7 +251,14 @@ namespace tabletop
         // Add the cluster of points
         std::vector<sensor_msgs::PointCloud2ConstPtr> ros_clouds (1);
         sensor_msgs::PointCloud2Ptr cluster_cloud (new sensor_msgs::PointCloud2());
+
+#if PCL_VERSION_COMPARE(>=,1,7,0)
+        ::pcl::PCLPointCloud2 pcd_tmp;
+        ::pcl::toPCLPointCloud2(*result.cloud_, pcd_tmp);
+        pcl_conversions::fromPCL(pcd_tmp, *cluster_cloud);
+#else
         pcl::toROSMsg(*result.cloud_, *cluster_cloud);
+#endif
         ros_clouds[0] = cluster_cloud;
         pose_result.set_clouds(ros_clouds);
 
