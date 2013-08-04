@@ -107,7 +107,7 @@ namespace tabletop_object_detector
       //do the model fitting part
       std::vector<size_t> cluster_model_indices;
       std::vector<std::vector<ModelFitInfo> > raw_fit_results(clusters.size());
-      std::vector<typename pcl::search::KdTree<PointType>::Ptr> search (clusters.size ());
+      std::vector<typename pcl::search::Search<PointType>::Ptr> search (clusters.size ());
       cluster_model_indices.resize(clusters.size(), -1);
       int num_models = 1;
       for (size_t i = 0; i < clusters.size(); i++)
