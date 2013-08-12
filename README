@@ -8,3 +8,5 @@ Have not been re-implemented:
 
 Have been modified:
 - Shape is now copied from arm_navigation_msgs
+
+Please see http://wg-perception.github.io/tabletop for documentation.
