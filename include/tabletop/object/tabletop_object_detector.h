@@ -113,13 +113,11 @@ namespace tabletop_object_detector
       for (size_t i = 0; i < clusters.size(); i++)
       {
         cluster_model_indices[i] = i;
-        search[i].reset (new pcl::search::KdTree<PointType> ());
-        search[i]->setInputCloud (clusters[i]);
-
+	search[i].reset (new pcl::search::KdTree<PointType> ());
+	search[i]->setInputCloud (clusters[i]);
         std::vector<ModelFitInfo> fit_results = detector_.fitBestModels (
             *(clusters[i]), std::max(1, num_models), *search[i]);
         std::vector<ModelFitInfo> &final_fit_results = raw_fit_results[i];
-
         final_fit_results.reserve(fit_results.size());
         BOOST_FOREACH(const ModelFitInfo & fit_info, fit_results)
         {
@@ -178,6 +176,7 @@ namespace tabletop_object_detector
           }
         }
       }
+
 
       // Merge clusters together
       for (size_t i = 0; i < cluster_model_indices.size(); i++)

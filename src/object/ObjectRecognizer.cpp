@@ -48,6 +48,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -196,6 +197,8 @@ namespace tabletop
 
       std::vector<cv::Vec3f> translations(clusters_->size());
       std::vector<cv::Matx33f> rotations(clusters_->size());
+
+
       for (size_t table_index = 0; table_index < clusters_->size(); ++table_index)
       {
         getPlaneTransform((*table_coefficients_)[table_index], rotations[table_index], translations[table_index]);
@@ -217,7 +220,6 @@ namespace tabletop
           }
           cluster_table.insert(std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, size_t>(clusters[cluster_index], table_index));
         }
-
         clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
       }
 
