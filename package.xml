@@ -1,6 +1,6 @@
 <package>
   <name>object_recognition_tabletop</name>
-  <version>0.2.22</version>
+  <version>0.2.23</version>
   <description>A port of the old tabletop object recognition</description>
   <author>Marius Muja</author>
   <author email="vrabaud@willowgarage.com">Vincent Rabaud</author>
