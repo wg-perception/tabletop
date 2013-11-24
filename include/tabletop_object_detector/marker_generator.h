@@ -46,8 +46,6 @@
 
 namespace tabletop_object_detector {
 
-class ModelFitInfo;
-
 //! A convenience class for generating markers based on various clustering and fitting data
 /*! Just a place to group all the different debug marker generators
   so they don't polute other classes.

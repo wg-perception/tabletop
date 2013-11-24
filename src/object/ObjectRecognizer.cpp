@@ -45,7 +45,6 @@
 #include <ecto/ecto.hpp>
 #include <Eigen/StdVector>
 #include <Eigen/Geometry>
-#include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 

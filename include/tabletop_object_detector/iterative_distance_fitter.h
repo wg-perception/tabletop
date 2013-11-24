@@ -45,8 +45,6 @@
 #include <math.h>
 #include <moveit/distance_field/propagation_distance_field.h>
 
-#include "tabletop_object_detector/marker_generator.h"
-
 namespace tabletop_object_detector {
 
 // use M-kernel to weight inliers and suppress the influence of outliers from linear to just constant ->

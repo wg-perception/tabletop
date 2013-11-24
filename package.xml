@@ -11,7 +11,6 @@
   <url>http://ecto.willowgarage.com</url>
 
   <build_depend>ecto</build_depend>
-  <build_depend>ecto_pcl</build_depend>
   <build_depend>ecto_ros</build_depend>
   <build_depend>household_objects_database</build_depend>
   <build_depend>household_objects_database_msgs</build_depend>
@@ -25,7 +24,6 @@
   <build_depend>pluginlib</build_depend>
 
   <run_depend>ecto</run_depend>
-  <run_depend>ecto_pcl</run_depend>
   <run_depend>ecto_ros</run_depend>
   <run_depend>household_objects_database</run_depend>
   <run_depend>moveit_core</run_depend>
