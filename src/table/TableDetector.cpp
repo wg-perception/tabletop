@@ -77,7 +77,7 @@ namespace tabletop
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
       ros::NodeHandle nh("~");
-      nh.param("filter_planes", filter_planes_, true);
+      nh.param("filter_planes", filter_planes_, false);
       nh.param("min_table_height", min_table_height_, 0.5);
       nh.param("max_table_height", max_table_height_, 1.0);
       nh.param("robot_frame", robot_frame_id_, std::string("/base_link"));
