@@ -101,6 +101,7 @@ struct TableMsgAssembler {
       addConvexHullTable(table, cloud_hull, R, T);
       table_array_msg.tables.push_back(table);
     }
+    table_array_msg.header = table_array_msg.tables[0].header;
 
     outputs["table_array_msg"] << object_recognition_msgs::TableArrayConstPtr(new object_recognition_msgs::TableArray(table_array_msg));
 
@@ -117,16 +118,7 @@ private:
       vertex.x = point[0];
       vertex.y = point[1];
       vertex.z = point[2];
-      table.convex_hull.vertices.push_back(vertex);
-
-      if (i == 0 || i == convex_hull.size() - 1)
-        continue;
-
-      shape_msgs::MeshTriangle tri;
-      tri.vertex_indices[0] = 0;
-      tri.vertex_indices[1] = i;
-      tri.vertex_indices[2] = i + 1;
-      table.convex_hull.triangles.push_back(tri);
+      table.convex_hull.push_back(vertex);
     }
   }
 
@@ -164,8 +156,8 @@ private:
     table_pose.orientation.y = quaternion.y();
     table_pose.orientation.z = quaternion.z();
 
-    table.pose.pose = table_pose;
-    table.pose.header = cloud_header;
+    table.pose = table_pose;
+    table.header = cloud_header;
 
     return table;
   }

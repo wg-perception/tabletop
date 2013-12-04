@@ -35,32 +35,67 @@
 /** File defining a cell producing messages for tabletop visualization
  */
 
-#include <fstream>
-
-#include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <ecto/ecto.hpp>
 
 #include <sensor_msgs/Image.h>
-#include <sensor_msgs/PointCloud.h>
-#include <shape_msgs/Mesh.h>
 
-#include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_msgs/Table.h>
 #include <object_recognition_msgs/TableArray.h>
 
-#include <tabletop_object_detector/marker_generator.h>
+//for random colors
+#include <stdlib.h>
+#include <time.h>
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <vector>
 
-using object_recognition_core::common::PoseResult;
+#include <opencv2/core/core.hpp>
+
+#include <visualization_msgs/Marker.h>
 
 using ecto::tendrils;
+
+
+/*!
+ *  It is the responsibility of the caller to set the appropriate pose for the marker so that
+ *  it shows up in the right reference frame.
+ */
+visualization_msgs::Marker getCloudMarker(const std::vector<cv::Vec3f>& cloud)
+{
+  static bool first_time = true;
+  if (first_time) {
+    srand ( time(NULL) );
+    first_time = false;
+  }
+
+  //create the marker
+  visualization_msgs::Marker marker;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.lifetime = ros::Duration(5);
+
+  marker.type = visualization_msgs::Marker::POINTS;
+  marker.scale.x = 0.002;
+  marker.scale.y = 0.002;
+  marker.scale.z = 1.0;
+
+  marker.color.r = ((double)rand())/RAND_MAX;
+  marker.color.g = ((double)rand())/RAND_MAX;
+  marker.color.b = ((double)rand())/RAND_MAX;
+  marker.color.a = 1.0;
+
+  for(size_t i=0; i<cloud.size(); i++) {
+    geometry_msgs::Point p;
+    p.x = cloud[i][0];
+    p.y = cloud[i][1];
+    p.z = cloud[i][2];
+    marker.points.push_back(p);
+  }
+
+  //the caller must decide the header; we are done here
+  return marker;
+}
 
 /** Class simplifying the management of MarkerArray in RViz
  */
@@ -144,143 +179,48 @@ struct TableVisualizationMsgAssembler {
                    "The clusters on top of the table.").required(true);
     inputs.declare(&TableVisualizationMsgAssembler::image_message_,
                    "image_message", "the image message to get the header").required(true);
-    inputs.declare(&TableVisualizationMsgAssembler::pose_results_,
-                   "pose_results", "The results of object recognition").required(true);
-    inputs.declare(&TableVisualizationMsgAssembler::table_array_msg_,
-                   "table_array_msg", "The message for the found tables").required(true);
 
     outputs.declare<visualization_msgs::MarkerArrayConstPtr>(
       "marker_array_clusters", "The markers of the clusters");
-    outputs.declare<visualization_msgs::MarkerArrayConstPtr>(
-      "marker_array_hulls", "The marker for the table hull");
-    outputs.declare<visualization_msgs::MarkerArrayConstPtr>(
-      "marker_array_origins", "The marker for the origin of the table");
-    outputs.declare<visualization_msgs::MarkerArrayConstPtr>(
-      "marker_array_tables", "The marker for the table");
   }
 
   void configure(const tendrils& params, const tendrils& inputs,
                  const tendrils& outputs) {
     marker_array_clusters_ = MarkerArrayWrapper(0);
-    marker_array_hull_ = MarkerArrayWrapper(100);
-    marker_array_origin_ = MarkerArrayWrapper(200);
-    marker_array_table_ = MarkerArrayWrapper(300);
   }
 
   int process(const tendrils& inputs, const tendrils& outputs) {
-    std::string frame_id;
+    std_msgs::Header message_header;
     if (*image_message_)
-      frame_id = (*image_message_)->header.frame_id;
+      message_header = (*image_message_)->header;
     // Delete the old markers
     marker_array_clusters_.clear();
-    marker_array_hull_.clear();
-    marker_array_origin_.clear();
-    marker_array_table_.clear();
 
-    std_msgs::Header message_header;
-    message_header.frame_id = frame_id;
-
-    for (size_t table_index = 0; table_index < pose_results_->size();
-         ++table_index) {
-      const PoseResult& pose_result = (*pose_results_)[table_index];
-
-      const object_recognition_msgs::Table& table =
-        (*table_array_msg_)->tables[table_index];
-
-      getTable(table, message_header);
-
-      // ---[ Add the convex hull as a triangle mesh to the Table message
-      addConvexHullTable(table);
-
-      // Publish each clusters
-      addClusterMarkers((*clusters3d_)[table_index],
-                        table.pose.header/*message_header*/);
+    // Publish each clusters
+    for (size_t i = 0; i < clusters3d_->size(); ++i) {
+      std::vector<std::vector<cv::Vec3f> > &clusters = (*clusters3d_)[i];
+      for (size_t j = 0; j < clusters.size(); j++) {
+        visualization_msgs::Marker cloud_marker =
+        getCloudMarker(clusters[j]);
+        cloud_marker.header = message_header;
+        cloud_marker.pose.orientation.w = 1;
+        cloud_marker.ns = "tabletop_node";
+        marker_array_clusters_.push_back(cloud_marker);
+      }
     }
 
     outputs["marker_array_clusters"]
         << visualization_msgs::MarkerArrayConstPtr(
           new visualization_msgs::MarkerArray(marker_array_clusters_.array()));
-    outputs["marker_array_hulls"]
-        << visualization_msgs::MarkerArrayConstPtr(
-          new visualization_msgs::MarkerArray(marker_array_hull_.array()));
-    outputs["marker_array_origins"]
-        << visualization_msgs::MarkerArrayConstPtr(
-          new visualization_msgs::MarkerArray(marker_array_origin_.array()));
-    outputs["marker_array_tables"]
-        << visualization_msgs::MarkerArrayConstPtr(
-          new visualization_msgs::MarkerArray(marker_array_table_.array()));
 
     return ecto::OK;
   }
 private:
-  void addConvexHullTable(const object_recognition_msgs::Table& table) {
-    //create a triangle mesh out of the convex hull points and add it to the table message
-    visualization_msgs::Marker marker_hull;
-
-    marker_hull =
-      tabletop_object_detector::MarkerGenerator::getConvexHullTableMarker(
-        table.convex_hull);
-    marker_hull.header = table.pose.header;
-    marker_hull.pose = table.pose.pose;
-    marker_hull.ns = "tabletop_node";
-    marker_array_hull_.push_back(marker_hull);
-
-    // Deal with the marker for the origin of the table
-    Eigen::Matrix3f rotation_table(
-      Eigen::Quaternionf(table.pose.pose.orientation.w,
-                         table.pose.pose.orientation.x, table.pose.pose.orientation.y,
-                         table.pose.pose.orientation.z));
-
-    Eigen::Matrix3f rotation_arrow;
-    rotation_arrow << 0, 0, -1, 0, 1, 0, 1, 0, 0;
-    Eigen::Quaternionf quat(rotation_table * rotation_arrow);
-
-    ::geometry_msgs::Pose_<std::allocator<void> > marker_pose = table.pose.pose;
-    marker_pose.orientation.w = quat.w();
-    marker_pose.orientation.x = quat.x();
-    marker_pose.orientation.y = quat.y();
-    marker_pose.orientation.z = quat.z();
-    marker_array_origin_.push_back(tabletop_object_detector::MarkerGenerator::createMarker(
-                                     table.pose.header.frame_id, 10, .2, .2, .05, 0, 1, 1,
-                                     visualization_msgs::Marker::ARROW, 0,
-                                     "tabletop_node", marker_pose));
-  }
-
-  void getTable(const object_recognition_msgs::Table& table,
-                const std_msgs::Header& cloud_header) {
-    visualization_msgs::Marker marker_table =
-      tabletop_object_detector::MarkerGenerator::getTableMarker(table.x_min,
-          table.x_max, table.y_min, table.y_max);
-    marker_table.header = cloud_header;
-    marker_table.pose = table.pose.pose;
-    marker_table.ns = "tabletop_node";
-    marker_array_table_.push_back(marker_table);
-  }
-
-  void addClusterMarkers(
-    const std::vector<std::vector<cv::Vec3f> > &clusters,
-    const std_msgs::Header& cloud_header) {
-    for (size_t i = 0; i < clusters.size(); i++) {
-      visualization_msgs::Marker cloud_marker =
-        tabletop_object_detector::MarkerGenerator::getCloudMarker(clusters[i]);
-      cloud_marker.header = cloud_header;
-      cloud_marker.pose.orientation.w = 1;
-      cloud_marker.ns = "tabletop_node";
-      marker_array_clusters_.push_back(cloud_marker);
-    }
-  }
 
   /** The image message the initial data is from */
   ecto::spore<sensor_msgs::ImageConstPtr> image_message_;
 
-  ecto::spore<std::vector<PoseResult> > pose_results_;
-
-  ecto::spore<object_recognition_msgs::TableArrayConstPtr> table_array_msg_;
-
   MarkerArrayWrapper marker_array_clusters_;
-  MarkerArrayWrapper marker_array_hull_;
-  MarkerArrayWrapper marker_array_origin_;
-  MarkerArrayWrapper marker_array_table_;
   /** For each table, a vector of clusters */
   ecto::spore<std::vector<std::vector<std::vector<cv::Vec3f> > > > clusters3d_;
 };
