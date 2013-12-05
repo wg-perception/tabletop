@@ -250,7 +250,34 @@ namespace tabletop
             getPlaneTransform((*table_coefficients_)[i], R, T);
             PoseResult pose_result;
             pose_result.set_R(cv::Mat(R));
-            pose_result.set_T(cv::Mat(T));
+
+            // Get the center of the hull
+            cv::Moments m = moments(hull);
+            int y = int(m.m01/m.m00), x = int(m.m10/m.m00);
+            int y_min = y, y_max = y, x_min = x, x_max = x;
+            cv::Vec3f center;
+            // Make sure we get a non-NaN
+            bool is_found = false;
+            while (!is_found) {
+
+              for(x = x_min; x <= x_max && !is_found; ++x) {
+                if (is_found = (table_mask_->at<uchar>(y_min, x) == i))
+                  center = (*points3d_).at<cv::Vec3f>(y_min, x);
+                if (is_found = (table_mask_->at<uchar>(y_max, x) == i))
+                  center = (*points3d_).at<cv::Vec3f>(y_max, x);
+              }
+              for(int y = y_min+1; y <= y_max-1 && !is_found; ++y) {
+                if (is_found = (table_mask_->at<uchar>(y, x_min) == i))
+                  center = (*points3d_).at<cv::Vec3f>(y, x_min);
+                if (is_found = (table_mask_->at<uchar>(y, x_max) == i))
+                  center = (*points3d_).at<cv::Vec3f>(y, x_max);
+              }
+              --x_min;
+              --y_min;
+              ++x_max;
+              ++y_max;
+            }
+            pose_result.set_T(cv::Mat(center));
             pose_results_->push_back(pose_result);
 
             // Add the point cloud
