@@ -7,7 +7,7 @@ from ecto import BlackBoxCellInfo as CellInfo, BlackBoxForward as Forward
 from object_recognition_core.db import ObjectDb, ObjectDbParameters
 from object_recognition_core.pipelines.detection import DetectorBase
 from ecto_opencv.rgbd import OnPlaneClusterer
-from object_recognition_tabletop.ecto_cells.tabletop_table import TablePose, TableDetector
+from object_recognition_tabletop.ecto_cells.tabletop_table import TableDetector
 import ecto
 
 class TabletopTableDetector(ecto.BlackBox, DetectorBase):
@@ -20,7 +20,6 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
         return {'passthrough': ecto.PassthroughN(items={'K_image': 'The original calibration matrix',
                                                         'points3d': 'The 3d points as cv::Mat_<cv::Vec3f>.'}),
                 'table_detector': TableDetector(),
-                'table_pose': CellInfo(TablePose),
                 'clusterer': OnPlaneClusterer()
                 }
 
@@ -31,16 +30,14 @@ class TabletopTableDetector(ecto.BlackBox, DetectorBase):
         i = {'passthrough': 'all'}
 
         o = {'clusterer': [Forward('clusters2d'), Forward('clusters3d')],
-             'table_detector': [Forward('clouds_hull'), Forward('table_coefficients')],
-             'table_pose': [Forward('pose_results')]
+             'table_detector': [Forward('clouds_hull'), Forward('table_coefficients'), Forward('pose_results')]
              }
 
         return (p,i,o)
 
     def connections(self, _p):
         # First find the table, then the pose
-        connections = [ self.passthrough['points3d', 'K_image'] >> self.table_detector['points3d', 'K'],
-                        self.table_detector['table_coefficients'] >> self.table_pose['table_coefficients'] ]
+        connections = [ self.passthrough['points3d', 'K_image'] >> self.table_detector['points3d', 'K'] ]
         # also find the clusters of points
         connections += [ self.passthrough['points3d'] >> self.clusterer['points3d'],
                          self.table_detector['table_coefficients', 'table_mask'] >> self.clusterer['planes', 'masks'],
