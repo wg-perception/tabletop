@@ -101,7 +101,7 @@ struct TableMsgAssembler {
       addConvexHullTable(table, cloud_hull, R, T);
       table_array_msg.tables.push_back(table);
     }
-    table_array_msg.header = table_array_msg.tables[0].header;
+    table_array_msg.header = message_header;
 
     outputs["table_array_msg"] << object_recognition_msgs::TableArrayConstPtr(new object_recognition_msgs::TableArray(table_array_msg));
 
@@ -125,24 +125,6 @@ private:
   object_recognition_msgs::Table
   getTable(const std_msgs::Header& cloud_header, const std::vector<cv::Vec3f>& convex_hull, const cv::Matx33f& R, const cv::Vec3f& T) {
     object_recognition_msgs::Table table;
-
-    //get the extents of the table
-    table.x_min = std::numeric_limits<float>::max();
-    table.x_max = -table.x_min;
-    table.y_min = std::numeric_limits<float>::max();
-    table.y_max = -table.y_min;
-
-    for (size_t i = 0; i < convex_hull.size(); ++i) {
-      cv::Vec3f point = R.t() * (convex_hull[i] - T);
-      if (point[0] < table.x_min && point[0] > -3.0)
-        table.x_min = point[0];
-      if (point[0] > table.x_max && point[0] < 3.0)
-        table.x_max = point[0];
-      if (point[1] < table.y_min && point[1] > -3.0)
-        table.y_min = point[1];
-      if (point[1] > table.y_max && point[1] < 3.0)
-        table.y_max = point[1];
-    }
 
     geometry_msgs::Pose table_pose;
     table_pose.position.x = T[0];
