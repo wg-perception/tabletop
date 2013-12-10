@@ -4,12 +4,12 @@ source1:
   #
   # Example parameters to set (the default settings are using the ros topics starting with /camera/....) 
   #  
-  parameters:
+  #parameters:
     #rgb_frame_id: camera_rgb_optical_frame
-    rgb_image_topic: camera_rgb_image_rect_color
-    rgb_camera_info: camera_rgb_camera_info
-    depth_image_topic: camera_depth_registered_image_rect
-    depth_camera_info: camera_depth_registered_camera_info
+    #rgb_image_topic: camera_rgb_image_rect_color
+    #rgb_camera_info: camera_rgb_camera_info
+    #depth_image_topic: camera_depth_registered_image_rect
+    #depth_camera_info: camera_depth_registered_camera_info
     #
     #crop_enabled: True
     #x_min: -0.4
@@ -52,10 +52,13 @@ pipeline2:
     object_ids: 'all'
     tabletop_object_ids: 'REDUCED_MODEL_SET'
     db:
-      type: 'ObjectDbSqlHousehold'
-      host: 'wgs36'
-      port: 5432
-      user: 'willow'
-      password: 'willow'
-      name: 'household_objects'
-      module: 'object_recognition_tabletop'
+#      type: 'ObjectDbSqlHousehold'
+#      host: 'wgs36'
+#      port: 5432
+#      user: 'willow'
+#      password: 'willow'
+#      name: 'household_objects'
+#      module: 'object_recognition_tabletop'
+      type: CouchDB
+      root: http://localhost:5984
+      collection: object_recognition
