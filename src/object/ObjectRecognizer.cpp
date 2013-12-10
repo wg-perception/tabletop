@@ -58,6 +58,7 @@
 
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
+#include <object_recognition_core/db/ModelReader.h>
 
 #include <object_recognition_tabletop/household.h>
 
@@ -96,65 +97,118 @@ getPlaneTransform(const cv::Vec4f& plane_coefficients, cv::Matx33f& rotation, cv
 
 namespace tabletop
 {
-  /** Ecto implementation of a module that recognizes objects using the tabletop code
-   *
-   */
-  struct ObjectRecognizer
-  {
-    void
-    ParameterCallback(const std::string &model_set)
-    {
-      //std::vector<object_recognition_core::db::ModelId> object_ids;
+/** Ecto implementation of a module that recognizes objects using the tabletop code
+ */
+struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReaderBase {
+  virtual
+  void parameter_callback(const object_recognition_core::db::Documents& db_documents) {
+    object_recognizer_.clearObjects();
 
-      //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
-      //std::copy(begin, end, std::back_inserter(object_ids));
-
-    object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer <pcl::PointXYZ>();
-
-    object_recognition_core::db::ObjectDbParameters parameters(*json_db_params_);
-
-    if (parameters.type() == object_recognition_core::db::ObjectDbParameters::NONCORE) {
-      // If we are dealing with a household DB
-      ObjectDbSqlHousehold *db = new ObjectDbSqlHousehold();
-      db->set_parameters(parameters);
-      db_.reset(db);
-      boost::shared_ptr<household_objects_database::ObjectsDatabase> database = db->db();
-
-      std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
-      std::cout << "Loading model set: " << model_set << std::endl;
-      if (!database->getScaledModelsBySet(models, model_set))
-        return;
-
-      object_recognizer_.clearObjects();
-      for (size_t i = 0; i < models.size(); i++) {
-        int model_id = models[i]->id_.data();
-        shape_msgs::Mesh mesh;
-
-        std::cout << "Loading model: " << model_id;
-        if (!database->getScaledModelMesh(model_id, mesh)) {
-          std::cout << "  ... Failed" << std::endl;
+    BOOST_FOREACH(const object_recognition_core::db::Document & document, db_documents) {
+      // Get the list of _attachments and figure out the original mesh
+      std::vector<std::string> attachments_names = document.attachment_names();
+      std::string mesh_path;
+      BOOST_FOREACH(const std::string & attachment_name, attachments_names) {
+        if (attachment_name.find("original") != 0)
           continue;
-        }
+        // Create a temporary file
+        char mesh_path_tmp[L_tmpnam];
+        tmpnam(mesh_path_tmp);
+        mesh_path = std::string(mesh_path_tmp) + attachment_name.substr(8);
 
-        object_recognizer_.addObject(model_id, mesh);
-        std::cout << std::endl;
+        // Load the mesh and save it to the temporary file
+        std::ofstream mesh_file;
+        mesh_file.open(mesh_path.c_str());
+        document.get_attachment_stream(attachment_name, mesh_file);
+        mesh_file.close();
+        break;
       }
-    } else {
-      // We are dealing with a core DB so read meshes from that DB
+
+      // Create a fake ID
+      static int i = 0;
+      household_id_to_db_id_[i] = document.id();
+
+      // Load the mesh and convert it to a shape_msgs::Mesh
+      shape_msgs::Mesh mesh;
+
       // TODO
+      std::cout << "Loading model: " << document.id();
+/*            if (!database->getScaledModelMesh(i, mesh)) {
+              std::cout << "  ... Failed" << std::endl;
+              continue;
+            }*/
+
+      object_recognizer_.addObject(i, mesh);
+      std::cout << std::endl;
     }
   }
 
+  virtual void
+  parameterCallbackJsonDb(const std::string& json_db) {
+    *json_db_ = json_db;
+    if (json_db_->empty())
+      return;
+
+    object_recognition_core::db::ObjectDbParameters parameters(*json_db_);
+
+    if (parameters.type() == object_recognition_core::db::ObjectDbParameters::NONCORE) {
+      // If we are dealing with a household DB
+      db_.reset(new ObjectDbSqlHousehold());
+      db_->set_parameters(parameters);
+    } else {
+      // If we are dealing with an ORK DB
+      if (!db_)
+        db_ = ObjectDbParameters(*json_db_).generateDb();
+      parameterCallbackCommon();
+    }
+  }
+
+  void
+  parameterCallbackModelSet(const std::string& model_set) {
+    //std::vector<object_recognition_core::db::ModelId> object_ids;
+
+    //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
+    //std::copy(begin, end, std::back_inserter(object_ids));
+
+    object_recognition_core::db::ObjectDbParameters parameters(*json_db_);
+
+    if (parameters.type() != object_recognition_core::db::ObjectDbParameters::NONCORE)
+      return;
+
+    object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer <pcl::PointXYZ>();
+
+    boost::shared_ptr<household_objects_database::ObjectsDatabase> database = dynamic_cast<ObjectDbSqlHousehold*>(&(*db_))->db();
+
+    std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
+    std::cout << "Loading model set: " << model_set << std::endl;
+    if (!database->getScaledModelsBySet(models, model_set))
+      return;
+
+    object_recognizer_.clearObjects();
+    for (size_t i = 0; i < models.size(); i++) {
+      int model_id = models[i]->id_.data();
+      shape_msgs::Mesh mesh;
+
+      std::cout << "Loading model: " << model_id;
+      if (!database->getScaledModelMesh(model_id, mesh)) {
+        std::cout << "  ... Failed" << std::endl;
+        continue;
+      }
+
+      object_recognizer_.addObject(model_id, mesh);
+      std::stringstream ss;
+      ss << model_id;
+      household_id_to_db_id_[model_id] = ss.str();
+      std::cout << std::endl;
+    }
+
+  }
+
   static void declare_params(ecto::tendrils& params) {
-    params.declare(
-        &ObjectRecognizer::object_ids_, "json_object_ids",
-        "The DB id of the objects to load in the household database.");
-    params.declare(
-        &ObjectRecognizer::tabletop_object_ids_, "tabletop_object_ids",
-        "The object_ids set as defined by the household object database.",
-        "REDUCED_MODEL_SET");
-    params.declare(&ObjectRecognizer::json_db_params_, "json_db",
-                   "The DB parameters").required(true);
+    object_recognition_core::db::bases::declare_params_impl(params, "mesh");
+    params.declare(&ObjectRecognizer::tabletop_object_ids_, "tabletop_object_ids",
+                   "The object_ids set as defined by the household object database.",
+                   "REDUCED_MODEL_SET");
   }
 
     static void
@@ -169,7 +223,9 @@ namespace tabletop
     void
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
-      tabletop_object_ids_.set_callback(boost::bind(&ObjectRecognizer::ParameterCallback, this, _1));
+      configure_impl();
+
+      tabletop_object_ids_.set_callback(boost::bind(&ObjectRecognizer::parameterCallbackModelSet, this, _1));
       tabletop_object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
@@ -230,9 +286,7 @@ namespace tabletop
         PoseResult pose_result;
 
         // Add the object id
-        std::stringstream ss;
-        ss << result.object_id_;
-        pose_result.set_object_id(db_, ss.str());
+        pose_result.set_object_id(db_, household_id_to_db_id_[result.object_id_]);
 
         // Add the pose
         const geometry_msgs::Pose &pose = result.pose_;
@@ -268,8 +322,6 @@ namespace tabletop
 
   private:
     typedef std::vector<tabletop_object_detector::ModelFitInfo> ModelFitInfos;
-    /** The db we are dealing with */
-    boost::shared_ptr<object_recognition_core::db::ObjectDb> db_;
     /** The object recognizer */
     tabletop_object_detector::TabletopObjectRecognizer<pcl::PointXYZ> object_recognizer_;
     /** The resulting poses of the objects */
@@ -281,9 +333,9 @@ namespace tabletop
     /** The number of models to fit to each cluster */
     float confidence_cutoff_;
     bool perform_fit_merge_;
-    ecto::spore<std::string> object_ids_;
     ecto::spore<std::string> tabletop_object_ids_;
-    ecto::spore<std::string> json_db_params_;
+    /** map to convert from artificial household id to db id */
+    std::map<size_t, std::string> household_id_to_db_id_;
   };
 }
 
