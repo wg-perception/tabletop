@@ -66,6 +66,11 @@
 #include <pcl_conversions/pcl_conversions.h>
 #endif
 
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
@@ -104,6 +109,9 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
   void parameter_callback(const object_recognition_core::db::Documents& db_documents) {
     object_recognizer_.clearObjects();
 
+    aiLogStream* ai_stream_ = new aiLogStream(aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL));
+    aiAttachLogStream(ai_stream_);
+
     BOOST_FOREACH(const object_recognition_core::db::Document & document, db_documents) {
       // Get the list of _attachments and figure out the original mesh
       std::vector<std::string> attachments_names = document.attachment_names();
@@ -128,19 +136,47 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
       static int i = 0;
       household_id_to_db_id_[i] = document.id();
 
-      // Load the mesh and convert it to a shape_msgs::Mesh
-      shape_msgs::Mesh mesh;
-
-      // TODO
+      // Load the mesh through assimp
       std::cout << "Loading model: " << document.id();
-/*            if (!database->getScaledModelMesh(i, mesh)) {
-              std::cout << "  ... Failed" << std::endl;
-              continue;
-            }*/
 
-      object_recognizer_.addObject(i, mesh);
+      const struct aiScene* scene = aiImportFile(mesh_path.c_str(), aiProcessPreset_TargetRealtime_Quality);
+      const aiNode* nd = scene->mRootNode;
+
+      // Load the mesh and convert it to a shape_msgs::Mesh
+      shape_msgs::Mesh mesh_msg;
+
+      for (size_t i_mesh = 0; i_mesh < scene->mNumMeshes; ++i_mesh) {
+        const struct aiMesh* mesh = scene->mMeshes[i_mesh];
+        size_t size_ini = mesh_msg.vertices.size();
+        mesh_msg.vertices.resize(size_ini + mesh->mNumVertices);
+        for (size_t j = 0; j < mesh->mNumVertices; ++j) {
+          const aiVector3D& vertex = mesh->mVertices[j];
+          mesh_msg.vertices[size_ini + j].x = vertex.x;
+          mesh_msg.vertices[size_ini + j].y = vertex.y;
+          mesh_msg.vertices[size_ini + j].z = vertex.z;
+        }
+
+        size_t size_ini_triangles = mesh_msg.triangles.size();
+        mesh_msg.triangles.resize(size_ini_triangles + mesh->mNumFaces);
+        size_t j_triangles = size_ini_triangles;
+        for (size_t j = 0; j < mesh->mNumFaces; ++j) {
+          const aiFace& face = mesh->mFaces[j];
+          if (face.mNumIndices != 3)
+            continue;
+          for (size_t k = 0; k < 3; ++k)
+            mesh_msg.triangles[j_triangles].vertex_indices[k] = size_ini + face.mIndices[k];
+          ++j_triangles;
+        }
+        mesh_msg.triangles.resize(j_triangles);
+      }
+
+      object_recognizer_.addObject(i, mesh_msg);
       std::cout << std::endl;
+
+      aiReleaseImport(scene);
     }
+
+    aiDetachAllLogStreams();
   }
 
   virtual void
