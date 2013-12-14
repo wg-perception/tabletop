@@ -85,7 +85,7 @@ class IterativeTranslationFitter : public DistanceFieldFitter
 
   //! Main fitting function
   ModelFitInfo fitPointCloud(const PointCloudType& cloud, const pcl::search::Search<typename PointCloudType::PointType>& search,
-                             double min_object_score = 0.75) const;
+                             double min_object_score) const;
 };
 
 //------------------------- Implementation follows ----------------------------------------

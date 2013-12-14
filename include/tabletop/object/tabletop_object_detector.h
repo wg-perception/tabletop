@@ -115,16 +115,8 @@ namespace tabletop_object_detector
         search[i].reset (new pcl::search::KdTree<PointType> ());
         search[i]->setInputCloud (clusters[i]);
 
-        std::vector<ModelFitInfo> fit_results = detector_.fitBestModels (
-            *(clusters[i]), std::max(1, num_models), *search[i]);
-        std::vector<ModelFitInfo> &final_fit_results = raw_fit_results[i];
-
-        final_fit_results.reserve(fit_results.size());
-        BOOST_FOREACH(const ModelFitInfo & fit_info, fit_results)
-        {
-          if (getConfidence(fit_info.getScore()) >= confidence_cutoff)
-            final_fit_results.push_back(fit_info);
-        }
+        raw_fit_results[i] = detector_.fitBestModels(
+            *(clusters[i]), std::max(1, num_models), *search[i], confidence_cutoff);
       }
 
       //merge models that were fit very close to each other
@@ -169,7 +161,7 @@ namespace tabletop_object_detector
             //fits for cluster j now point at fit for cluster i
             cluster_model_indices[j] = i;
             //refit cluster i
-            raw_fit_results.at(i) = detector_.fitBestModels(*(clusters[i]), std::max(1, num_models), *search[i]);
+            raw_fit_results.at(i) = detector_.fitBestModels(*(clusters[i]), std::max(1, num_models), *search[i], confidence_cutoff);
           }
           else
           {

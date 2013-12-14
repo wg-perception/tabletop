@@ -125,14 +125,14 @@ class ExhaustiveFitDetector
     \param rotate true if we search for the optimal rotation as well
   */
   template <class PointCloudType>
-  std::vector<ModelFitInfo> fitBestModels(const PointCloudType& cloud, int numResults, const pcl::search::Search<typename PointCloudType::PointType>& search)
+  std::vector<ModelFitInfo> fitBestModels(const PointCloudType& cloud, int numResults, const pcl::search::Search<typename PointCloudType::PointType>& search, double min_object_score)
   {
     std::vector<ModelFitInfo> fit_results;
     if (numResults <= 0) return fit_results;
     
     for (size_t i=0; i<templates.size(); ++i) 
     {
-      ModelFitInfo current = templates[i]->fitPointCloud(cloud, search);
+      ModelFitInfo current = templates[i]->fitPointCloud(cloud, search, min_object_score);
       // If the model that was matched is not in the exclusion list
       bool found = (model_exclusion_set_.find(current.getModelId()) != model_exclusion_set_.end());
       if (negate_exclusions_ == found)
