@@ -129,10 +129,27 @@ std::vector<tf::Vector3> interpolateTriangle(tf::Vector3 v0,
 {
   std::vector<tf::Vector3> vectors;
 
-  //find out the interpolation resolution for the first coordinate
-  //based on the size of the 0-1 and 0-2 edges
+  // Choose which corner should be the main one
   double d01 = dist(v0, v1);
   double d02 = dist(v0, v2);
+  double d12 = dist(v1, v2);
+  tf::Vector3 vtmp;
+  if ((d01 < d02) && (d01 < d12)) {
+      vtmp = v0;
+      v0 = v2;
+      v2 = vtmp;
+  }
+  if ((d02 < d01) && (d02 < d12)) {
+    vtmp = v0;
+    v0 = v1;
+    v1 = vtmp;
+  }
+  d01 = dist(v0, v1);
+  d02 = dist(v0, v2);
+  d12 = dist(v1, v2);
+
+  //find out the interpolation resolution for the first coordinate
+  //based on the size of the 0-1 and 0-2 edges
   double res_0 = min_res / std::max(d01, d02);
 
   //perform the first interpolation
