@@ -70,7 +70,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-
 using object_recognition_core::common::PoseResult;
 
 using ecto::tendrils;
@@ -134,17 +133,29 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
 
       // Create a fake ID
       static int i = 0;
-      household_id_to_db_id_[i] = document.id();
+      household_id_to_db_id_[i] = document.get_field<std::string>("object_id");
 
       // Load the mesh through assimp
-      std::cout << "Loading model: " << document.id();
+      std::cout << "Loading model: " << document.id() << " for object id: " << household_id_to_db_id_[i];
 
-      const struct aiScene* scene = aiImportFile(mesh_path.c_str(), aiProcessPreset_TargetRealtime_Quality);
+      const struct aiScene* scene = aiImportFile(mesh_path.c_str(), aiProcess_FindDegenerates |
+      aiProcess_FindInvalidData |
+      aiProcess_ImproveCacheLocality |
+      aiProcess_JoinIdenticalVertices |
+      aiProcess_OptimizeGraph |
+      aiProcess_OptimizeMeshes |
+      aiProcess_RemoveRedundantMaterials |
+      aiProcess_SortByPType |
+      aiProcess_Triangulate |
+      aiProcess_RemoveComponent |
+      aiProcess_FlipUVs |
+      aiProcess_ValidateDataStructure |
+      aiProcess_MakeLeftHanded);
       const aiNode* nd = scene->mRootNode;
 
-      // Load the mesh and convert it to a shape_msgs::Mesh
+      // Load the meshes and convert them to a shape_msgs::Mesh
       shape_msgs::Mesh mesh_msg;
-
+      double min_z = std::numeric_limits<double>::max();
       for (size_t i_mesh = 0; i_mesh < scene->mNumMeshes; ++i_mesh) {
         const struct aiMesh* mesh = scene->mMeshes[i_mesh];
         size_t size_ini = mesh_msg.vertices.size();
@@ -154,6 +165,8 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
           mesh_msg.vertices[size_ini + j].x = vertex.x;
           mesh_msg.vertices[size_ini + j].y = vertex.y;
           mesh_msg.vertices[size_ini + j].z = vertex.z;
+          if (vertex.z < min_z)
+            min_z = vertex.z;
         }
 
         size_t size_ini_triangles = mesh_msg.triangles.size();
@@ -161,8 +174,6 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         size_t j_triangles = size_ini_triangles;
         for (size_t j = 0; j < mesh->mNumFaces; ++j) {
           const aiFace& face = mesh->mFaces[j];
-          if (face.mNumIndices != 3)
-            continue;
           for (size_t k = 0; k < 3; ++k)
             mesh_msg.triangles[j_triangles].vertex_indices[k] = size_ini + face.mIndices[k];
           ++j_triangles;
@@ -170,7 +181,14 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         mesh_msg.triangles.resize(j_triangles);
       }
 
+      // Make sure z=0 is the minimum z for this mesh
+      for (size_t i = 0; i < mesh_msg.vertices.size(); ++i)
+        mesh_msg.vertices[i].z -= min_z;
+
+      min_z_[document.get_field<std::string>("object_id")] = min_z;
+
       object_recognizer_.addObject(i, mesh_msg);
+
       std::cout << std::endl;
 
       aiReleaseImport(scene);
@@ -313,7 +331,6 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
       }
 
       object_recognizer_.objectDetection(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
-
       for (size_t i = 0; i < results.size(); ++i)
       {
         const tabletop_object_detector::TabletopObjectRecognizer<pcl::PointXYZ>::TabletopResult & result = results[i];
@@ -322,11 +339,13 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         PoseResult pose_result;
 
         // Add the object id
-        pose_result.set_object_id(db_, household_id_to_db_id_[result.object_id_]);
+        std::string object_id = household_id_to_db_id_[result.object_id_];
+        pose_result.set_object_id(db_, object_id);
 
         // Add the pose
         const geometry_msgs::Pose &pose = result.pose_;
         cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
+        T[2] -= min_z_[object_id];
         Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
 
         cv::Vec3f new_T = rotations[table_index] * T + translations[table_index];
@@ -370,9 +389,11 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
     float confidence_cutoff_;
     bool perform_fit_merge_;
     ecto::spore<std::string> tabletop_object_ids_;
-    /** map to convert from artificial household id to db id */
-    std::map<size_t, std::string> household_id_to_db_id_;
-  };
+  /** map to convert from artificial household id to db id */
+  std::map<size_t, std::string> household_id_to_db_id_;
+  /** for each DB id, store the minimum z */
+  std::map<std::string, double> min_z_;
+};
 }
 
 ECTO_CELL(tabletop_object, tabletop::ObjectRecognizer, "ObjectRecognizer",
