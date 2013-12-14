@@ -219,21 +219,6 @@ ObjectDbSqlHousehold::QueryView(const object_recognition_core::db::View & view, 
         throw std::runtime_error("Function not implemented in the SQL household DB.");
       break;
     }
-    case object_recognition_core::db::View::VIEW_OBJECT_INFO_WHERE_OBJECT_ID:
-    {
-      object_recognition_core::db::View::Key key;
-      std::string options;
-      if (view.key(key))
-      {
-        object_recognition_core::db::Document view_element;
-        view_element.SetIdRev("", key.get_str());
-        view_element.set_field("name", key.get_str());
-        view_elements.push_back(view_element);
-      }
-      else
-        throw std::runtime_error("Function not implemented in the SQL household DB.");
-      break;
-    }
   }
 }
 
