@@ -292,11 +292,10 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
       std::vector<tabletop_object_detector::TabletopObjectRecognizer::TabletopResult > results;
 
       // Process each table
-      pose_results_->clear();
-
       std::vector<std::vector<cv::Vec3f> > clusters_merged;
-      // Map to store the transformation for each cluster (table_index)
-      std::map<size_t, size_t> cluster_table;
+      clusters_merged.reserve(100);
+      std::vector<size_t> cluster_table;
+      cluster_table.reserve(100);
 
       std::vector<cv::Vec3f> translations(clusters_->size());
       std::vector<cv::Matx33f> rotations(clusters_->size());
@@ -304,27 +303,24 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
       {
         getPlaneTransform((*table_coefficients_)[table_index], rotations[table_index], translations[table_index]);
 
-        // Make the clusters be in the table frame
-        size_t n_clusters = (*clusters_)[table_index].size();
-        std::vector<std::vector<cv::Vec3f> > clusters(n_clusters);
-
         cv::Matx33f Rinv = rotations[table_index].t();
         cv::Vec3f Tinv = -Rinv*translations[table_index];
 
-        for (size_t cluster_index = 0; cluster_index < n_clusters; ++cluster_index)
-        {
-          for(size_t i = 0; i < (*clusters_)[table_index][cluster_index].size(); ++i)
-          {
-            cv::Vec3f res = Rinv*(*clusters_)[table_index][cluster_index][i] + Tinv;
-            clusters[cluster_index].push_back(cv::Vec3f(res[0], res[1], res[2]));
-          }
-          cluster_table[cluster_index] = table_index;
+      BOOST_FOREACH(const std::vector<cv::Vec3f>& cluster, (*clusters_)[table_index]) {
+        clusters_merged.resize(clusters_merged.size() + 1);
+        for (size_t i = 0; i < cluster.size(); ++i) {
+          cv::Vec3f res = Rinv * cluster[i] + Tinv;
+          clusters_merged.back().push_back(cv::Vec3f(res[0], res[1], res[2]));
         }
-
-        clusters_merged.insert(clusters_merged.end(), clusters.begin(), clusters.end());
+        cluster_table.push_back(table_index);
       }
+    }
 
+      // Find possible candidates
       object_recognizer_.objectDetection(clusters_merged, confidence_cutoff_, perform_fit_merge_, results);
+
+      // Define the results
+      pose_results_->clear();
       for (size_t i = 0; i < results.size(); ++i)
       {
         const tabletop_object_detector::TabletopObjectRecognizer::TabletopResult & result = results[i];
