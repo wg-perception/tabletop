@@ -39,16 +39,13 @@
 
 #include <vector>
 #include <set>
-#include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 
-#include <sensor_msgs/PointCloud.h>
-#include <pcl/search/search.h>
+#include <opencv2/flann/flann.hpp>
 
 #include <household_objects_database/objects_database.h>
 #include <shape_msgs/Mesh.h>
 
-#include "tabletop_object_detector/model_fitter.h"
+#include <tabletop_object_detector/model_fitter.h>
 
 namespace tabletop_object_detector {
 
@@ -122,10 +119,8 @@ class ExhaustiveFitDetector
   /*! Fits the point cloud \a cloud against all the models in the internal list.
     It always stores the list with at most \a numResults best fits, sorted by 
     their score. At the end, it returns this list.
-    \param rotate true if we search for the optimal rotation as well
   */
-  template <class PointCloudType>
-  std::vector<ModelFitInfo> fitBestModels(const PointCloudType& cloud, int numResults, const pcl::search::Search<typename PointCloudType::PointType>& search, double min_object_score)
+  std::vector<ModelFitInfo> fitBestModels(const std::vector<cv::Vec3f>& cloud, int numResults, cv::flann::Index &search, double min_object_score)
   {
     std::vector<ModelFitInfo> fit_results;
     if (numResults <= 0) return fit_results;

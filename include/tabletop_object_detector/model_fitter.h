@@ -43,9 +43,8 @@
 
 #include "tf/transform_datatypes.h"
 
-#include "geometry_msgs/Point32.h"
-#include "sensor_msgs/PointCloud.h"
-#include "shape_msgs/Mesh.h"
+#include <sensor_msgs/PointCloud.h>
+#include <shape_msgs/Mesh.h>
 
 namespace distance_field {
   class PropagationDistanceField;

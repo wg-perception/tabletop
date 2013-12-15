@@ -3,7 +3,7 @@ project(object_recognition_tabletop)
 
 find_package(catkin REQUIRED ecto household_objects_database
                              moveit_core object_recognition_core object_recognition_msgs opencv_candidate
-                             pcl_ros pluginlib rosconsole roscpp shape_msgs sql_database tf)
+                             pluginlib rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
 
 # deal with Python
@@ -14,15 +14,12 @@ add_subdirectory(python)
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE 1)
 
 # include some directories
-find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
 
 include_directories(${catkin_INCLUDE_DIRS}
                     include
 )
-include_directories(SYSTEM ${Eigen_INCLUDE_DIRS}
-                           ${PCL_INCLUDE_DIRS}
-)
+include_directories(SYSTEM ${Eigen_INCLUDE_DIRS})
 
 add_subdirectory(src)
 

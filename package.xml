@@ -17,7 +17,6 @@
   <build_depend>object_recognition_core</build_depend>
   <build_depend>object_recognition_msgs</build_depend>
   <build_depend>opencv_candidate</build_depend>
-  <build_depend>pcl_ros</build_depend>
   <build_depend>sql_database</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>pluginlib</build_depend>
@@ -29,7 +28,6 @@
   <run_depend>object_recognition_core</run_depend>
   <run_depend>object_recognition_msgs</run_depend>
   <run_depend>opencv_candidate</run_depend>
-  <run_depend>pcl_ros</run_depend>
   <run_depend>sql_database</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>pluginlib</run_depend>
