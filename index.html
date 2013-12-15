@@ -44,6 +44,7 @@
 <li><a class="reference internal" href="#">object_recognition_tabletop: Tabletop Object Recognition</a><ul>
 <li><a class="reference internal" href="#table-finder">Table Finder</a></li>
 <li><a class="reference internal" href="#object-finder">Object Finder</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
 </ul>
@@ -76,7 +77,7 @@
             
   <div class="section" id="object-recognition-tabletop-tabletop-object-recognition">
 <span id="tabletop"></span><h1>object_recognition_tabletop: Tabletop Object Recognition<a class="headerlink" href="#object-recognition-tabletop-tabletop-object-recognition" title="Permalink to this headline">¶</a></h1>
-<p>Tabletop is a port of the method in <a class="reference external" href="http://www.ros.org/wiki/tabletop_object_detector">http://www.ros.org/wiki/tabletop_object_detector</a> originally developed by Marius Muja from the FLANN TODO fame.</p>
+<p>Tabletop is a port of the method in <a class="reference external" href="http://www.ros.org/wiki/tabletop_object_detector">http://www.ros.org/wiki/tabletop_object_detector</a> originally developed by Marius Muja from the <a class="reference external" href="https://github.com/mariusmuja/flann">FLANN</a> fame.</p>
 <p>This object detection method has two parts: a table finder and an object recognizer. The recognition part can only recognize objects that are rotationnally symmetric.</p>
 <div class="section" id="table-finder">
 <h2>Table Finder<a class="headerlink" href="#table-finder" title="Permalink to this headline">¶</a></h2>
@@ -89,23 +90,16 @@ function toggle(label) {
   $('.toggleable_div').css('display', 'none');
   $('.toggleable_div.label_' + label).css('display', 'block');
 };
-toggle('Non-ROS')">Non-ROS</button><frameset onload="
-$(document).ready(function() {
-  var classList =$('.toggleable_button').attr('class').split(/\s+/);
-  $.each( classList, function(index, item){
-    if (item.substring(0, 5) === 'label') {
-      toggle(item.substring(6));
-    };
-  });
-});
-"/><button class="toggleable_button label_ROS" onclick="
+toggle('Non-ROS')">Non-ROS</button>
+<script>
+
 function toggle(label) {
   $('.toggleable_button').css({border: '2px outset', 'border-radius': '4px'});
   $('.toggleable_button.label_' + label).css({border: '2px inset', 'border-radius': '4px'});
   $('.toggleable_div').css('display', 'none');
   $('.toggleable_div.label_' + label).css('display', 'block');
 };
-toggle('ROS')">ROS</button><frameset onload="
+
 $(document).ready(function() {
   var classList =$('.toggleable_button').attr('class').split(/\s+/);
   $.each( classList, function(index, item){
@@ -114,7 +108,34 @@ $(document).ready(function() {
     };
   });
 });
-"/></div>
+</script>
+<button class="toggleable_button label_ROS" onclick="
+function toggle(label) {
+  $('.toggleable_button').css({border: '2px outset', 'border-radius': '4px'});
+  $('.toggleable_button.label_' + label).css({border: '2px inset', 'border-radius': '4px'});
+  $('.toggleable_div').css('display', 'none');
+  $('.toggleable_div.label_' + label).css('display', 'block');
+};
+toggle('ROS')">ROS</button>
+<script>
+
+function toggle(label) {
+  $('.toggleable_button').css({border: '2px outset', 'border-radius': '4px'});
+  $('.toggleable_button.label_' + label).css({border: '2px inset', 'border-radius': '4px'});
+  $('.toggleable_div').css('display', 'none');
+  $('.toggleable_div.label_' + label).css('display', 'block');
+};
+
+$(document).ready(function() {
+  var classList =$('.toggleable_button').attr('class').split(/\s+/);
+  $.each( classList, function(index, item){
+    if (item.substring(0, 5) === 'label') {
+      toggle(item.substring(6));
+    };
+  });
+});
+</script>
+</div>
 <p>To launch the pipeline, simply execute execute the following</p>
 <div class="container">
 <div class="toggleable_div label_Non-ROS"><div class="highlight-sh"><div class="highlight"><pre>./detection -c <span class="k">${</span><span class="nv">PATH_TO_YOUR_TABLETOP_FOLDER</span><span class="k">}</span>/conf/detection.table.ork
@@ -122,18 +143,31 @@ $(document).ready(function() {
 </div>
 </div></div>
 <div class="container">
-<div class="toggleable_div label_Non-ROS"><div class="highlight-sh"><div class="highlight"><pre>rosrun object_recognition_ros server -c <span class="sb">`</span>rospack find object_recognition_tabletop<span class="sb">`</span>/conf/detection.table.ork
+<div class="toggleable_div label_ROS"><div class="highlight-sh"><div class="highlight"><pre>rosrun object_recognition_ros server -c <span class="sb">`</span>rospack find object_recognition_tabletop<span class="sb">`</span>/conf/detection.table.ork
 </pre></div>
 </div>
+<p>In ROS mode, several topics are published:</p>
+<blockquote>
+<div><ul class="simple">
+<li>a MarkerArray.msg for the clusters found on the planes as <tt class="docutils literal"><span class="pre">/tabletop/clusters</span></tt></li>
+<li>a Table.msg for the different tables (the RViz ork plugin can help visualize those)</li>
+</ul>
+</div></blockquote>
 </div></div>
-<p>TODO create a config file that just displays the clustertop cell + create the corresponding cell</p>
-<p>TODO detail the topics</p>
-<p>TODO add an RViz screenshot</p>
 </div>
 <div class="section" id="object-finder">
 <h2>Object Finder<a class="headerlink" href="#object-finder" title="Permalink to this headline">¶</a></h2>
-<p>The part of the pipeline that recognizes objects functions as follows: it takes the clusters segmented from the previous stage, finds possibile candidates in the database and then tries to match their meshes to the observed clusters during the final ICP step.</p>
+<p>The part of the pipeline that recognizes objects functions as follows: it takes the clusters segmented from the previous stage, finds possible candidates in the database and then tries to match their meshes to the observed clusters during the final ICP step.</p>
 <p>The objects are assumed to be rotationnally symmetric and flat on the table: the ICP step is therefore performed only on the x,y position of the object. No color information is used.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Here is what the scene looks like:</p>
+<img alt="_images/example1.png" src="_images/example1.png" style="width: 100%;" />
+<p>The pipeline then finds the planes and the clusters on top of it:</p>
+<img alt="_images/example2.png" src="_images/example2.png" style="width: 100%;" />
+<p>And it then identifies the clusters as objects in the database:</p>
+<img alt="_images/example3.png" src="_images/example3.png" style="width: 100%;" />
 </div>
 </div>
 
