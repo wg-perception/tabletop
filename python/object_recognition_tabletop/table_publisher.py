@@ -42,7 +42,7 @@ class TablePublisher(ecto.BlackBox, SinkBase):
     def declare_forwards(_p):
         p = {'marker_array_clusters': [Forward('topic_name', 'marker_array_clusters',
                                                'The ROS topic to use for the markers of the clusters.',
-                                               'marker_array_clusters')],
+                                               'tabletop/clusters')],
              'table_array': [Forward('topic_name', 'table_array', 'The array of found tables.', 'table_array')]
              }
 
