@@ -311,9 +311,9 @@ namespace tabletop
     /** The distance used as a threshold when finding a plane */
     ecto::spore<float> plane_threshold_;
 
-    /** The input calibration matrix */
-    ecto::spore<cv::Mat> points3d_;
     /** The input cloud */
+    ecto::spore<cv::Mat> points3d_;
+    /** The input calibration matrix */
     ecto::spore<cv::Mat> K_;
     /** The mask of the foundplanes */
     ecto::spore<cv::Mat> table_mask_;
