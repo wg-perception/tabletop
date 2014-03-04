@@ -41,8 +41,9 @@
 #include <vector>
 #include <algorithm>
 
-#include "tf/transform_datatypes.h"
+#include <opencv2/core/core.hpp>
 
+#include <geometry_msgs/Pose.h>
 #include <sensor_msgs/PointCloud.h>
 #include <shape_msgs/Mesh.h>
 
@@ -105,7 +106,7 @@ class ModelToCloudFitter
   //! The id of this model if loaded from the model database
   int model_id_;
 
-  void sampleMesh(const shape_msgs::Mesh &mesh, std::vector<tf::Vector3> &btVectors, double resolution);
+  void sampleMesh(const shape_msgs::Mesh &mesh, std::vector<cv::Point3f> &points, double resolution);
 
  public:
 
@@ -147,7 +148,7 @@ class DistanceFieldFitter : public ModelToCloudFitter
   float truncate_value_;
 
   //! Initialize the distance field from a set of vertices
-  void initializeFromBtVectors(const std::vector<tf::Vector3> &points);
+  void initializeFromVector(const std::vector<cv::Point3f> &points);
 
  public:
   //! Initialize distance voxel grid to NULL and set default values for grid parameters
@@ -158,7 +159,7 @@ class DistanceFieldFitter : public ModelToCloudFitter
   //! Calls initialize from points on the vertices of the mesh
   void initializeFromMesh(const shape_msgs::Mesh &mesh);
 
-  std::vector<tf::Vector3> model_points_;
+  std::vector<cv::Point3f> model_points_;
 };
 
 } //namespace tabletop_object_detector

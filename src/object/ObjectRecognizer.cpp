@@ -47,9 +47,6 @@
 #include <Eigen/Geometry>
 #include "point_cloud2_proxy.h"
 
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
-
 #include <household_objects_database/objects_database.h>
 #include <tabletop/object/tabletop_object_detector.h>
 

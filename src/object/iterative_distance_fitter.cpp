@@ -121,7 +121,7 @@ ModelFitInfo IterativeTranslationFitter::fitPointCloud(const std::vector<cv::Vec
     cv::flann::Index &search, double min_object_score) const
 {
   if (cloud.empty()) {
-    ROS_ERROR("Attempt to fit model to empty point cloud");
+    //ROS_ERROR("Attempt to fit model to empty point cloud");
     geometry_msgs::Pose bogus_pose;
     return ModelFitInfo(model_id_, bogus_pose, 0.0);
   }
@@ -152,7 +152,7 @@ ModelFitInfo IterativeTranslationFitter::fitPointCloud(const std::vector<cv::Vec
 
 
   if (iter == max_iterations) {
-    ROS_WARN("Maximum iterations reached in model fitter");
+    //ROS_WARN("Maximum iterations reached in model fitter");
   }
 
   pose.position.x = location.x;
@@ -183,10 +183,10 @@ double IterativeTranslationFitter::getModelFitScore(const std::vector<cv::Vec3f>
   std::vector<int> indices(1);
   std::vector<float> distances(1);
   cv::Mat_<float> points(1, 3);
-  for (std::vector<tf::Vector3>::const_iterator mIt = model_points_.begin(); mIt != model_points_.end(); ++mIt) {
-    points(0, 0) = mIt->x() + position.x;
-    points(0, 1) = mIt->y() + position.y;
-    points(0, 2) = mIt->z() + position.z;
+  for (std::vector<cv::Point3f>::const_iterator mIt = model_points_.begin(); mIt != model_points_.end(); ++mIt) {
+    points(0, 0) = mIt->x + position.x;
+    points(0, 1) = mIt->y + position.y;
+    points(0, 2) = mIt->z + position.z;
 
     search.knnSearch(points, indices, distances, 1);
     inlier_count += kernel(sqrt(distances[0]));

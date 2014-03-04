@@ -52,7 +52,7 @@ DistanceFieldFitter::~DistanceFieldFitter()
   delete distance_voxel_grid_;
 }
 
-void DistanceFieldFitter::initializeFromBtVectors(const std::vector<tf::Vector3> &points) 
+void DistanceFieldFitter::initializeFromVector(const std::vector<cv::Point3f> &points)
 {
   delete distance_voxel_grid_;
   distance_voxel_grid_ = NULL;
@@ -61,23 +61,24 @@ void DistanceFieldFitter::initializeFromBtVectors(const std::vector<tf::Vector3>
     return;
   }
 
-  tf::Vector3 min = points[0], max = points[0];
-  for (size_t i=0; i<points.size(); ++i) 
+  cv::Point3f min = points[0], max = points[0];
+  for (size_t i=0; i<points.size(); ++i)
   {
-    for (size_t j=0; j<3; ++j) 
-    {
-      if (min[j] > points[i][j]) 
-      {
-	min[j] = points[i][j];
-      }
-      if (max[j] < points[i][j]) 
-      {
-	max[j] = points[i][j];
-      }
-    }
+    if (min.x > points[i].x)
+      min.x = points[i].x;
+    if (max.x < points[i].x)
+      max.x = points[i].x;
+
+    if (min.y > points[i].y)
+      min.y = points[i].y;
+    if (max.y < points[i].y)
+      max.y = points[i].y;
+
+    if (min.z > points[i].z)
+      min.z = points[i].z;
+    if (max.z < points[i].z)
+      max.z = points[i].z;
   }
-  
-  ROS_DEBUG("Size: (%g,%g,%g, %g, %g, %g)",min[0], min[1], min[2], max[0], max[1], max[2]);
 
   //the distance field is initialized as follows: match the size of the object, but add
   //padding equal to the truncate_value_ on each side. Resolution is constant regardless 
@@ -88,30 +89,30 @@ void DistanceFieldFitter::initializeFromBtVectors(const std::vector<tf::Vector3>
   //have the origin on the bottom, and nothing is below the table
   //allow just two cells under the table, to deal with noise and such
   double table_padding = 2.5 * distance_field_resolution_;
-  distance_voxel_grid_ = new distance_field::PropagationDistanceField(max[0]-min[0] + 2*truncate_value_, 
-								      max[1]-min[1] + 2*truncate_value_,
-								      max[2]-min[2] + truncate_value_ + table_padding, 
+  distance_voxel_grid_ = new distance_field::PropagationDistanceField(max.x-min.x + 2*truncate_value_,
+								      max.y-min.y + 2*truncate_value_,
+								      max.z-min.z + truncate_value_ + table_padding,
 								      distance_field_resolution_, 
-								      min[0] - truncate_value_, 
-								      min[1] - truncate_value_,  
-								      min[2] - table_padding,
+								      min.x - truncate_value_,
+								      min.y - truncate_value_,
+								      min.z - table_padding,
 								      2 * truncate_value_ );
   distance_voxel_grid_->reset();
   EigenSTL::vector_Vector3d eigen_points(points.size());
   for(size_t i = 0; i < points.size(); ++i)
   {
-    eigen_points[i][0] = points[i][0];
-    eigen_points[i][1] = points[i][1];
-    eigen_points[i][2] = points[i][2];
+    eigen_points[i][0] = points[i].x;
+    eigen_points[i][1] = points[i].y;
+    eigen_points[i][2] = points[i].z;
   }
   distance_voxel_grid_->addPointsToField(eigen_points);
 }
 
-double dist(const tf::Vector3 &v0, const tf::Vector3 &v1)
+double dist(const cv::Point3f &v0, const cv::Point3f &v1)
 {
-  return sqrt( (v1.x()-v0.x())*(v1.x()-v0.x()) + 
-	       (v1.y()-v0.y())*(v1.y()-v0.y()) +  
-	       (v1.z()-v0.z())*(v1.z()-v0.z()) );
+  return sqrt( (v1.x-v0.x)*(v1.x-v0.x) +
+	       (v1.y-v0.y)*(v1.y-v0.y) +
+	       (v1.z-v0.z)*(v1.z-v0.z) );
 }
 
 /*! Given a triangle defined by three vertices, returns a set of points obtained
@@ -123,17 +124,16 @@ double dist(const tf::Vector3 &v0, const tf::Vector3 &v1)
 
   The vertices themselves are NOT returned in the set of points.
 */
-std::vector<tf::Vector3> interpolateTriangle(tf::Vector3 v0, 
-					   tf::Vector3 v1, 
-					   tf::Vector3 v2, double min_res)
+std::vector<cv::Point3f> interpolateTriangle(cv::Point3f v0, cv::Point3f v1,
+					   cv::Point3f v2, double min_res)
 {
-  std::vector<tf::Vector3> vectors;
+  std::vector<cv::Point3f> vectors;
 
   // Choose which corner should be the main one
   double d01 = dist(v0, v1);
   double d02 = dist(v0, v2);
   double d12 = dist(v1, v2);
-  tf::Vector3 vtmp;
+  cv::Point3f vtmp;
   if ((d01 < d02) && (d01 < d12)) {
       vtmp = v0;
       v0 = v2;
@@ -164,8 +164,8 @@ std::vector<tf::Vector3> interpolateTriangle(tf::Vector3 v0,
       done = true;
     }
     //compute the resolution for the second interpolation
-    tf::Vector3 p1 = t0*v0 + (1-t0) * v1;
-    tf::Vector3 p2 = t0*v0 + (1-t0) * v2;
+    cv::Point3f p1 = t0*v0 + (1-t0) * v1;
+    cv::Point3f p2 = t0*v0 + (1-t0) * v2;
     double d12 = dist(p1, p2);
     double res_12 = min_res / d12;
 
@@ -194,7 +194,7 @@ std::vector<tf::Vector3> interpolateTriangle(tf::Vector3 v0,
 }
 
 void ModelToCloudFitter::sampleMesh(const shape_msgs::Mesh &mesh,
-				    std::vector<tf::Vector3> &btVectors,
+				    std::vector<cv::Point3f> &btVectors,
 				    double resolution)
 {
   btVectors.reserve(mesh.vertices.size());
@@ -203,23 +203,23 @@ void ModelToCloudFitter::sampleMesh(const shape_msgs::Mesh &mesh,
   typedef std::vector<geometry_msgs::Point>::const_iterator I;
   for (I i=mesh.vertices.begin(); i!=mesh.vertices.end(); i++) 
   {
-    btVectors.push_back(tf::Vector3(i->x,i->y,i->z));
+    btVectors.push_back(cv::Point3f(i->x,i->y,i->z));
   }
   
   //sample triangle surfaces at a specified min-resolution 
   //and insert the resulting points
   for (size_t i=0; i<mesh.triangles.size(); ++i)
   {
-    tf::Vector3 v0( mesh.vertices[ mesh.triangles[i].vertex_indices[0] ].x,
+    cv::Point3f v0( mesh.vertices[ mesh.triangles[i].vertex_indices[0] ].x,
 		  mesh.vertices[ mesh.triangles[i].vertex_indices[0] ].y,
 		  mesh.vertices[ mesh.triangles[i].vertex_indices[0] ].z);
-    tf::Vector3 v1( mesh.vertices[ mesh.triangles[i].vertex_indices[1] ].x,
+    cv::Point3f v1( mesh.vertices[ mesh.triangles[i].vertex_indices[1] ].x,
 		  mesh.vertices[ mesh.triangles[i].vertex_indices[1] ].y,
 		  mesh.vertices[ mesh.triangles[i].vertex_indices[1] ].z);
-    tf::Vector3 v2( mesh.vertices[ mesh.triangles[i].vertex_indices[2] ].x,
+    cv::Point3f v2( mesh.vertices[ mesh.triangles[i].vertex_indices[2] ].x,
 		  mesh.vertices[ mesh.triangles[i].vertex_indices[2] ].y,
 		  mesh.vertices[ mesh.triangles[i].vertex_indices[2] ].z);
-    std::vector<tf::Vector3> triangleVectors = interpolateTriangle(v0, v1, v2, resolution);
+    std::vector<cv::Point3f> triangleVectors = interpolateTriangle(v0, v1, v2, resolution);
     btVectors.insert(btVectors.begin(), triangleVectors.begin(), triangleVectors.end());
   }
 }
@@ -227,18 +227,18 @@ void ModelToCloudFitter::sampleMesh(const shape_msgs::Mesh &mesh,
 
 void DistanceFieldFitter::initializeFromMesh(const shape_msgs::Mesh &mesh)
 {
-  std::vector<tf::Vector3> btVectors;
+  std::vector<cv::Point3f> btVectors;
   model_points_.reserve(mesh.vertices.size());
   typedef std::vector<geometry_msgs::Point>::const_iterator I;
   for (I i = mesh.vertices.begin(); i != mesh.vertices.end(); i++)
-    model_points_.push_back(tf::Vector3(i->x,i->y,i->z));
+    model_points_.push_back(cv::Point3f(i->x,i->y,i->z));
   // 20mm resolution
   //sampleMesh(mesh, model_points_, 0.02 );
 
   //we use a slightly larger resolution than the distance field, in an attempt to bring
   //down pre-computation time
   sampleMesh(mesh, btVectors,  1.5 * distance_field_resolution_ ); 
-  initializeFromBtVectors(btVectors);
+  initializeFromVector(btVectors);
 }
 
 
