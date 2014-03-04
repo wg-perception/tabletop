@@ -156,9 +156,26 @@ struct Material
 	aiString texture;
 	aiString textureSpecular;
 	aiString textureAmbient;
+	aiString textureEmissive;
 	aiString textureBump;
+	aiString textureNormal;
 	aiString textureSpecularity;
 	aiString textureOpacity;
+	aiString textureDisp;
+	enum TextureType
+	{
+		TextureDiffuseType = 0,
+		TextureSpecularType,
+		TextureAmbientType,
+		TextureEmissiveType,
+		TextureBumpType,
+		TextureNormalType,
+		TextureSpecularityType,
+		TextureOpacityType,
+		TextureDispType,
+		TextureTypeCount
+	};
+	bool clamp[TextureTypeCount];
 
 	//!	Ambient color 
 	aiColor3D ambient;
@@ -184,6 +201,10 @@ struct Material
 		,	ior		(1.f)
 	{
 		// empty
+		for (size_t i = 0; i < TextureTypeCount; ++i)
+		{
+			clamp[i] = false;
+		}
 	}
 
 	// Destructor
@@ -275,19 +296,20 @@ struct Model
 	//!	Material map
 	std::map<std::string, Material*> m_MaterialMap;
 
-	//!	\brief	Default constructor
+	//!	\brief	The default class constructor
 	Model() :
 		m_ModelName(""),
 		m_pCurrent(NULL),
 		m_pCurrentMaterial(NULL),
 		m_pDefaultMaterial(NULL),
+        m_pGroupFaceIDs(NULL),
 		m_strActiveGroup(""),
 		m_pCurrentMesh(NULL)
 	{
 		// empty
 	}
 	
-	//!	\brief	Destructor
+	//!	\brief	The class destructor
 	~Model()
 	{
 		// Clear all stored object instances
@@ -310,7 +332,7 @@ struct Model
 		m_Groups.clear();
 
 		for ( std::map<std::string, Material*>::iterator it = m_MaterialMap.begin(); it != m_MaterialMap.end(); ++it ) {
-//			delete it->second;
+			delete it->second;
 		}
 	}
 };
