@@ -107,20 +107,25 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
       // Get the list of _attachments and figure out the original mesh
       std::vector<std::string> attachments_names = document.attachment_names();
       std::string mesh_path;
-      BOOST_FOREACH(const std::string & attachment_name, attachments_names) {
-        if (attachment_name.find("original") != 0)
-          continue;
-        // Create a temporary file
-        char mesh_path_tmp[L_tmpnam];
-        tmpnam(mesh_path_tmp);
-        mesh_path = std::string(mesh_path_tmp) + attachment_name.substr(8);
+      std::vector<std::string> possible_names(2);
+      possible_names[0] = "original";
+      possible_names[1] = "mesh";
+      for (size_t i = 0; i < 2 && mesh_path.empty(); ++i) {
+        BOOST_FOREACH(const std::string & attachment_name, attachments_names) {
+          if (attachment_name.find(possible_names[i]) != 0)
+            continue;
+          // Create a temporary file
+          char mesh_path_tmp[L_tmpnam];
+          tmpnam(mesh_path_tmp);
+          mesh_path = std::string(mesh_path_tmp) + attachment_name.substr(possible_names[i].size());
 
-        // Load the mesh and save it to the temporary file
-        std::ofstream mesh_file;
-        mesh_file.open(mesh_path.c_str());
-        document.get_attachment_stream(attachment_name, mesh_file);
-        mesh_file.close();
-        break;
+          // Load the mesh and save it to the temporary file
+          std::ofstream mesh_file;
+          mesh_file.open(mesh_path.c_str());
+          document.get_attachment_stream(attachment_name, mesh_file);
+          mesh_file.close();
+          break;
+        }
       }
 
       // Create a fake ID
@@ -166,9 +171,11 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         size_t j_triangles = size_ini_triangles;
         for (size_t j = 0; j < mesh->mNumFaces; ++j) {
           const aiFace& face = mesh->mFaces[j];
-          for (size_t k = 0; k < 3; ++k)
-            mesh_msg.triangles[j_triangles].vertex_indices[k] = size_ini + face.mIndices[k];
-          ++j_triangles;
+          if (face.mNumIndices == 3) {
+            for (size_t k = 0; k < 3; ++k)
+              mesh_msg.triangles[j_triangles].vertex_indices[k] = size_ini + face.mIndices[k];
+            ++j_triangles;
+          }
         }
         mesh_msg.triangles.resize(j_triangles);
       }
