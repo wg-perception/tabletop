@@ -103,6 +103,7 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
     aiLogStream* ai_stream_ = new aiLogStream(aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL));
     aiAttachLogStream(ai_stream_);
 
+    int template_db_id = 0;
     BOOST_FOREACH(const object_recognition_core::db::Document & document, db_documents) {
       // Get the list of _attachments and figure out the original mesh
       std::vector<std::string> attachments_names = document.attachment_names();
@@ -128,12 +129,10 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         }
       }
 
-      // Create a fake ID
-      static int i = 0;
-      household_id_to_db_id_[i] = document.get_field<std::string>("object_id");
+      household_id_to_db_id_[template_db_id] = document.get_field<std::string>("object_id");
 
       // Load the mesh through assimp
-      std::cout << "Loading model: " << document.id() << " for object id: " << household_id_to_db_id_[i];
+      std::cout << "Loading model: " << document.id() << " for object id: " << household_id_to_db_id_[template_db_id];
 
       const struct aiScene* scene = aiImportFile(mesh_path.c_str(), aiProcess_FindDegenerates |
       aiProcess_FindInvalidData |
@@ -186,11 +185,12 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
 
       min_z_[document.get_field<std::string>("object_id")] = min_z;
 
-      object_recognizer_.addObject(i, mesh_msg);
+      object_recognizer_.addObject(template_db_id, mesh_msg);
 
       std::cout << std::endl;
 
       aiReleaseImport(scene);
+      template_db_id++;
     }
 
     aiDetachAllLogStreams();
