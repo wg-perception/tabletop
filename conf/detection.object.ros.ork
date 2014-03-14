@@ -4,7 +4,7 @@ source1:
   #
   # Example parameters to set (the default settings are using the ros topics starting with /camera/....) 
   #  
-  #parameters:
+  parameters:
     rgb_frame_id: camera_rgb_optical_frame
     rgb_image_topic: /camera/rgb/image_rect_color
     rgb_camera_info: /camera/rgb/camera_info
