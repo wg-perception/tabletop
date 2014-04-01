@@ -338,7 +338,6 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
 
         // Add the pose
         const geometry_msgs::Pose &pose = result.pose_;
-
         cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
         T[2] -= min_z_[object_id];
         Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
