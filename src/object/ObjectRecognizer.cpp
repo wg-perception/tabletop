@@ -338,6 +338,7 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
 
         // Add the pose
         const geometry_msgs::Pose &pose = result.pose_;
+
         cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
         T[2] -= min_z_[object_id];
         Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
@@ -356,13 +357,17 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         ros_clouds[0].reset(new sensor_msgs::PointCloud2());
         sensor_msgs::PointCloud2Proxy<sensor_msgs::PointXYZ> proxy(*(ros_clouds[0]));
 
+      cv::Matx33f Rot = rotations[table_index];
+      cv::Vec3f Tra = translations[table_index];
       // Add the cloud
       proxy.resize(result.cloud_.size());
       sensor_msgs::PointXYZ *iter = &(proxy[0]);
       for(size_t i = 0; i < result.cloud_.size(); ++i, ++iter) {
-        iter->x = result.cloud_[i][0];
-        iter->y = result.cloud_[i][1];
-        iter->z = result.cloud_[i][2];
+        //Transform the object points back to their original frame
+        cv::Vec3f res = Rot * result.cloud_[i] + Tra;
+        iter->x = res[0];
+        iter->y = res[1];
+        iter->z = res[2];
       }
 
         pose_result.set_clouds(ros_clouds);
