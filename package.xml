@@ -10,7 +10,7 @@
 
   <url>http://ecto.willowgarage.com</url>
 
-  <build_depend>assimp</build_depend>
+  <build_depend>assimp-dev</build_depend>
   <build_depend>ecto</build_depend>
   <build_depend>household_objects_database</build_depend>
   <build_depend>moveit_core</build_depend>
