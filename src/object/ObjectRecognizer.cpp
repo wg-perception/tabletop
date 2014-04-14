@@ -183,8 +183,6 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
       for (size_t i = 0; i < mesh_msg.vertices.size(); ++i)
         mesh_msg.vertices[i].z -= min_z;
 
-      min_z_[document.get_field<std::string>("object_id")] = min_z;
-
       object_recognizer_.addObject(template_db_id, mesh_msg);
 
       std::cout << std::endl;
@@ -339,7 +337,7 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
         // Add the pose
         const geometry_msgs::Pose &pose = result.pose_;
         cv::Vec3f T(pose.position.x, pose.position.y, pose.position.z);
-        T[2] -= min_z_[object_id];
+
         Eigen::Quaternionf quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
 
         cv::Vec3f new_T = rotations[table_index] * T + translations[table_index];
@@ -392,8 +390,6 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
     ecto::spore<std::string> tabletop_object_ids_;
   /** map to convert from artificial household id to db id */
   std::map<size_t, std::string> household_id_to_db_id_;
-  /** for each DB id, store the minimum z */
-  std::map<std::string, double> min_z_;
 };
 }
 
