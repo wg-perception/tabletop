@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(object_recognition_tabletop)
 
-find_package(catkin REQUIRED ecto household_objects_database
+find_package(catkin REQUIRED ecto cmake_modules household_objects_database
                              moveit_core object_recognition_core object_recognition_msgs opencv_candidate
                              pluginlib rosconsole roscpp shape_msgs sql_database tf)
 catkin_package(INCLUDE_DIRS include)
