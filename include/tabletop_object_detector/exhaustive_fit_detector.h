@@ -42,7 +42,6 @@
 
 #include <opencv2/flann/flann.hpp>
 
-#include <household_objects_database/objects_database.h>
 #include <shape_msgs/Mesh.h>
 
 #include <tabletop_object_detector/model_fitter.h>
@@ -68,9 +67,6 @@ class ExhaustiveFitDetector
   //! Stores a list of model ids which may be in the list of templates, but which we should not look at
   std::set<int> model_exclusion_set_;
   bool negate_exclusions_;
-
-  //! The database connection itself
-  household_objects_database::ObjectsDatabase *database_;
 
  public:
   //! Just a stub; does not load models
@@ -157,49 +153,6 @@ ExhaustiveFitDetector<Fitter>::~ExhaustiveFitDetector()
   for (size_t i=0;i<templates.size();++i) {
     delete templates[i];
   }
-}
-
-/*! Loads all the models in the Model Database. In order to do that, it asks the
-  database for a list of models, then asks for the path to the geometry file for
-  each model. Then it initializes a IterativeDistanceFitter for each of them, and also sets
-  the database model id correctly for each model so that we later know what model
-  each instance of IterativeDistanceFitter refers to.
-
-  WARNING: for the moment, it only uses the database models with the "orthographic"
-  acquisition method. Those models are rotationally symmetric (which is what most fitters
-  operating under this class are capable of handling) plus they do not have "filled insides"
-  which makes them easier to grasp.
-*/
-  template<class Fitter>
-  void
-  ExhaustiveFitDetector<Fitter>::loadDatabaseModels(const std::string & model_set, const std::string &database_host,
-                                                    const std::string database_port, const std::string &database_user,
-                                                    const std::string &database_pass, const std::string &database_name)
-  {
-    database_ = new household_objects_database::ObjectsDatabase(database_host, database_port, database_user,
-                                                                database_pass, database_name);
-
-  std::vector< boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
-  if (!database_->getScaledModelsBySet(models, model_set))
-    return;
-
-  templates.clear();
-  for(size_t i=0; i<models.size(); i++)
-  {
-    int model_id = models[i]->id_.data();
-    shape_msgs::Mesh mesh;
-
-    if (!database_->getScaledModelMesh(model_id, mesh))
-      continue;
-
-    Fitter* fitter = new Fitter();
-    fitter->initializeFromMesh(mesh);
-    templates.push_back(fitter);  
-    //set the model ID in the template so that we can use it later
-    templates.back()->setModelId( model_id );
-    ROS_INFO("  Loaded database model with id %d", model_id);
-  }
-  ROS_INFO("Object detector: loading complete");
 }
 
 } //namespace
