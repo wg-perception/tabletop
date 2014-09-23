@@ -54,8 +54,9 @@
 #include <object_recognition_core/common/pose_result.h>
 #include <object_recognition_core/common/types.h>
 #include <object_recognition_core/db/ModelReader.h>
+#include <object_recognition_core/db/db.h>
 
-#include <object_recognition_tabletop/household.h>
+#include <pluginlib/class_loader.h>
 
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
@@ -203,55 +204,15 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
 
     if (parameters.type() == object_recognition_core::db::ObjectDbParameters::NONCORE) {
       // If we are dealing with a household DB
-      db_.reset(new ObjectDbSqlHousehold());
+      pluginlib::ClassLoader<object_recognition_core::db::ObjectDb> db_loader("object_recognition_tabletop_household", "object_recognition_core::db::ObjectDb");
+      db_ = db_loader.createInstance("ObjectDbSqlHousehold");
       db_->set_parameters(parameters);
     } else {
       // If we are dealing with an ORK DB
       if (!db_)
-        db_ = ObjectDbParameters(*json_db_).generateDb();
+        db_ = object_recognition_core::db::ObjectDbParameters(*json_db_).generateDb();
       parameterCallbackCommon();
     }
-  }
-
-  void
-  parameterCallbackModelSet(const std::string& model_set) {
-    //std::vector<object_recognition_core::db::ModelId> object_ids;
-
-    //boost::python::stl_input_iterator<std::string> begin(python_object_ids), end;
-    //std::copy(begin, end, std::back_inserter(object_ids));
-
-    object_recognition_core::db::ObjectDbParameters parameters(*json_db_);
-
-    if (parameters.type() != object_recognition_core::db::ObjectDbParameters::NONCORE)
-      return;
-
-    object_recognizer_ = tabletop_object_detector::TabletopObjectRecognizer();
-
-    boost::shared_ptr<household_objects_database::ObjectsDatabase> database = dynamic_cast<ObjectDbSqlHousehold*>(&(*db_))->db();
-
-    std::vector<boost::shared_ptr<household_objects_database::DatabaseScaledModel> > models;
-    std::cout << "Loading model set: " << model_set << std::endl;
-    if (!database->getScaledModelsBySet(models, model_set))
-      return;
-
-    object_recognizer_.clearObjects();
-    for (size_t i = 0; i < models.size(); i++) {
-      int model_id = models[i]->id_.data();
-      shape_msgs::Mesh mesh;
-
-      std::cout << "Loading model: " << model_id;
-      if (!database->getScaledModelMesh(model_id, mesh)) {
-        std::cout << "  ... Failed" << std::endl;
-        continue;
-      }
-
-      object_recognizer_.addObject(model_id, mesh);
-      std::stringstream ss;
-      ss << model_id;
-      household_id_to_db_id_[model_id] = ss.str();
-      std::cout << std::endl;
-    }
-
   }
 
   static void declare_params(ecto::tendrils& params) {
@@ -274,9 +235,6 @@ struct ObjectRecognizer : public object_recognition_core::db::bases::ModelReader
     configure(const tendrils& params, const tendrils& inputs, const tendrils& outputs)
     {
       configure_impl();
-
-      tabletop_object_ids_.set_callback(boost::bind(&ObjectRecognizer::parameterCallbackModelSet, this, _1));
-      tabletop_object_ids_.dirty(true);
 
       perform_fit_merge_ = true;
       confidence_cutoff_ = 0.85f;
