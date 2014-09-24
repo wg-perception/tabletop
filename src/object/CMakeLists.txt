@@ -59,5 +59,4 @@ ectomodule(tabletop_object DESTINATION ${PROJECT_NAME}/ecto_cells
 link_ecto(tabletop_object ${catkin_LIBRARIES}
                           ${Boost_LIBRARIES}
                           tabletop_model_fitter
-                          tabletop_db
 )
