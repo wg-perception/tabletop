@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -15,7 +13,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     '',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -44,6 +42,7 @@
 <li><a class="reference internal" href="#">object_recognition_tabletop: Tabletop Object Recognition</a><ul>
 <li><a class="reference internal" href="#table-finder">Table Finder</a></li>
 <li><a class="reference internal" href="#object-finder">Object Finder</a></li>
+<li><a class="reference internal" href="#manage-tabletop-s-input-parameters">Manage tabletop&#8217;s input parameters</a></li>
 <li><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
@@ -78,7 +77,14 @@
   <div class="section" id="object-recognition-tabletop-tabletop-object-recognition">
 <span id="tabletop"></span><h1>object_recognition_tabletop: Tabletop Object Recognition<a class="headerlink" href="#object-recognition-tabletop-tabletop-object-recognition" title="Permalink to this headline">¶</a></h1>
 <p>Tabletop is a port of the method in <a class="reference external" href="http://www.ros.org/wiki/tabletop_object_detector">http://www.ros.org/wiki/tabletop_object_detector</a> originally developed by Marius Muja from the <a class="reference external" href="https://github.com/mariusmuja/flann">FLANN</a> fame.</p>
-<p>This object detection method has two parts: a table finder and an object recognizer. The recognition part can only recognize objects that are rotationnally symmetric.</p>
+<p>This object detection method has two parts: a table finder and an object recognizer. The recognition part can only recognize objects that are rotationnally symmetric.
+The sensor data that tabletop uses consists of a point cloud from the narrow stereo or Kinect cameras. tabletop performs the following steps:</p>
+<blockquote>
+<div><ul class="simple">
+<li>segmentation: the table is detected by finding the dominant plane in the point cloud based on analysis of 3D normal vectors; points above the table are considered to belong to graspable objects. We use a clustering algorithm to identify individual objects. We refer to the points corresponding to an individual object as clusters.</li>
+<li>recognition : for each cluster, a simple iterative fitting technique (a distant cousin of ICP) is used to see how well it corresponds to each mesh in our database of models. If a good fit is found, the database id of the model is returned along with the cluster; note that our current fitting method operates in 2D, since based on our assumptions (object resting upright on the known surface of the table) the other 4 dimensions are fixed.</li>
+</ul>
+</div></blockquote>
 <div class="section" id="table-finder">
 <h2>Table Finder<a class="headerlink" href="#table-finder" title="Permalink to this headline">¶</a></h2>
 <p>The table finder finds planes in the scene and segments out the objects on top of it. This part of this method can be useful in itself if you need the clusters as a pre-processing step for other object recognition techniques or if raw clusters are enough for you (for robot grasping for example).</p>
@@ -158,16 +164,83 @@ $(document).ready(function() {
 <div class="section" id="object-finder">
 <h2>Object Finder<a class="headerlink" href="#object-finder" title="Permalink to this headline">¶</a></h2>
 <p>The part of the pipeline that recognizes objects functions as follows: it takes the clusters segmented from the previous stage, finds possible candidates in the database and then tries to match their meshes to the observed clusters during the final ICP step.</p>
-<p>The objects are assumed to be rotationnally symmetric and flat on the table: the ICP step is therefore performed only on the x,y position of the object. No color information is used.</p>
+<p>To perform these tasks tabletop relies the following assumptions:</p>
+<blockquote>
+<div><ul class="simple">
+<li>the objects are resting on a table, which is the dominant plane in the scene</li>
+<li>the minimum distance between two objects exceeds a given threshold (3cm in the demo)</li>
+<li>in addition, object recognition can only handle 2 degrees of freedom: translation along the X and Y axes (with the Z axis assumed to be pointing &#8220;up&#8221; relative to the table). Therefore, in order to recognize an object:</li>
+<li>it must be rotationally symmetric</li>
+<li>it must have a known orientation, such as a glass or a bowl sitting &#8220;upright&#8221; on the table.</li>
+</ul>
+</div></blockquote>
+<p>The output from this components consists of the location of the table, the identified point clusters, and the corresponding database object id and fitting pose for those clusters found to be similar to database objects.</p>
+<p>Tabletop uses CouchDB database that contains details about the objects to be recognized. These details include the object id (generated automatically when the object is added to the database), object&#8217;s name, object&#8217;s author, object&#8217;s tags object&#8217;s 3D mesh. This 3D mesh will be used by tabletop during its recognition step. Setting up a CouchDB is explained here and managing objects is explained here.</p>
+</div>
+<div class="section" id="manage-tabletop-s-input-parameters">
+<h2>Manage tabletop&#8217;s input parameters<a class="headerlink" href="#manage-tabletop-s-input-parameters" title="Permalink to this headline">¶</a></h2>
+<p>tabletop manages a certain number of parameters, such as input image flow, database details, and detection thresholds, all of these parameters are defined in a configuration file, given as -c parameter in the tabletop command. The configuration file needs to be in YAML format.  An example of the configuration file for tabletop that process image published by openni_launch package is as below:</p>
+<div class="highlight-python"><div class="highlight"><pre>source1:
+  type: RosKinect
+  module: &#39;object_recognition_ros.io&#39;
+  parameters:
+    rgb_frame_id: camera_rgb_optical_frame
+    rgb_image_topic: /camera/rgb/image_rect_color
+    rgb_camera_info: /camera/rgb/camera_info
+    depth_image_topic: /camera/depth_registered/image_raw
+    depth_camera_info: /camera/depth_registered/camera_info
+
+sink1:
+  type: TablePublisher
+  module: &#39;object_recognition_tabletop&#39;
+  inputs: [source1]
+
+sink2:
+  type: Publisher
+  module: &#39;object_recognition_ros.io&#39;
+  inputs: [source1]
+
+
+pipeline1:
+  type: TabletopTableDetector
+  module: &#39;object_recognition_tabletop&#39;
+  inputs: [source1]
+  outputs: [sink1]
+  parameters:
+    table_detector:
+        min_table_size: 4000
+        plane_threshold: 0.01
+
+pipeline2:
+  type: TabletopObjectDetector
+  module: &#39;object_recognition_tabletop&#39;
+  inputs: [source1, pipeline1]
+  outputs: [sink2]
+  parameters:
+    object_ids: &#39;all&#39;
+    tabletop_object_ids: &#39;REDUCED_MODEL_SET&#39;
+    threshold: 0.85
+    db:
+      type: CouchDB
+      root: http://localhost:5984
+      collection: object_recognition
+</pre></div>
+</div>
+<p>&#8216;source1&#8217; defines image topics that tabletop needs for its detection steps. Basically, tabletop needs a depth image topic, a color image topic, and the camera information messages for these images as input.</p>
+<p>&#8216;sink1&#8217; and &#8216;sink2&#8217; defines how the output of tabletop can be processed further. In this example, they take care of publishing the detection results of tabletop.</p>
+<p>&#8216;pipeline1&#8217; takes care of detecting planar surfaces.</p>
+<p>&#8216;pipeline2&#8217; takes care of detecting objects on the main (detected) surface.</p>
+<p>You can modify these parameters, such as input image topics, detection threshold, URI of the CouchDB to be used, etc. according to the setting you have in your project.</p>
 </div>
 <div class="section" id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
 <p>Here is what the scene looks like:</p>
-<img alt="_images/example1.png" src="_images/example1.png" style="width: 100%;" />
+<a class="reference internal image-reference" href="_images/example1.png"><img alt="_images/example1.png" src="_images/example1.png" style="width: 100%;" /></a>
 <p>The pipeline then finds the planes and the clusters on top of it:</p>
-<img alt="_images/example2.png" src="_images/example2.png" style="width: 100%;" />
+<a class="reference internal image-reference" href="_images/example2.png"><img alt="_images/example2.png" src="_images/example2.png" style="width: 100%;" /></a>
 <p>And it then identifies the clusters as objects in the database:</p>
-<img alt="_images/example3.png" src="_images/example3.png" style="width: 100%;" />
+<a class="reference internal image-reference" href="_images/example3.png"><img alt="_images/example3.png" src="_images/example3.png" style="width: 100%;" /></a>
+<p>A video resuming the steps to run tabletop in ROS can be found <a class="reference external" href="http://youtu.be/b_Ti3_4gY1I">here</a>.</p>
 </div>
 </div>
 
@@ -188,7 +261,7 @@ $(document).ready(function() {
     </div>
     <div class="footer">
         &copy; Copyright 2013,  Willow Garage, Inc.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
