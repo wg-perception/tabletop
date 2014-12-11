@@ -1,5 +1,5 @@
-Forthcoming
------------
+0.3.2 (2014-12-11)
+------------------
 * Merge pull request `#21 <https://github.com/wg-perception/tabletop/issues/21>`_ from hris2003/master
   Complete explanation about tabletop
 * Complete explanation about tabletop
