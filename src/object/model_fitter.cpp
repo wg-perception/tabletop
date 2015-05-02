@@ -39,6 +39,8 @@
 #include <moveit/distance_field/propagation_distance_field.h>
 #include "tabletop_object_detector/iterative_distance_fitter.h"
 
+#include <boost/bind.hpp>
+
 namespace tabletop_object_detector {
 
 DistanceFieldFitter::DistanceFieldFitter() : distance_voxel_grid_(NULL) 

@@ -39,10 +39,6 @@
 
 #include <tabletop_object_detector/model_fitter.h>
 #include <boost/function.hpp>
-#include <boost/bind.hpp>
-
-#include <math.h>
-#include <moveit/distance_field/propagation_distance_field.h>
 
 #include <opencv2/flann/flann.hpp>
 

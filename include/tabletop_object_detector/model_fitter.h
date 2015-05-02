@@ -37,6 +37,8 @@
 #ifndef _MODEL_FITTER_H_
 #define _MODEL_FITTER_H_
 
+#include <moveit/distance_field/propagation_distance_field.h>
+
 #include <string>
 #include <vector>
 #include <algorithm>

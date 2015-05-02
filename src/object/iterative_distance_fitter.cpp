@@ -36,6 +36,8 @@
 
 #include <tabletop_object_detector/iterative_distance_fitter.h>
 
+#include <boost/bind.hpp>
+
 namespace tabletop_object_detector
 {
 
