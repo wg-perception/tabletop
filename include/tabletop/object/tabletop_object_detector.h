@@ -112,7 +112,7 @@ class TabletopObjectRecognizer
       {
         cluster_model_indices[i] = i;
         cv::Mat features = cv::Mat(clusters[i]).reshape(1);
-        search[i].build(features, cv::flann::KDTreeIndexParams());
+        search[i] = cv::flann::Index(features, cv::flann::KDTreeIndexParams());
 
         raw_fit_results[i] = detector_.fitBestModels(clusters[i], std::max(1, num_models), search[i], confidence_cutoff);
       }
