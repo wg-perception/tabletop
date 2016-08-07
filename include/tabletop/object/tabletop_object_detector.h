@@ -112,7 +112,12 @@ class TabletopObjectRecognizer
       {
         cluster_model_indices[i] = i;
         cv::Mat features = cv::Mat(clusters[i]).reshape(1);
+#if CV_VERSION_MAJOR == 2 && CV_VERSION_MINOR == 4 && CV_VERSION_REVISION >= 12
+        // That compiles but seems to crash on other versions
         search[i] = cv::flann::Index(features, cv::flann::KDTreeIndexParams());
+#else
+        search[i].build(features, cv::flann::KDTreeIndexParams());
+#endif
 
         raw_fit_results[i] = detector_.fitBestModels(clusters[i], std::max(1, num_models), search[i], confidence_cutoff);
       }
