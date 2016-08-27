@@ -36,7 +36,7 @@
 #include <boost/foreach.hpp>
 #include <ecto/ecto.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#if CV_VERSION_MAJOR >= 3
+#if CV_MAJOR_VERSION >= 3
 #include <opencv2/rgbd.hpp>
 namespace cv {
   using namespace rgbd;
