@@ -36,7 +36,14 @@
 #include <boost/foreach.hpp>
 #include <ecto/ecto.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#if CV_VERSION_MAJOR >= 3
+#include <opencv2/rgbd.hpp>
+namespace cv {
+  using namespace rgbd;
+}
+#else
 #include <opencv2/rgbd/rgbd.hpp>
+#endif
 #include <tf/transform_listener.h>
 #include <ros/ros.h>
 #include <object_recognition_core/common/pose_result.h>
@@ -157,9 +164,15 @@ namespace tabletop
       // Compute the planes
       std::vector<cv::Vec4f> plane_coefficients;
       cv::RgbdPlane plane_finder;
+#if CV_VERSION_MAJOR >= 3
+      plane_finder.setThreshold(*plane_threshold_);
+      plane_finder.setMinSize(int(*min_table_size_));
+      plane_finder.setSensorErrorA(0.0075);
+#else
       plane_finder.set("threshold", *plane_threshold_);
       plane_finder.set("min_size", int(*min_table_size_));
       plane_finder.set("sensor_error_a", 0.0075);
+#endif
       plane_finder(*points3d_, normals, *table_mask_, plane_coefficients);
 
       std::vector<bool> valid_planes;

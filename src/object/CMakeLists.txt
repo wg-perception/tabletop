@@ -1,3 +1,8 @@
+if(("$ENV{ROS_DISTRO}" STREQUAL "indigo") OR ("$ENV{ROS_DISTRO}" STREQUAL "jade"))
+else()
+add_definitions(-std=c++11)
+endif()
+
 FIND_PACKAGE(OpenGL)
 
 #find_package(PkgConfig REQUIRED)
