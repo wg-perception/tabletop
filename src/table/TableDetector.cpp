@@ -164,7 +164,7 @@ namespace tabletop
       // Compute the planes
       std::vector<cv::Vec4f> plane_coefficients;
       cv::RgbdPlane plane_finder;
-#if CV_VERSION_MAJOR >= 3
+#if CV_MAJOR_VERSION >= 3
       plane_finder.setThreshold(*plane_threshold_);
       plane_finder.setMinSize(int(*min_table_size_));
       plane_finder.setSensorErrorA(0.0075);
